@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>LicitMap</title>
+    <style>
+        body { font-family: system-ui, sans-serif; margin: 2rem; background: #f5f5f5; }
+        h1 { color: #1a1a2e; }
+        .stats { margin-bottom: 1.5rem; color: #555; }
+        table { width: 100%; border-collapse: collapse; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
+        th { background: #1a1a2e; color: white; padding: 0.75rem; text-align: left; }
+        td { padding: 0.75rem; border-bottom: 1px solid #eee; }
+        tr:hover { background: #f0f0f0; }
+        a { color: #2563eb; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .estado { display: inline-block; padding: 2px 8px; border-radius: 4px; font-size: 0.85rem; font-weight: 600; }
+        .estado-PUB { background: #dbeafe; color: #1e40af; }
+        .estado-ADJ { background: #d1fae5; color: #065f46; }
+        .estado-PRE { background: #fef3c7; color: #92400e; }
+        .estado-RES { background: #fce7f3; color: #9d174d; }
+    </style>
+</head>
+<body>
+    <h1>LicitMap</h1>
+    <div class="stats">{{total}} licitaciones en base de datos</div>
+    <table>
+        <tr>
+            <th>Expediente</th>
+            <th>Título</th>
+            <th>Órgano</th>
+            <th>CCAA</th>
+            <th>Presupuesto</th>
+            <th>Estado</th>
+        </tr>
+        {{filas}}
+    </table>
+</body>
+</html>

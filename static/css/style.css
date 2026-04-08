@@ -1,0 +1,23 @@
+body {
+    background: #f8f9fa;
+}
+
+.badge-PUB { background: #dbeafe; color: #1e40af; }
+.badge-ADJ { background: #d1fae5; color: #065f46; }
+.badge-PRE { background: #fef3c7; color: #92400e; }
+.badge-RES { background: #fce7f3; color: #9d174d; }
+.badge-EV  { background: #e0e7ff; color: #3730a3; }
+.badge-ANUL { background: #fee2e2; color: #991b1b; }
+
+.badge {
+    padding: 4px 10px;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.table th {
+    background: #1a1a2e;
+    color: white;
+    font-weight: 500;
+}
