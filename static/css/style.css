@@ -1,23 +1,359 @@
-body {
-    background: #f8f9fa;
+/* =============================================
+   LIGHT — "Stone"
+   Base cálida off-white, texto carbón,
+   acento esmeralda.
+============================================= */
+:root {
+  --bg-base:     #f9f7f4;   /* página — apenas crema, casi blanco */
+  --bg-mantle:   #f2efea;   /* paneles, filtros */
+  --bg-crust:    #eae6e0;   /* navbar */
+  --bg-surface0: #dedad3;   /* bordes suaves */
+  --bg-surface1: #cec9c0;   /* bordes medios */
+  --bg-surface2: #bcb6ab;   /* bordes fuertes */
+
+  --tx-primary:  #1c1917;   /* texto principal */
+  --tx-secondary:#44403c;   /* texto secundario */
+  --tx-muted:    #78716c;   /* texto auxiliar */
+  --tx-faint:    #a8a29e;   /* placeholders, disabled */
+
+  --ac-main:     #059669;   /* esmeralda-600 — acento principal */
+  --ac-hover:    #047857;   /* esmeralda-700 — hover */
+  --ac-soft:     #ecfdf5;   /* esmeralda-50  — fondo suave acento */
+  --ac-text:     #ffffff;   /* texto sobre acento (contraste ok) */
+
+  --co-yellow:   #d97706;
+  --co-red:      #dc2626;
+  --co-blue:     #2563eb;
+  --co-mauve:    #7c3aed;
+  --co-sky:      #0369a1;
 }
 
-.badge-PUB { background: #dbeafe; color: #1e40af; }
-.badge-ADJ { background: #d1fae5; color: #065f46; }
-.badge-PRE { background: #fef3c7; color: #92400e; }
-.badge-RES { background: #fce7f3; color: #9d174d; }
-.badge-EV  { background: #e0e7ff; color: #3730a3; }
-.badge-ANUL { background: #fee2e2; color: #991b1b; }
+/* =============================================
+   DARK — "Slate"
+   Azul-negro profundo, texto casi-blanco
+   azulado, acento esmeralda brillante.
+   Especificidad 0,2,0 — gana siempre.
+============================================= */
+:root[data-theme="dark"] {
+  --bg-base:     #20232b;   /* grafito oscuro suave */
+  --bg-mantle:   #272b35;
+  --bg-crust:    #191c23;
+  --bg-surface0: #303444;
+  --bg-surface1: #3a3f52;
+  --bg-surface2: #454b60;
 
+  --tx-primary:  #e2e8f4;
+  --tx-secondary:#b0baca;
+  --tx-muted:    #8292a8;
+  --tx-faint:    #576070;
+
+  --ac-main:     #34d399;   /* esmeralda-400 — brillante sobre fondo oscuro */
+  --ac-hover:    #6ee7b7;   /* esmeralda-300 */
+  --ac-soft:     rgba(52, 211, 153, 0.12);
+  --ac-text:     #052e16;   /* texto oscuro sobre acento claro */
+
+  --co-yellow:   #fbbf24;
+  --co-red:      #f87171;
+  --co-blue:     #60a5fa;
+  --co-mauve:    #a78bfa;
+  --co-sky:      #38bdf8;
+}
+
+/* =============================================
+   BASE
+============================================= */
+html, body {
+  background-color: var(--bg-base) !important;
+  color: var(--tx-primary) !important;
+  transition: background-color 0.3s ease, color 0.2s ease;
+}
+
+a {
+  color: var(--ac-main);
+  text-decoration: none;
+}
+a:hover {
+  color: var(--ac-hover);
+  text-decoration: underline;
+}
+
+.text-muted {
+  color: var(--tx-muted) !important;
+}
+
+/* =============================================
+   NAVBAR
+============================================= */
+.lm-navbar {
+  background-color: var(--bg-crust);
+  border-bottom: 1px solid var(--bg-surface0);
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.lm-brand {
+  font-size: 1.15rem;
+  font-weight: 700;
+  color: var(--ac-main);
+  text-decoration: none;
+  letter-spacing: -0.02em;
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  transition: color 0.2s ease;
+}
+.lm-brand:hover {
+  color: var(--ac-hover);
+  text-decoration: none;
+}
+
+/* =============================================
+   BOTÓN TEMA — animación sol ↔ luna
+============================================= */
+.lm-theme-toggle {
+  position: relative;
+  background: var(--bg-surface0);
+  border: 1px solid var(--bg-surface1);
+  border-radius: 50%;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+  transition: background-color 0.2s ease, border-color 0.2s ease;
+}
+.lm-theme-toggle:hover {
+  background: var(--bg-surface1);
+  border-color: var(--bg-surface2);
+}
+
+.lm-theme-toggle .icon-sun,
+.lm-theme-toggle .icon-moon {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
+              opacity 0.3s ease;
+}
+
+/* Light: luna visible */
+:root .icon-moon {
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(0deg) scale(1);
+  color: var(--tx-secondary);
+}
+:root .icon-sun {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(180deg) scale(0.2);
+  color: var(--co-yellow);
+}
+
+/* Dark: sol visible */
+:root[data-theme="dark"] .icon-sun {
+  opacity: 1;
+  transform: translate(-50%, -50%) rotate(0deg) scale(1);
+  color: var(--co-yellow);
+}
+:root[data-theme="dark"] .icon-moon {
+  opacity: 0;
+  transform: translate(-50%, -50%) rotate(-180deg) scale(0.2);
+  color: var(--tx-secondary);
+}
+
+/* =============================================
+   PANEL DE FILTROS
+============================================= */
+.lm-filters {
+  background-color: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 10px;
+  padding: 1rem 1.1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+
+.form-control,
+.form-select {
+  background-color: var(--bg-base) !important;
+  border-color: var(--bg-surface1) !important;
+  color: var(--tx-primary) !important;
+  border-radius: 6px;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.form-control::placeholder {
+  color: var(--tx-faint) !important;
+}
+.form-control:focus,
+.form-select:focus {
+  border-color: var(--ac-main) !important;
+  box-shadow: 0 0 0 3px rgba(5, 150, 105, 0.18) !important;
+  outline: none;
+}
+:root[data-theme="dark"] .form-control:focus,
+:root[data-theme="dark"] .form-select:focus {
+  box-shadow: 0 0 0 3px rgba(52, 211, 153, 0.18) !important;
+}
+.form-select option {
+  background-color: var(--bg-base);
+  color: var(--tx-primary);
+}
+
+/* =============================================
+   BOTONES
+============================================= */
+.btn-primary {
+  background-color: var(--ac-main) !important;
+  border-color: var(--ac-main) !important;
+  color: var(--ac-text) !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+.btn-primary:hover,
+.btn-primary:focus {
+  background-color: var(--ac-hover) !important;
+  border-color: var(--ac-hover) !important;
+  color: var(--ac-text) !important;
+}
+:root[data-theme="dark"] .btn-primary,
+:root[data-theme="dark"] .btn-primary:hover,
+:root[data-theme="dark"] .btn-primary:focus {
+  color: var(--ac-text) !important;
+}
+
+.btn-outline-secondary {
+  border-color: var(--bg-surface2) !important;
+  color: var(--tx-muted) !important;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+}
+.btn-outline-secondary:hover {
+  background-color: var(--bg-surface0) !important;
+  border-color: var(--bg-surface1) !important;
+  color: var(--tx-primary) !important;
+}
+
+/* =============================================
+   TABLA
+============================================= */
+.lm-table-wrapper {
+  border: 1px solid var(--bg-surface0);
+  border-radius: 10px;
+  overflow: hidden;
+  transition: border-color 0.3s ease;
+}
+
+.table {
+  color: var(--tx-primary) !important;
+  margin-bottom: 0;
+  --bs-table-bg: transparent;
+  --bs-table-border-color: var(--bg-surface0);
+}
+
+.table > thead > tr > th {
+  background-color: var(--bg-mantle) !important;
+  color: var(--tx-muted) !important;
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  border-bottom: 2px solid var(--ac-main) !important;
+  padding: 0.7rem 1rem;
+  white-space: nowrap;
+  transition: background-color 0.3s ease;
+}
+
+.table > tbody > tr > td {
+  padding: 0.6rem 1rem;
+  vertical-align: middle;
+  border-bottom-color: var(--bg-surface0) !important;
+  font-size: 0.9rem;
+  background-color: var(--bg-base);
+  color: var(--tx-primary) !important;
+  transition: background-color 0.15s ease;
+}
+.table > tbody > tr:last-child > td {
+  border-bottom: none !important;
+}
+.table > tbody > tr:hover > td {
+  background-color: var(--bg-mantle) !important;
+}
+
+/* =============================================
+   BADGES DE ESTADO
+============================================= */
 .badge {
-    padding: 4px 10px;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
+  padding: 3px 9px;
+  border-radius: 6px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  white-space: nowrap;
 }
 
-.table th {
-    background: #1a1a2e;
-    color: white;
-    font-weight: 500;
+/* Light */
+:root .badge-PUB  { background: #dbeafe; color: #1d4ed8; }
+:root .badge-ADJ  { background: #d1fae5; color: #065f46; }
+:root .badge-PRE  { background: #fef3c7; color: #92400e; }
+:root .badge-RES  { background: #ede9fe; color: #5b21b6; }
+:root .badge-EV   { background: #e0f2fe; color: #0369a1; }
+:root .badge-ANUL { background: #fee2e2; color: #991b1b; }
+
+/* Dark */
+:root[data-theme="dark"] .badge-PUB  { background: rgba(96,165,250,0.15);  color: #60a5fa; }
+:root[data-theme="dark"] .badge-ADJ  { background: rgba(52,211,153,0.15);  color: #34d399; }
+:root[data-theme="dark"] .badge-PRE  { background: rgba(251,191,36,0.15);  color: #fbbf24; }
+:root[data-theme="dark"] .badge-RES  { background: rgba(167,139,250,0.15); color: #a78bfa; }
+:root[data-theme="dark"] .badge-EV   { background: rgba(56,189,248,0.15);  color: #38bdf8; }
+:root[data-theme="dark"] .badge-ANUL { background: rgba(248,113,113,0.15); color: #f87171; }
+
+/* =============================================
+   PAGINACIÓN
+============================================= */
+.pagination {
+  gap: 3px;
+  margin-bottom: 0;
+}
+.page-link {
+  background-color: var(--bg-mantle) !important;
+  border-color: var(--bg-surface0) !important;
+  color: var(--tx-muted) !important;
+  border-radius: 6px !important;
+  font-size: 0.875rem;
+  padding: 0.3rem 0.65rem;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.page-link:hover {
+  background-color: var(--bg-surface0) !important;
+  color: var(--tx-primary) !important;
+}
+.page-item.active .page-link {
+  background-color: var(--ac-main) !important;
+  border-color: var(--ac-main) !important;
+  color: var(--ac-text) !important;
+}
+:root[data-theme="dark"] .page-item.active .page-link {
+  color: var(--ac-text) !important;
+}
+.page-item.disabled .page-link {
+  color: var(--tx-faint) !important;
+}
+
+/* =============================================
+   FOOTER
+============================================= */
+.lm-footer {
+  border-top: 1px solid var(--bg-surface0);
+  color: var(--tx-faint);
+  font-size: 0.8rem;
+  margin-top: 2.5rem;
+  transition: border-color 0.3s ease, color 0.2s ease;
+}
+
+/* =============================================
+   HEADING
+============================================= */
+.lm-heading {
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  color: var(--tx-primary);
+}
+.lm-stat {
+  font-size: 0.85rem;
+  color: var(--tx-muted);
 }
