@@ -125,7 +125,10 @@ def home(
     for lic in licitaciones:
         presupuesto = f"{lic.presupuesto:,.2f} €" if lic.presupuesto else "—"
         estado_val = lic.estado or "—"
-        territorio = lic.comunidad_autonoma or (lic.pais if lic.pais and lic.pais != "España" else "—")
+        if lic.comunidad_autonoma == "Extranjero":
+            territorio = lic.pais or "Extranjero"
+        else:
+            territorio = lic.comunidad_autonoma or "—"
         filas += f"""<tr>
             <td><a href="{lic.url}" target="_blank">{lic.expediente}</a></td>
             <td>{lic.titulo or '—'}</td>
