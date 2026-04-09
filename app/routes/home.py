@@ -12,7 +12,14 @@ router = APIRouter()
 
 PER_PAGE = 50
 
-ESTADOS = ["PUB", "ADJ", "PRE", "RES", "EV", "ANUL"]
+ESTADOS = {
+    "PUB": "Publicada",
+    "ADJ": "Adjudicada",
+    "PRE": "Preevaluación",
+    "RES": "Resuelta",
+    "EV": "En evaluación",
+    "ANUL": "Anulada",
+}
 
 
 def render(template, **kwargs):
@@ -132,8 +139,8 @@ def home(
 
     # Estado dropdown
     estado_options = "".join(
-        f'<option value="{e}"{"  selected" if estado == e else ""}>{e}</option>'
-        for e in ESTADOS
+        f'<option value="{code}"{"  selected" if estado == code else ""}>{label}</option>'
+        for code, label in ESTADOS.items()
     )
 
     params = {"q": q, "ccaa": ccaa, "estado": estado, "pmin": pmin, "pmax": pmax}

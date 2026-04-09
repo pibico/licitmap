@@ -48,51 +48,51 @@ def text(element, xpath):
 def extract_comunidad(status):
     loc = status.find("cac:ProcurementProject/cac:RealizedLocation", NS)
 
+    # Contratos en el extranjero: detección temprana por código de país
     if loc is not None:
-        # Contratos en el extranjero: país distinto de ES
         country_code = loc.find("cac:Address/cac:Country/cbc:IdentificationCode", NS)
         if country_code is not None and country_code.text and country_code.text.strip().upper() not in ("ES", ""):
             return "Extranjero"
 
-        # Fuente primaria: CountrySubentityCode
+    # Fuente primaria: cadena ParentLocatedParty del órgano de contratación.
+    # Más fiable que RealizedLocation porque refleja la adscripción institucional
+    # del órgano y no varía entre actualizaciones del mismo expediente.
+    located = status.find(".//cac-place-ext:LocatedContractingParty", NS)
+    if located is not None:
+        parent = located.find("cac-place-ext:ParentLocatedParty", NS)
+        chain = []
+        while parent is not None:
+            node = parent.find("cac:PartyName/cbc:Name", NS)
+            if node is not None and node.text:
+                chain.append(node.text.strip())
+            parent = parent.find("cac-place-ext:ParentLocatedParty", NS)
+        for name in chain:
+            if name in CCAA:
+                return name
+
+    # Fallback: RealizedLocation > CountrySubentityCode (NUTS)
+    # Usado cuando el órgano no tiene CCAA en su jerarquía (organismos nacionales, etc.)
+    if loc is not None:
         code_node = loc.find("cbc:CountrySubentityCode", NS)
         if code_node is not None and code_node.text:
             code = code_node.text.strip()
 
-            # Ámbito nacional (ES, España, ESPAÑA)
             if code.upper() in ("ES", "ESPAÑA", "ESPANA"):
                 return "Todo el territorio"
 
-            # Extra-Regio (ESZZZ, ESZZ, ESZ): contratos sin región asignable
             if code.startswith("ESZ"):
                 return "Extra-Regio"
 
-            # NUTS3 / NUTS2: tomar primeros 4 chars
             nuts2 = code[:4]
             ccaa = NUTS2_CCAA.get(nuts2)
             if ccaa:
                 return ccaa
 
-            # NUTS1 con correspondencia directa a una CCAA
             nuts1 = code[:3]
             ccaa = NUTS1_CCAA.get(nuts1)
             if ccaa:
                 return ccaa
 
-    # Fallback: cadena ParentLocatedParty del órgano de contratación
-    located = status.find(".//cac-place-ext:LocatedContractingParty", NS)
-    if located is None:
-        return None
-    parent = located.find("cac-place-ext:ParentLocatedParty", NS)
-    chain = []
-    while parent is not None:
-        node = parent.find("cac:PartyName/cbc:Name", NS)
-        if node is not None and node.text:
-            chain.append(node.text.strip())
-        parent = parent.find("cac-place-ext:ParentLocatedParty", NS)
-    for name in chain:
-        if name in CCAA:
-            return name
     return None
 
 
@@ -106,9 +106,13 @@ def _parse_entries(root):
         link_node = entry.find("atom:link", NS)
         url = link_node.get("href") if link_node is not None else None
 
+        atom_id_node = entry.find("atom:id", NS)
+        atom_id = atom_id_node.text.strip() if atom_id_node is not None and atom_id_node.text else None
+
         presupuesto_text = text(status, ".//cac:BudgetAmount/cbc:TaxExclusiveAmount")
 
         results.append({
+            "atom_id": atom_id,
             "expediente": text(status, "cbc:ContractFolderID"),
             "titulo": text(status, "cac:ProcurementProject/cbc:Name"),
             "organo_contratacion": text(status, ".//cac-place-ext:LocatedContractingParty/cac:Party/cac:PartyName/cbc:Name"),

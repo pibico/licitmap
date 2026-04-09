@@ -37,9 +37,14 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                 except ValueError:
                     pass
 
-            existente = db.query(Licitacion).filter_by(expediente=d["expediente"]).first()
+            if not d.get("atom_id"):
+                continue
+
+            existente = db.query(Licitacion).filter_by(atom_id=d["atom_id"]).first()
             if existente:
+                existente.expediente = d["expediente"]
                 existente.titulo = d["titulo"]
+                existente.organo_contratacion = d["organo_contratacion"]
                 existente.estado = d["estado"]
                 existente.presupuesto = d["presupuesto"]
                 existente.fecha_publicacion = fecha
@@ -49,6 +54,7 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                 actualizadas += 1
             else:
                 db.add(Licitacion(
+                    atom_id=d["atom_id"],
                     expediente=d["expediente"],
                     titulo=d["titulo"],
                     organo_contratacion=d["organo_contratacion"],

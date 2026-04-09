@@ -5,7 +5,8 @@ class Licitacion(Base):
     __tablename__ = "licitaciones"
 
     id = Column(Integer, primary_key=True, index=True)
-    expediente = Column(String, unique=True, index=True)
+    atom_id = Column(String, unique=True, index=True)
+    expediente = Column(String, index=True)
     titulo = Column(String)
     organo_contratacion = Column(String)
     estado = Column(String)
