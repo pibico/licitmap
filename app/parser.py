@@ -8,14 +8,36 @@ NS = {
     "cbc-place-ext": "urn:dgpe:names:draft:codice-place-ext:schema:xsd:CommonBasicComponents-2",
 }
 
-CCAA = {
-    "Andalucía", "Aragón", "Principado de Asturias", "Illes Balears",
-    "Canarias", "Cantabria", "Castilla y León", "Castilla-La Mancha",
-    "Cataluña", "Comunidad Valenciana", "Extremadura", "Galicia",
-    "Comunidad de Madrid", "Región de Murcia", "Comunidad Foral de Navarra",
-    "País Vasco", "La Rioja", "Ciudad Autónoma de Ceuta",
-    "Ciudad Autónoma de Melilla",
+# Mapa NUTS2 → nombre de CCAA
+NUTS2_CCAA = {
+    "ES11": "Galicia",
+    "ES12": "Principado de Asturias",
+    "ES13": "Cantabria",
+    "ES21": "País Vasco",
+    "ES22": "Comunidad Foral de Navarra",
+    "ES23": "La Rioja",
+    "ES24": "Aragón",
+    "ES30": "Comunidad de Madrid",
+    "ES41": "Castilla y León",
+    "ES42": "Castilla-La Mancha",
+    "ES43": "Extremadura",
+    "ES51": "Cataluña",
+    "ES52": "Comunidad Valenciana",
+    "ES53": "Illes Balears",
+    "ES61": "Andalucía",
+    "ES62": "Región de Murcia",
+    "ES63": "Ciudad Autónoma de Ceuta",
+    "ES64": "Ciudad Autónoma de Melilla",
+    "ES70": "Canarias",
 }
+
+# NUTS1 con correspondencia directa a una sola CCAA
+NUTS1_CCAA = {
+    "ES3": "Comunidad de Madrid",
+    "ES7": "Canarias",
+}
+
+CCAA = set(NUTS2_CCAA.values())
 
 
 def text(element, xpath):
@@ -24,6 +46,32 @@ def text(element, xpath):
 
 
 def extract_comunidad(status):
+    # Fuente primaria: RealizedLocation > CountrySubentityCode
+    code_node = status.find("cac:ProcurementProject/cac:RealizedLocation/cbc:CountrySubentityCode", NS)
+    if code_node is not None and code_node.text:
+        code = code_node.text.strip()
+
+        # Ámbito nacional (ES, España, ESPAÑA)
+        if code.upper() in ("ES", "ESPAÑA", "ESPANA"):
+            return "Todo el territorio"
+
+        # Extra-Regio (ESZZZ, ESZZ, ESZ): contratos sin región asignable
+        if code.startswith("ESZ"):
+            return "Extra-Regio"
+
+        # NUTS3 / NUTS2: tomar primeros 4 chars
+        nuts2 = code[:4]
+        ccaa = NUTS2_CCAA.get(nuts2)
+        if ccaa:
+            return ccaa
+
+        # NUTS1 con correspondencia directa a una CCAA
+        nuts1 = code[:3]
+        ccaa = NUTS1_CCAA.get(nuts1)
+        if ccaa:
+            return ccaa
+
+    # Fallback: cadena ParentLocatedParty del órgano de contratación
     located = status.find(".//cac-place-ext:LocatedContractingParty", NS)
     if located is None:
         return None
@@ -34,7 +82,6 @@ def extract_comunidad(status):
         if node is not None and node.text:
             chain.append(node.text.strip())
         parent = parent.find("cac-place-ext:ParentLocatedParty", NS)
-    # Buscar la CCAA en la cadena
     for name in chain:
         if name in CCAA:
             return name
