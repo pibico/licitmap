@@ -74,7 +74,7 @@ def home(
     db: Session = Depends(get_db),
     q: str = Query(default=""),
     ccaa: str = Query(default=""),
-    pais: str = Query(default=""),
+    pais: str = Query(default="España"),
     estado: str = Query(default=""),
     pmin: str = Query(default=""),
     pmax: str = Query(default=""),
