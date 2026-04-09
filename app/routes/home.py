@@ -128,13 +128,24 @@ def home(
             <td><span class="badge badge-{estado_val}">{estado_val}</span></td>
         </tr>"""
 
-    # CCAA dropdown
-    ccaa_rows = db.query(Licitacion.comunidad_autonoma).filter(
-        Licitacion.comunidad_autonoma.isnot(None)
-    ).distinct().order_by(Licitacion.comunidad_autonoma).all()
-    ccaa_options = "".join(
-        f'<option value="{r[0]}"{"  selected" if ccaa == r[0] else ""}>{r[0]}</option>'
-        for r in ccaa_rows
+    # Territorio dropdown con dos grupos
+    TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
+
+    territorio_rows = [
+        r[0] for r in db.query(Licitacion.comunidad_autonoma)
+        .filter(Licitacion.comunidad_autonoma.isnot(None))
+        .distinct().order_by(Licitacion.comunidad_autonoma).all()
+    ]
+    ccaa_list = sorted(v for v in territorio_rows if v not in TERRITORIOS_ESPECIALES)
+    especiales_list = sorted(v for v in territorio_rows if v in TERRITORIOS_ESPECIALES)
+
+    def opt(val):
+        sel = '  selected' if ccaa == val else ''
+        return f'<option value="{val}"{sel}>{val}</option>'
+
+    ccaa_options = (
+        f'<optgroup label="Comunidades Autónomas">{"".join(opt(v) for v in ccaa_list)}</optgroup>'
+        f'<optgroup label="Otros ámbitos">{"".join(opt(v) for v in especiales_list)}</optgroup>'
     )
 
     # Estado dropdown
