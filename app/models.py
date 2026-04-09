@@ -13,4 +13,5 @@ class Licitacion(Base):
     presupuesto = Column(Float)
     fecha_publicacion = Column(DateTime)
     comunidad_autonoma = Column(String)
+    pais = Column(String)
     url = Column(String)

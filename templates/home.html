@@ -8,8 +8,14 @@
         <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
     </div>
     <div class="col-6 col-md-2">
+        <select name="pais" class="form-select">
+            <option value="">Todos los países</option>
+            {{pais_options}}
+        </select>
+    </div>
+    <div class="col-6 col-md-2">
         <select name="ccaa" class="form-select">
-            <option value="">Todo el territorio</option>
+            <option value="">Todas las CCAA</option>
             {{ccaa_options}}
         </select>
     </div>

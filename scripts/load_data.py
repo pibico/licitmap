@@ -49,6 +49,7 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                 existente.presupuesto = d["presupuesto"]
                 existente.fecha_publicacion = fecha
                 existente.comunidad_autonoma = d["comunidad_autonoma"]
+                existente.pais = d["pais"]
                 existente.url = d["url"]
                 file_actualizadas += 1
                 actualizadas += 1
@@ -62,6 +63,7 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                     presupuesto=d["presupuesto"],
                     fecha_publicacion=fecha,
                     comunidad_autonoma=d["comunidad_autonoma"],
+                    pais=d["pais"],
                     url=d["url"],
                 ))
                 file_nuevas += 1

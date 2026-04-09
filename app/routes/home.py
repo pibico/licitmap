@@ -21,6 +21,8 @@ ESTADOS = {
     "ANUL": "Anulada",
 }
 
+TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
+
 
 def render(template, **kwargs):
     base = Path("templates/base.html").read_text()
@@ -41,7 +43,6 @@ def build_pagination(page, total_pages, params):
         return "/?" + urlencode(p_params)
 
     items = []
-
     items.append(
         f'<li class="page-item{"  disabled" if page == 1 else ""}"><a class="page-link" href="{page_url(page - 1)}">‹</a></li>'
     )
@@ -73,6 +74,7 @@ def home(
     db: Session = Depends(get_db),
     q: str = Query(default=""),
     ccaa: str = Query(default=""),
+    pais: str = Query(default=""),
     estado: str = Query(default=""),
     pmin: str = Query(default=""),
     pmax: str = Query(default=""),
@@ -87,6 +89,10 @@ def home(
             Licitacion.organo_contratacion.ilike(like),
             Licitacion.expediente.ilike(like),
         ))
+    if pais == "España":
+        query = query.filter(Licitacion.pais == "España")
+    elif pais:
+        query = query.filter(Licitacion.pais == pais)
     if ccaa:
         query = query.filter(Licitacion.comunidad_autonoma == ccaa)
     if estado:
@@ -119,33 +125,49 @@ def home(
     for lic in licitaciones:
         presupuesto = f"{lic.presupuesto:,.2f} €" if lic.presupuesto else "—"
         estado_val = lic.estado or "—"
+        territorio = lic.comunidad_autonoma or (lic.pais if lic.pais and lic.pais != "España" else "—")
         filas += f"""<tr>
             <td><a href="{lic.url}" target="_blank">{lic.expediente}</a></td>
             <td>{lic.titulo or '—'}</td>
             <td>{lic.organo_contratacion or '—'}</td>
-            <td>{lic.comunidad_autonoma or '—'}</td>
+            <td>{territorio}</td>
             <td class="text-end">{presupuesto}</td>
             <td><span class="badge badge-{estado_val}">{estado_val}</span></td>
         </tr>"""
 
-    # Territorio dropdown con dos grupos
-    TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
+    # País dropdown: España + países extranjeros
+    paises_ext = [
+        r[0] for r in db.query(Licitacion.pais)
+        .filter(Licitacion.pais != "España", Licitacion.pais.isnot(None))
+        .distinct().order_by(Licitacion.pais).all()
+    ]
 
+    def opt_pais(val, label=None):
+        sel = '  selected' if pais == val else ''
+        return f'<option value="{val}"{sel}>{label or val}</option>'
+
+    pais_options = (
+        opt_pais("España") +
+        f'<optgroup label="Extranjero">{"".join(opt_pais(v) for v in paises_ext)}</optgroup>'
+    )
+
+    # Territorio dropdown (solo relevante cuando pais=España)
     territorio_rows = [
         r[0] for r in db.query(Licitacion.comunidad_autonoma)
-        .filter(Licitacion.comunidad_autonoma.isnot(None))
+        .filter(Licitacion.comunidad_autonoma.isnot(None),
+                Licitacion.comunidad_autonoma != "Extranjero")
         .distinct().order_by(Licitacion.comunidad_autonoma).all()
     ]
-    ccaa_list = sorted(v for v in territorio_rows if v not in TERRITORIOS_ESPECIALES)
-    especiales_list = sorted(v for v in territorio_rows if v in TERRITORIOS_ESPECIALES)
+    ccaa_list = [v for v in territorio_rows if v not in TERRITORIOS_ESPECIALES]
+    especiales_list = [v for v in territorio_rows if v in TERRITORIOS_ESPECIALES]
 
-    def opt(val):
+    def opt_ccaa(val):
         sel = '  selected' if ccaa == val else ''
         return f'<option value="{val}"{sel}>{val}</option>'
 
     ccaa_options = (
-        f'<optgroup label="Comunidades Autónomas">{"".join(opt(v) for v in ccaa_list)}</optgroup>'
-        f'<optgroup label="Otros ámbitos">{"".join(opt(v) for v in especiales_list)}</optgroup>'
+        f'<optgroup label="Comunidades Autónomas">{"".join(opt_ccaa(v) for v in ccaa_list)}</optgroup>'
+        f'<optgroup label="Otros ámbitos">{"".join(opt_ccaa(v) for v in especiales_list)}</optgroup>'
     )
 
     # Estado dropdown
@@ -154,16 +176,18 @@ def home(
         for code, label in ESTADOS.items()
     )
 
-    params = {"q": q, "ccaa": ccaa, "estado": estado, "pmin": pmin, "pmax": pmax}
+    params = {"q": q, "pais": pais, "ccaa": ccaa, "estado": estado, "pmin": pmin, "pmax": pmax}
 
     return render(
         "home.html",
         total=total,
         resultados=resultados,
         filas=filas,
+        pais_options=pais_options,
         ccaa_options=ccaa_options,
         estado_options=estado_options,
         q=q,
+        pais=pais,
         ccaa=ccaa,
         estado=estado,
         pmin=pmin,

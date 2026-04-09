@@ -45,6 +45,19 @@ def text(element, xpath):
     return node.text.strip() if node is not None and node.text else None
 
 
+def extract_pais(status):
+    loc = status.find("cac:ProcurementProject/cac:RealizedLocation", NS)
+    if loc is None:
+        return "España"
+    country_code = loc.find("cac:Address/cac:Country/cbc:IdentificationCode", NS)
+    if country_code is not None and country_code.text and country_code.text.strip().upper() not in ("ES", ""):
+        country_name = loc.find("cac:Address/cac:Country/cbc:Name", NS)
+        if country_name is not None and country_name.text:
+            return country_name.text.strip()
+        return country_code.text.strip()
+    return "España"
+
+
 def extract_comunidad(status):
     loc = status.find("cac:ProcurementProject/cac:RealizedLocation", NS)
 
@@ -120,6 +133,7 @@ def _parse_entries(root):
             "presupuesto": float(presupuesto_text) if presupuesto_text else None,
             "fecha_publicacion": text(entry, "atom:updated"),
             "comunidad_autonoma": extract_comunidad(status),
+            "pais": extract_pais(status),
             "url": url,
         })
     return results
