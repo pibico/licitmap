@@ -17,3 +17,4 @@ class Licitacion(Base):
     comunidad_autonoma = Column(String)
     pais = Column(String)
     url = Column(String)
+    cpv = Column(String, index=True)

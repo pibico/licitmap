@@ -12,7 +12,35 @@
     localStorage.setItem(THEME_KEY, theme);
   }
 
+  var SIDEBAR_STATE_KEY = 'lm-sidebar-open';
+
+  function getSidebarState() {
+    try { return JSON.parse(localStorage.getItem(SIDEBAR_STATE_KEY)) || {}; } catch(e) { return {}; }
+  }
+
+  function setupSidebarToggles() {
+    var state = getSidebarState();
+    document.querySelectorAll('.lm-sidebar-toggle').forEach(function(btn) {
+      var section = btn.dataset.section;
+      var body = document.getElementById('sc-' + section);
+      if (!body) return;
+      if (state[section]) {
+        btn.classList.add('open');
+        body.classList.add('open');
+      }
+      btn.addEventListener('click', function() {
+        var open = btn.classList.toggle('open');
+        body.classList.toggle('open', open);
+        var s = getSidebarState();
+        if (open) s[section] = 1; else delete s[section];
+        localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(s));
+      });
+    });
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
+    setupSidebarToggles();
+
     // Theme toggle
     var btn = document.getElementById('theme-toggle');
     if (btn) {
@@ -39,6 +67,7 @@
         .then(function (r) { return r.json(); })
         .then(function (data) {
           document.getElementById('cards-container').innerHTML = data.filas;
+          document.getElementById('paginacion-top').innerHTML = data.paginacion;
           document.getElementById('paginacion-bottom').innerHTML = data.paginacion;
           document.getElementById('resultados-count').textContent = data.resultados;
           if (data.en_plazo !== undefined) {
@@ -72,6 +101,20 @@
         });
     }
 
+    // Salto de página — delegado en document para cubrir paginación top y bottom
+    document.addEventListener('keydown', function(e) {
+      if (e.key !== 'Enter') return;
+      var input = e.target.closest('.lm-page-input');
+      if (!input) return;
+      e.preventDefault();
+      var p = parseInt(input.value, 10);
+      var total = parseInt(input.dataset.total, 10);
+      if (!p || p < 1 || p > total) { input.value = input.defaultValue; return; }
+      var params = new URLSearchParams(window.location.search);
+      params.set('page', p);
+      window.location.href = '/?' + params.toString();
+    });
+
     // Búsqueda de texto: debounce 600ms
     var debounceTimer;
     var textInput = form.querySelector('input[type="text"]');
@@ -91,6 +134,39 @@
     var sidebar = document.querySelector('.lm-sidebar');
     if (!sidebar) return;
 
+    // Botón de orden
+    var btnOrden = document.getElementById('btn-orden');
+    var ordenInput = document.getElementById('h-orden');
+    if (btnOrden && ordenInput) {
+      btnOrden.addEventListener('click', function() {
+        var current = ordenInput.value || 'asc';
+        var next = current === 'asc' ? 'desc' : 'asc';
+        ordenInput.value = next;
+        document.getElementById('orden-label').textContent = next === 'asc' ? 'Pronta finalización' : 'Más tiempo';
+        var iconDesc = document.getElementById('orden-icon-desc');
+        var iconAsc  = document.getElementById('orden-icon-asc');
+        if (iconDesc) iconDesc.style.display = next === 'desc' ? '' : 'none';
+        if (iconAsc)  iconAsc.style.display  = next === 'asc'  ? '' : 'none';
+        fetchResultados();
+      });
+    }
+
+    // Per-page buttons: init active state and bind clicks
+    var perPageInput = document.getElementById('h-per_page');
+    document.querySelectorAll('.lm-per-page-btn').forEach(function(btn) {
+      if (perPageInput && btn.dataset.value === perPageInput.value) {
+        btn.classList.add('active');
+      }
+      btn.addEventListener('click', function() {
+        document.querySelectorAll('.lm-per-page-btn').forEach(function(b) { b.classList.remove('active'); });
+        btn.classList.add('active');
+        if (perPageInput) perPageInput.value = btn.dataset.value;
+        fetchResultados();
+      });
+    });
+
+    var MULTI_FIELDS = ['tipo', 'estado', 'prange', 'ccaa'];
+
     sidebar.addEventListener('click', function (e) {
       // Clic en item de filtro
       var item = e.target.closest('.lm-sidebar-item[data-field]');
@@ -103,22 +179,18 @@
 
         var isActive = item.classList.contains('lm-active');
 
-        // Desactivar todos los items del mismo grupo
-        sidebar.querySelectorAll('.lm-sidebar-item[data-field="' + field + '"]')
-          .forEach(function (el) { el.classList.remove('lm-active'); });
-
         if (field === 'pais') {
-          // Territorio: comportamiento radio — siempre activa el ítem, nunca deselecciona
+          // Territorio: comportamiento radio — desactiva todo el grupo, activa el ítem
+          sidebar.querySelectorAll('.lm-sidebar-item[data-field="pais"]')
+            .forEach(function (el) { el.classList.remove('lm-active'); });
           input.value = value;
           item.classList.add('lm-active');
 
           var esEspana = !value || value === 'España';
 
-          // Actualizar título inmediatamente
           var titleEl = document.getElementById('sidebar-territorio-title');
           if (titleEl) titleEl.textContent = esEspana ? 'Comunidad autónoma' : 'País';
 
-          // Limpiar CCAA si salimos de España/Todos
           var ccaaInput = document.getElementById('h-ccaa');
           if (!esEspana && ccaaInput) {
             ccaaInput.value = '';
@@ -126,7 +198,6 @@
               .forEach(function (el) { el.classList.remove('lm-active'); });
           }
 
-          // País concreto → marcar Internacional como activo visualmente
           if (!esEspana && value !== '__intl__') {
             sidebar.querySelectorAll('.lm-sidebar-item[data-field="pais"]')
               .forEach(function (el) { el.classList.remove('lm-active'); });
@@ -134,17 +205,21 @@
             if (intlItem) intlItem.classList.add('lm-active');
           }
 
-        } else {
-          // Resto de campos: toggle normal
-          if (isActive) {
-            input.value = '';
+        } else if (MULTI_FIELDS.indexOf(field) >= 0) {
+          // Multiselección: toggle este valor en lista separada por |
+          var current = input.value ? input.value.split('|').filter(Boolean) : [];
+          var idx = current.indexOf(value);
+          if (idx >= 0) {
+            current.splice(idx, 1);
+            item.classList.remove('lm-active');
           } else {
-            input.value = value;
+            current.push(value);
             item.classList.add('lm-active');
           }
+          input.value = current.join('|');
 
           // Al seleccionar una CCAA: auto-activar España si el territorio no lo está
-          if (field === 'ccaa' && !isActive) {
+          if (field === 'ccaa' && idx < 0) {
             var paisInput = document.getElementById('h-pais');
             if (paisInput && paisInput.value !== 'España') {
               paisInput.value = 'España';
@@ -155,6 +230,17 @@
               var titleEl2 = document.getElementById('sidebar-territorio-title');
               if (titleEl2) titleEl2.textContent = 'Comunidad autónoma';
             }
+          }
+
+        } else {
+          // Resto (paises individuales): toggle normal
+          sidebar.querySelectorAll('.lm-sidebar-item[data-field="' + field + '"]')
+            .forEach(function (el) { el.classList.remove('lm-active'); });
+          if (isActive) {
+            input.value = '';
+          } else {
+            input.value = value;
+            item.classList.add('lm-active');
           }
         }
 

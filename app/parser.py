@@ -124,6 +124,9 @@ def _parse_entries(root):
 
         presupuesto_text = text(status, ".//cac:BudgetAmount/cbc:TaxExclusiveAmount")
 
+        cpv_nodes = status.findall(".//cac:RequiredCommodityClassification/cbc:ItemClassificationCode", NS)
+        cpv = " ".join(n.text.strip() for n in cpv_nodes if n.text) or None
+
         results.append({
             "atom_id": atom_id,
             "expediente": text(status, "cbc:ContractFolderID"),
@@ -137,6 +140,7 @@ def _parse_entries(root):
             "comunidad_autonoma": extract_comunidad(status),
             "pais": extract_pais(status),
             "url": url,
+            "cpv": cpv,
         })
     return results
 

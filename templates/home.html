@@ -3,10 +3,12 @@
     <input type="hidden" name="ccaa"       id="h-ccaa"   value="{{ccaa}}">
     <input type="hidden" name="estado"     id="h-estado" value="{{estado}}">
     <input type="hidden" name="prange"     id="h-prange" value="{{prange}}">
-    <input type="hidden" name="pais"       id="h-pais"   value="{{pais}}">
+    <input type="hidden" name="pais"       id="h-pais"     value="{{pais}}">
+    <input type="hidden" name="per_page"   id="h-per_page" value="{{per_page}}">
+    <input type="hidden" name="orden"      id="h-orden"    value="{{orden}}">
 
     <div class="lm-search-bar mb-3">
-        <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano, expediente o CPV..." value="{{q}}">
         <a href="/" class="btn btn-primary text-nowrap">Limpiar filtros</a>
     </div>
 
@@ -35,53 +37,102 @@
                 <div class="lm-sidebar-header">Filtros</div>
 
                 <div class="lm-sidebar-section">
-                    <div class="lm-sidebar-title">Fecha límite</div>
-                    <div class="lm-sidebar-date-wrap">
-                        <div class="lm-sidebar-date-field">
-                            <span class="lm-sidebar-date-label">Desde</span>
-                            <input type="date" name="fecha_desde" value="{{fecha_desde}}">
-                        </div>
-                        <div class="lm-sidebar-date-field">
-                            <span class="lm-sidebar-date-label">Hasta</span>
-                            <input type="date" name="fecha_hasta" value="{{fecha_hasta}}">
+                    <button class="lm-sidebar-toggle" type="button" data-section="fecha">
+                        Fecha límite
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-fecha">
+                        <div class="lm-sidebar-date-wrap">
+                            <div class="lm-sidebar-date-field">
+                                <span class="lm-sidebar-date-label">Desde</span>
+                                <input type="date" name="fecha_desde" value="{{fecha_desde}}">
+                            </div>
+                            <div class="lm-sidebar-date-field">
+                                <span class="lm-sidebar-date-label">Hasta</span>
+                                <input type="date" name="fecha_hasta" value="{{fecha_hasta}}">
+                            </div>
                         </div>
                     </div>
                 </div>
 
                 <div class="lm-sidebar-section">
-                    <div class="lm-sidebar-title">Tipo de contrato</div>
-                    <div id="sidebar-tipo-items">{{sidebar_tipo}}</div>
+                    <button class="lm-sidebar-toggle" type="button" data-section="tipo">
+                        Tipo de contrato
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-tipo">
+                        <div id="sidebar-tipo-items">{{sidebar_tipo}}</div>
+                    </div>
                 </div>
 
                 <div class="lm-sidebar-section">
-                    <div class="lm-sidebar-title">Presupuesto</div>
-                    <div id="sidebar-prange-items">{{sidebar_prange}}</div>
+                    <button class="lm-sidebar-toggle" type="button" data-section="prange">
+                        Presupuesto
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-prange">
+                        <div id="sidebar-prange-items">{{sidebar_prange}}</div>
+                    </div>
                 </div>
 
                 <div class="lm-sidebar-section">
-                    <div class="lm-sidebar-title">Territorio</div>
-                    <div id="sidebar-territorio-items">{{sidebar_pais}}</div>
+                    <button class="lm-sidebar-toggle" type="button" data-section="territorio">
+                        Territorio
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-territorio">
+                        <div id="sidebar-territorio-items">{{sidebar_pais}}</div>
+                    </div>
                 </div>
 
                 <div class="lm-sidebar-section" id="sidebar-territorio-section">
-                    <div class="lm-sidebar-title" id="sidebar-territorio-title">{{territorio_title}}</div>
-                    <div id="sidebar-ccaa-items" style="{{ccaa_display}}">
-                        {{sidebar_ccaa}}
-                    </div>
-                    <div id="sidebar-paises-items" style="{{paises_display}}">
-                        {{sidebar_paises_ext}}
+                    <button class="lm-sidebar-toggle" type="button" data-section="ccaa">
+                        <span id="sidebar-territorio-title">{{territorio_title}}</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-ccaa">
+                        <div id="sidebar-ccaa-items" style="{{ccaa_display}}">
+                            {{sidebar_ccaa}}
+                        </div>
+                        <div id="sidebar-paises-items" style="{{paises_display}}">
+                            {{sidebar_paises_ext}}
+                        </div>
                     </div>
                 </div>
 
                 <div class="lm-sidebar-section">
-                    <div class="lm-sidebar-title">Estado</div>
-                    <div id="sidebar-estado-items">{{sidebar_estado}}</div>
+                    <button class="lm-sidebar-toggle" type="button" data-section="estado">
+                        Estado
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-estado">
+                        <div id="sidebar-estado-items">{{sidebar_estado}}</div>
+                    </div>
                 </div>
 
             </div>
         </div>
 
         <div class="col-lg-9">
+            <div class="lm-top-controls mb-2">
+                <div>
+                    <button type="button" id="btn-orden" class="lm-orden-btn" data-orden="{{orden}}">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="orden-icon-desc" style="{{orden_icon_desc}}"><line x1="12" y1="5" x2="12" y2="19"/><polyline points="5 12 12 19 19 12"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" id="orden-icon-asc" style="{{orden_icon_asc}}"><line x1="12" y1="19" x2="12" y2="5"/><polyline points="5 12 12 5 19 12"/></svg>
+                        <span id="orden-label">{{orden_label}}</span>
+                    </button>
+                </div>
+                <div id="paginacion-top">{{paginacion}}</div>
+                <div class="lm-per-page">
+                    <span class="lm-per-page-label">Por página:</span>
+                    <div class="lm-per-page-btns" id="per-page-btns">
+                        <button type="button" class="lm-per-page-btn" data-value="5">5</button>
+                        <button type="button" class="lm-per-page-btn" data-value="10">10</button>
+                        <button type="button" class="lm-per-page-btn" data-value="15">15</button>
+                        <button type="button" class="lm-per-page-btn" data-value="20">20</button>
+                    </div>
+                </div>
+            </div>
             <div id="cards-container">
                 {{filas}}
             </div>

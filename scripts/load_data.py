@@ -61,6 +61,7 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                 existente.comunidad_autonoma = d["comunidad_autonoma"]
                 existente.pais = d["pais"]
                 existente.url = d["url"]
+                existente.cpv = d.get("cpv")
                 file_actualizadas += 1
                 actualizadas += 1
             else:
@@ -77,6 +78,7 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                     comunidad_autonoma=d["comunidad_autonoma"],
                     pais=d["pais"],
                     url=d["url"],
+                    cpv=d.get("cpv"),
                 ))
                 file_nuevas += 1
                 nuevas += 1

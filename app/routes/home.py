@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, func
+from sqlalchemy import or_, and_, func
 from pathlib import Path
 from urllib.parse import urlencode
 from datetime import date, datetime
@@ -65,30 +65,34 @@ def build_pagination(page, total_pages, params):
         return "/?" + urlencode(p_params)
 
     items = []
+
+    # Primera página
     items.append(
-        f'<li class="page-item{"  disabled" if page == 1 else ""}"><a class="page-link" href="{page_url(page - 1)}">‹</a></li>'
+        f'<li class="page-item{"  disabled" if page == 1 else ""}" title="Primera página">'
+        f'<a class="page-link" href="{page_url(1)}">«</a></li>'
     )
 
-    pages = sorted(set(
-        [1, 2, total_pages - 1, total_pages] +
-        list(range(max(1, page - 2), min(total_pages + 1, page + 3)))
-    ))
-
-    prev = None
-    for p in pages:
-        if p < 1 or p > total_pages:
-            continue
-        if prev is not None and p - prev > 1:
-            items.append('<li class="page-item disabled"><span class="page-link">…</span></li>')
+    # Ventana: página actual ±2
+    for p in range(max(1, page - 2), min(total_pages, page + 2) + 1):
         active = ' active' if p == page else ''
         items.append(f'<li class="page-item{active}"><a class="page-link" href="{page_url(p)}">{p}</a></li>')
-        prev = p
 
+    # Última página
     items.append(
-        f'<li class="page-item{"  disabled" if page == total_pages else ""}"><a class="page-link" href="{page_url(page + 1)}">›</a></li>'
+        f'<li class="page-item{"  disabled" if page == total_pages else ""}" title="Última página">'
+        f'<a class="page-link" href="{page_url(total_pages)}">»</a></li>'
     )
 
-    return '<nav><ul class="pagination justify-content-center flex-wrap">' + "".join(items) + "</ul></nav>"
+    # Salto de página
+    items.append(
+        f'<li class="page-item lm-page-jump-item">'
+        f'<span class="page-link lm-page-jump-wrap">'
+        f'<input class="lm-page-input" type="number" min="1" max="{total_pages}" value="{page}" data-total="{total_pages}" aria-label="Ir a página">'
+        f'<span class="lm-page-total">/ {total_pages}</span>'
+        f'</span></li>'
+    )
+
+    return '<nav><ul class="pagination justify-content-center flex-wrap mb-0">' + "".join(items) + "</ul></nav>"
 
 
 def sidebar_item(label, count, field, value, active):
@@ -112,6 +116,7 @@ def apply_filters(query, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, 
             Licitacion.titulo.ilike(like),
             Licitacion.organo_contratacion.ilike(like),
             Licitacion.expediente.ilike(like),
+            Licitacion.cpv.ilike(like),
         ))
     if not skip_pais:
         if pais == "España":
@@ -121,11 +126,17 @@ def apply_filters(query, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, 
         elif pais:
             query = query.filter(Licitacion.pais == pais)
     if not skip_ccaa and ccaa:
-        query = query.filter(Licitacion.comunidad_autonoma == ccaa)
+        ccaas = [c for c in ccaa.split("|") if c]
+        if ccaas:
+            query = query.filter(Licitacion.comunidad_autonoma.in_(ccaas))
     if not skip_estado and estado:
-        query = query.filter(Licitacion.estado == estado)
+        estados = [e for e in estado.split("|") if e]
+        if estados:
+            query = query.filter(Licitacion.estado.in_(estados))
     if not skip_tipo and tipo:
-        query = query.filter(Licitacion.tipo_contrato == tipo)
+        tipos = [t for t in tipo.split("|") if t]
+        if tipos:
+            query = query.filter(Licitacion.tipo_contrato.in_(tipos))
     if fecha_desde:
         try:
             query = query.filter(Licitacion.fecha_limite >= date.fromisoformat(fecha_desde))
@@ -137,13 +148,21 @@ def apply_filters(query, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, 
         except ValueError:
             pass
     if not skip_prange and prange:
-        for code, _label, pmin_v, pmax_v in PRANGES:
-            if prange == code:
-                if pmin_v is not None:
-                    query = query.filter(Licitacion.presupuesto >= pmin_v)
-                if pmax_v is not None:
-                    query = query.filter(Licitacion.presupuesto < pmax_v)
-                break
+        pranges_sel = [p for p in prange.split("|") if p]
+        range_conds = []
+        for p_code in pranges_sel:
+            for code, _label, pmin_v, pmax_v in PRANGES:
+                if p_code == code:
+                    conds = []
+                    if pmin_v is not None:
+                        conds.append(Licitacion.presupuesto >= pmin_v)
+                    if pmax_v is not None:
+                        conds.append(Licitacion.presupuesto < pmax_v)
+                    if conds:
+                        range_conds.append(and_(*conds))
+                    break
+        if range_conds:
+            query = query.filter(or_(*range_conds))
     return query
 
 
@@ -199,15 +218,20 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
         .group_by(Licitacion.estado).all()
     )
 
+    tipos_list = [t for t in tipo.split("|") if t]
+    estados_list = [e for e in estado.split("|") if e]
+    pranges_list = [p for p in prange.split("|") if p]
+    ccaas_list = [c for c in ccaa.split("|") if c]
+
     # HTML sidebar tipo — siempre muestra todos los tipos conocidos (0 si no hay resultados)
     sidebar_tipo = "".join(
-        sidebar_item(label, tipo_counts_raw.get(code, 0), "tipo", code, tipo == code)
+        sidebar_item(label, tipo_counts_raw.get(code, 0), "tipo", code, code in tipos_list)
         for code, label in TIPOS_CONTRATO.items()
     )
 
     # HTML sidebar prange
     sidebar_prange = "".join(
-        sidebar_item(label, prange_count(pmin_v, pmax_v), "prange", code, prange == code)
+        sidebar_item(label, prange_count(pmin_v, pmax_v), "prange", code, code in pranges_list)
         for code, label, pmin_v, pmax_v in PRANGES
     )
 
@@ -239,19 +263,19 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
     # HTML lista CCAA
     top_ccaa = ccaa_counts_raw[:7]
     rest_ccaa = ccaa_counts_raw[7:]
-    sidebar_ccaa = "".join(sidebar_item(v, c, "ccaa", v, ccaa == v) for v, c in top_ccaa)
+    sidebar_ccaa = "".join(sidebar_item(v, c, "ccaa", v, v in ccaas_list) for v, c in top_ccaa)
     if rest_ccaa:
         sidebar_ccaa += (
             f'<a href="#" class="lm-sidebar-ver-todas">Ver todas ({len(rest_ccaa)} más)...</a>'
             f'<div class="lm-sidebar-extra" style="display:none">'
-            + "".join(sidebar_item(v, c, "ccaa", v, ccaa == v) for v, c in rest_ccaa)
+            + "".join(sidebar_item(v, c, "ccaa", v, v in ccaas_list) for v, c in rest_ccaa)
             + '<a href="#" class="lm-sidebar-ver-todas lm-sidebar-ver-menos">Ver menos...</a>'
             + '</div>'
         )
 
     # HTML sidebar estado — siempre muestra todos los estados (0 si no hay resultados)
     sidebar_estado = "".join(
-        sidebar_item(label, estado_counts_raw.get(code, 0), "estado", code, estado == code)
+        sidebar_item(label, estado_counts_raw.get(code, 0), "estado", code, code in estados_list)
         for code, label in ESTADOS.items()
     )
 
@@ -278,29 +302,44 @@ def home(
     fecha_desde: str = Query(default=""),
     fecha_hasta: str = Query(default=""),
     prange: str = Query(default=""),
+    per_page: int = Query(default=20),
+    orden: str = Query(default="desc"),
 ):
+    if per_page not in (5, 10, 15, 20):
+        per_page = 20
+    if orden not in ("asc", "desc"):
+        orden = "asc"
+
     query = apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange)
 
     total = db.query(func.count(Licitacion.id)).scalar()
     resultados = query.count()
-    total_pages = max(1, (resultados + PER_PAGE - 1) // PER_PAGE)
+    total_pages = max(1, (resultados + per_page - 1) // per_page)
     page = min(page, total_pages)
 
+    if orden == "asc" and not fecha_desde:
+        query = query.filter(Licitacion.fecha_limite >= date.today())
+
+    sort_col = Licitacion.fecha_limite.asc().nullslast() if orden == "asc" else Licitacion.fecha_limite.desc().nullslast()
     licitaciones = (
-        query.order_by(Licitacion.fecha_publicacion.desc())
-        .offset((page - 1) * PER_PAGE)
-        .limit(PER_PAGE)
+        query.order_by(sort_col)
+        .offset((page - 1) * per_page)
+        .limit(per_page)
         .all()
     )
 
     # Cards
     filas = ""
     for lic in licitaciones:
-        presupuesto_str = (f"{lic.presupuesto:,.0f}".replace(",", ".") + " €") if lic.presupuesto else "—"
+        if lic.presupuesto is None:
+            presupuesto_str = "Sin especificar"
+        else:
+            presupuesto_str = f"{lic.presupuesto:,.0f}".replace(",", ".") + " €"
         estado_val = lic.estado or "—"
         estado_label = ESTADOS.get(estado_val, estado_val)
-        fecha_str = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else "—"
+        fecha_str = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else "no indicado"
         tipo_nombre = TIPOS_CONTRATO.get(lic.tipo_contrato or "", "—")
+        cpv_str = lic.cpv.split()[0] if lic.cpv else None
         if lic.comunidad_autonoma == "Extranjero":
             territorio = lic.pais or "Extranjero"
         else:
@@ -313,6 +352,7 @@ def home(
   </div>
   <div class="lm-card-meta">
     <span>Exp. {lic.expediente or '—'}</span>
+    {('<span class="lm-dot">·</span><span class="lm-card-cpv">CPV ' + cpv_str + '</span>') if cpv_str else ''}
     <span class="lm-dot">·</span>
     <span>{tipo_nombre}</span>
   </div>
@@ -326,7 +366,9 @@ def home(
 </div>"""
 
     params = {"q": q, "pais": pais, "ccaa": ccaa, "estado": estado, "tipo": tipo,
-              "fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta, "prange": prange}
+              "fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta, "prange": prange,
+              "per_page": per_page if per_page != 20 else "",
+              "orden": orden if orden != "asc" else ""}
     paginacion = build_pagination(page, total_pages, params)
 
     sidebar = compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange)
@@ -392,5 +434,10 @@ def home(
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
         prange=prange,
+        per_page=per_page,
+        orden=orden,
+        orden_label="Pronta finalización" if orden == "asc" else "Más tiempo",
+        orden_icon_desc="display:none" if orden == "asc" else "",
+        orden_icon_asc="" if orden == "asc" else "display:none",
         paginacion=paginacion,
     )
