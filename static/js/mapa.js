@@ -88,6 +88,11 @@ let geojsonLayer = null;
 let conteos = {};
 let maxConteo = 1;
 let geojsonCache = null;
+let coordsCache = null;
+
+// ─── Drill-down estado ────────────────────────────────────────────────────
+let drillCCAA = null;
+let drillMarkers = [];
 
 function getDbName(feature) {
     return CCAA_MAP[feature.properties.name] || feature.properties.name;
@@ -111,12 +116,90 @@ function onEachFeature(feature, layer) {
         if (this._tt) { map.removeLayer(this._tt); this._tt = null; }
     });
     layer.on('click', function() {
-        const secs = seccionesActivas();
-        const params = buildParams({ pais: 'España', ccaa: dbName, open: secs.join(',') });
-        window.location.href = '/?' + params.toString();
+        drillDown(dbName, layer);
     });
 }
 
+// ─── Drill-down municipal ──────────────────────────────────────────────────
+async function drillDown(ccaa, layer) {
+    drillCCAA = ccaa;
+
+    // Zoom a los bounds de la CCAA
+    try { map.fitBounds(layer.getBounds(), { padding: [30, 30] }); } catch(e) {}
+
+    // Mostrar botón volver
+    const btnVolver = document.getElementById('btn-volver-ccaa');
+    if (btnVolver) {
+        btnVolver.textContent = `← Volver a España`;
+        btnVolver.style.display = 'inline-flex';
+    }
+    const hint = document.getElementById('mapa-hint');
+    if (hint) hint.textContent = 'Haz clic en un municipio para ver sus licitaciones';
+
+    // Cargar coords si no están en caché
+    if (!coordsCache) {
+        coordsCache = await fetch('/static/data/municipios_coords.json').then(r => r.json()).catch(() => ({}));
+    }
+
+    // Fetch datos municipales
+    const params = buildParams({ ccaa });
+    const data = await fetch('/api/mapa/municipios?' + params.toString()).then(r => r.json()).catch(() => ({ municipios: {} }));
+    const municipios = data.municipios || {};
+
+    // Limpiar marcadores anteriores
+    clearDrillMarkers();
+
+    const maxN = Math.max(1, ...Object.values(municipios));
+
+    Object.entries(municipios).forEach(([nombre, n]) => {
+        const coords = coordsCache[nombre];
+        if (!coords) return;
+
+        const t = Math.sqrt(n / maxN);
+        const radius = 6 + t * 22;
+        const color = isDark() ? '#34d399' : '#059669';
+        const fillColor = isDark()
+            ? `rgba(52,211,153,${0.15 + t * 0.55})`
+            : `rgba(5,150,105,${0.12 + t * 0.5})`;
+
+        const circle = L.circleMarker(coords, {
+            radius,
+            color,
+            weight: 1.5,
+            fillColor,
+            fillOpacity: 1,
+        }).addTo(map);
+
+        const tt = L.tooltip({ sticky: true, className: 'lm-map-tooltip' })
+            .setContent(`<strong>${nombre}</strong><br>${n.toLocaleString('es')} licitaciones`);
+        circle.bindTooltip(tt);
+
+        circle.on('click', () => {
+            const secs = seccionesActivas();
+            const p = buildParams({ pais: 'España', ccaa, municipio: nombre, open: secs.join(',') });
+            window.location.href = '/?' + p.toString();
+        });
+
+        drillMarkers.push(circle);
+    });
+}
+
+function clearDrillMarkers() {
+    drillMarkers.forEach(m => map.removeLayer(m));
+    drillMarkers = [];
+}
+
+function resetDrill() {
+    drillCCAA = null;
+    clearDrillMarkers();
+    map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
+    const btnVolver = document.getElementById('btn-volver-ccaa');
+    if (btnVolver) btnVolver.style.display = 'none';
+    const hint = document.getElementById('mapa-hint');
+    if (hint) hint.textContent = 'Haz clic en una comunidad para ver sus municipios';
+}
+
+// ─── Render CCAA ──────────────────────────────────────────────────────────
 async function renderMapa() {
     const [geojson, apiData] = await Promise.all([
         geojsonCache
@@ -143,17 +226,22 @@ async function renderMapa() {
     map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
     actualizarStats(apiData);
     actualizarLeyenda();
+
+    // Si había drill activo, re-aplicar
+    if (drillCCAA) {
+        geojsonLayer.eachLayer(layer => {
+            if (getDbName(layer.feature) === drillCCAA) {
+                drillDown(drillCCAA, layer);
+            }
+        });
+    }
 }
 
 function actualizarStats(apiData) {
     const enPlazo = document.getElementById('mapa-en-plazo');
     const resultados = document.getElementById('mapa-resultados');
-    if (apiData && apiData.en_plazo != null) {
-        if (enPlazo) enPlazo.textContent = apiData.en_plazo;
-    }
-    if (apiData && apiData.resultados != null) {
-        if (resultados) resultados.textContent = apiData.resultados;
-    }
+    if (apiData?.en_plazo != null && enPlazo) enPlazo.textContent = apiData.en_plazo;
+    if (apiData?.resultados != null && resultados) resultados.textContent = apiData.resultados;
 }
 
 function actualizarLeyenda() {
@@ -180,6 +268,8 @@ document.querySelectorAll('.lm-check-item').forEach(el => {
         if (!filtros[g]) filtros[g] = new Set();
         if (filtros[g].has(v)) { filtros[g].delete(v); el.classList.remove('lm-active'); }
         else                   { filtros[g].add(v);    el.classList.add('lm-active'); }
+        clearDrillMarkers();
+        drillCCAA = null;
         actualizarUrl();
         renderMapa();
     });
@@ -189,19 +279,22 @@ let debounceTimer;
 document.getElementById('mapa-q')?.addEventListener('input', e => {
     filtros.q = e.target.value;
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => { actualizarUrl(); renderMapa(); }, 400);
+    debounceTimer = setTimeout(() => { clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa(); }, 400);
 });
 document.getElementById('mapa-cpv-q')?.addEventListener('input', e => {
     filtros.cpv_q = e.target.value;
     clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => { actualizarUrl(); renderMapa(); }, 400);
+    debounceTimer = setTimeout(() => { clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa(); }, 400);
 });
 document.getElementById('mapa-fecha-desde')?.addEventListener('change', e => {
-    filtros.fecha_desde = e.target.value; actualizarUrl(); renderMapa();
+    filtros.fecha_desde = e.target.value; clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa();
 });
 document.getElementById('mapa-fecha-hasta')?.addEventListener('change', e => {
-    filtros.fecha_hasta = e.target.value; actualizarUrl(); renderMapa();
+    filtros.fecha_hasta = e.target.value; clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa();
 });
+
+// Botón volver
+document.getElementById('btn-volver-ccaa')?.addEventListener('click', resetDrill);
 
 // ─── Reaccionar al cambio de tema ─────────────────────────────────────────
 new MutationObserver(() => {

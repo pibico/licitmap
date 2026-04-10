@@ -207,6 +207,35 @@ def mapa_page(
     )
 
 
+@router.get("/api/mapa/municipios", response_class=JSONResponse)
+def api_municipios(
+    ccaa: str = Query(default=""),
+    q: str = Query(default=""),
+    cpv_q: str = Query(default=""),
+    tipo: str = Query(default=""),
+    estado: str = Query(default=""),
+    prange: str = Query(default=""),
+    fecha_desde: str = Query(default=""),
+    fecha_hasta: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    base = apply_common_filters(
+        db.query(Licitacion).filter(Licitacion.pais == "España", Licitacion.municipio.isnot(None)),
+        q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=cpv_q
+    )
+    if ccaa:
+        base = base.filter(Licitacion.comunidad_autonoma == ccaa)
+
+    rows = (
+        base.with_entities(Licitacion.municipio, func.count().label("n"))
+        .group_by(Licitacion.municipio)
+        .order_by(func.count().desc())
+        .limit(150)
+        .all()
+    )
+    return {"municipios": {row[0]: row[1] for row in rows if row[0]}}
+
+
 @router.get("/api/mapa", response_class=JSONResponse)
 def api_mapa(
     q: str = Query(default=""),

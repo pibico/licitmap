@@ -32,7 +32,7 @@
       // Abre si: estaba abierto en localStorage, viene forzado desde mapa,
       // o tiene ítems activos, o tiene inputs de fecha con valor
       var hasActive = body.querySelector('.lm-active');
-      var hasDate = Array.from(body.querySelectorAll('input[type="date"]')).some(function(i) { return i.value; });
+      var hasDate = Array.from(body.querySelectorAll('input[type="date"], input[type="text"]')).some(function(i) { return i.value; });
       if (state[section] || forceOpen.indexOf(section) >= 0 || hasActive || hasDate) {
         btn.classList.add('open');
         body.classList.add('open');
@@ -133,7 +133,16 @@
       window.location.href = '/?' + params.toString();
     });
 
-    // Búsqueda de texto: debounce 600ms (cubre barra principal y CPV)
+    // Municipio: sincronizar hidden input antes del debounce (el debounce lo cubre el bloque genérico)
+    var municipioInput = document.getElementById('sidebar-municipio-input');
+    if (municipioInput) {
+      municipioInput.addEventListener('input', function() {
+        var h = document.getElementById('h-municipio');
+        if (h) h.value = municipioInput.value;
+      });
+    }
+
+    // Búsqueda de texto: debounce 600ms (cubre barra principal, CPV y municipio)
     var debounceTimer;
     form.querySelectorAll('input[type="text"]').forEach(function (textInput) {
       textInput.addEventListener('input', function () {

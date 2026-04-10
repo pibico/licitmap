@@ -83,16 +83,19 @@
     </div>
 
     <div class="col-lg-9">
+        <div class="d-flex align-items-center gap-2 mb-2">
+            <button id="btn-volver-ccaa" class="lm-orden-btn" style="display:none">← Volver a España</button>
+        </div>
         <div class="lm-map-container">
             <div id="mapa-leaflet"></div>
             <div id="mapa-legend" class="lm-map-legend"></div>
         </div>
-        <p class="mt-2 text-center" style="font-size:0.75rem; color:var(--tx-faint)">
-            Haz clic en una comunidad para ver sus licitaciones en la búsqueda
+        <p class="mt-2 text-center" id="mapa-hint" style="font-size:0.75rem; color:var(--tx-faint)">
+            Haz clic en una comunidad para ver sus municipios
         </p>
     </div>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/static/js/mapa.js?v=38"></script>
+<script src="/static/js/mapa.js?v=39"></script>

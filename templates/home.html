@@ -4,6 +4,7 @@
     <input type="hidden" name="estado"     id="h-estado" value="{{estado}}">
     <input type="hidden" name="prange"     id="h-prange" value="{{prange}}">
     <input type="hidden" name="pais"       id="h-pais"     value="{{pais}}">
+    <input type="hidden" name="municipio"  id="h-municipio" value="{{municipio}}">
     <input type="hidden" name="per_page"   id="h-per_page" value="{{per_page}}">
     <input type="hidden" name="orden"      id="h-orden"    value="{{orden}}">
 
@@ -97,6 +98,20 @@
                         </div>
                         <div id="sidebar-paises-items" style="{{paises_display}}">
                             {{sidebar_paises_ext}}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lm-sidebar-section">
+                    <button class="lm-sidebar-toggle" type="button" data-section="municipio">
+                        Municipio
+                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                    </button>
+                    <div class="lm-sidebar-body" id="sc-municipio">
+                        <div style="padding: 0.35rem 1rem 0.6rem">
+                            <input type="text" id="sidebar-municipio-input" class="form-control form-control-sm"
+                                   placeholder="Ej: Madrid, Barcelona..." value="{{municipio}}"
+                                   autocomplete="off">
                         </div>
                     </div>
                 </div>
