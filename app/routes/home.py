@@ -303,7 +303,7 @@ def home(
     fecha_hasta: str = Query(default=""),
     prange: str = Query(default=""),
     per_page: int = Query(default=20),
-    orden: str = Query(default="desc"),
+    orden: str = Query(default="asc"),
 ):
     if per_page not in (5, 10, 15, 20):
         per_page = 20
@@ -391,19 +391,25 @@ def home(
             "sidebar": sidebar,
         })
 
-    # Última sincronización: fecha más reciente en la BD
-    last_pub = db.query(func.max(Licitacion.fecha_publicacion)).scalar()
-    if last_pub:
-        delta = datetime.now() - last_pub
-        secs = int(delta.total_seconds())
-        if secs < 3600:
-            ultima_sync = f"Hace {secs // 60} min"
-        elif secs < 86400:
-            ultima_sync = f"Hace {secs // 3600} h"
-        else:
-            ultima_sync = f"Hace {delta.days} días"
-    else:
-        ultima_sync = "—"
+    # Última sincronización: leída del fichero de estado del script de sync
+    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
+    ultima_sync = "—"
+    if _state_file.exists():
+        try:
+            import json as _json
+            _state = _json.loads(_state_file.read_text())
+            _last = _state.get("last_sync")
+            if _last:
+                _sync_date = datetime.fromisoformat(_last).date()
+                _diff = (date.today() - _sync_date).days
+                if _diff == 0:
+                    ultima_sync = "Hoy"
+                elif _diff == 1:
+                    ultima_sync = "Ayer"
+                else:
+                    ultima_sync = f"Hace {_diff} días"
+        except Exception:
+            pass
 
     mostrar_ccaa = pais in ("España", "")
     ccaa_display = "" if mostrar_ccaa else "display:none"
