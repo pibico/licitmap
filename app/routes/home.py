@@ -127,6 +127,8 @@ def home(
         ))
     if pais == "España":
         query = query.filter(Licitacion.pais == "España")
+    elif pais == "__intl__":
+        query = query.filter(Licitacion.pais != "España")
     elif pais:
         query = query.filter(Licitacion.pais == pais)
     if ccaa:
@@ -217,7 +219,7 @@ def home(
             ~Licitacion.comunidad_autonoma.in_(TERRITORIOS_ESPECIALES),
         )
         .group_by(Licitacion.comunidad_autonoma)
-        .order_by(func.count(Licitacion.id).desc()).all()
+        .order_by(Licitacion.comunidad_autonoma).all()
     )
     estado_counts_raw = dict(
         db.query(Licitacion.estado, func.count(Licitacion.id))
@@ -252,10 +254,32 @@ def home(
         .order_by(func.count(Licitacion.id).desc()).all()
     )
     espana_count = next((c for v, c in pais_counts_raw if v == "España"), 0)
-    intl_count = sum(c for v, c in pais_counts_raw if v != "España")
+    paises_ext_raw = sorted([(v, c) for v, c in pais_counts_raw if v != "España"], key=lambda x: x[0])
+    intl_count = sum(c for _, c in paises_ext_raw)
+
+    intl_active = pais not in ("España",)
     sidebar_pais = sidebar_item("España", espana_count, "pais", "España", pais == "España")
     if intl_count > 0:
-        sidebar_pais += sidebar_item("Internacional", intl_count, "pais", "", pais == "")
+        sidebar_pais += sidebar_item("Internacional", intl_count, "pais", "__intl__", intl_active)
+
+    # Lista de países extranjeros: top 7 + Ver todos
+    top_paises = paises_ext_raw[:7]
+    rest_paises = paises_ext_raw[7:]
+    sidebar_paises_ext = "".join(sidebar_item(v, c, "pais", v, pais == v) for v, c in top_paises)
+    if rest_paises:
+        sidebar_paises_ext += (
+            f'<a href="#" class="lm-sidebar-ver-todas">Ver todos ({len(rest_paises)} más)...</a>'
+            f'<div class="lm-sidebar-extra" style="display:none">'
+            + "".join(sidebar_item(v, c, "pais", v, pais == v) for v, c in rest_paises)
+            + '<a href="#" class="lm-sidebar-ver-todas lm-sidebar-ver-menos">Ver menos...</a>'
+            + '</div>'
+        )
+
+    # Display helpers y título de la sección Territorio secundario
+    mostrar_ccaa = pais == "España"
+    ccaa_display = "" if mostrar_ccaa else "display:none"
+    paises_display = "display:none" if mostrar_ccaa else ""
+    territorio_title = "Comunidad autónoma" if mostrar_ccaa else "País"
 
     sidebar_estado = "".join(
         sidebar_item(label, estado_counts_raw.get(code, 0), "estado", code, estado == code)
@@ -284,7 +308,11 @@ def home(
         filas=filas,
         sidebar_tipo=sidebar_tipo,
         sidebar_pais=sidebar_pais,
+        sidebar_paises_ext=sidebar_paises_ext,
         sidebar_ccaa=sidebar_ccaa,
+        ccaa_display=ccaa_display,
+        paises_display=paises_display,
+        territorio_title=territorio_title,
         sidebar_estado=sidebar_estado,
         sidebar_prange=sidebar_prange,
         q=q,

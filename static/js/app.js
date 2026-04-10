@@ -75,33 +75,34 @@
           this.classList.add('lm-active');
         }
 
-        // País → ocultar/mostrar CCAA y resetear ccaa si no es España
+        // País → alternar entre CCAA y lista de países en bloque Territorio
         if (field === 'pais') {
-          var ccaaSection = document.getElementById('sidebar-ccaa-section');
+          var newPais = isActive ? 'España' : value;
+          var esEspana = newPais === 'España';
+          var ccaaItems = document.getElementById('sidebar-ccaa-items');
+          var paisesItems = document.getElementById('sidebar-paises-items');
           var ccaaInput = document.getElementById('h-ccaa');
-          if (ccaaSection) {
-            var esEspana = (isActive ? '' : value) === 'España';
-            ccaaSection.style.display = esEspana ? '' : 'none';
-            if (!esEspana && ccaaInput) {
-              ccaaInput.value = '';
-              document.querySelectorAll('.lm-sidebar-item[data-field="ccaa"]')
-                .forEach(function (el) { el.classList.remove('lm-active'); });
-            }
+          if (ccaaItems) ccaaItems.style.display = esEspana ? '' : 'none';
+          if (paisesItems) paisesItems.style.display = esEspana ? 'none' : '';
+          var titleEl = document.getElementById('sidebar-territorio-title');
+          if (titleEl) titleEl.textContent = esEspana ? 'Comunidad autónoma' : 'País';
+          if (!esEspana && ccaaInput) {
+            ccaaInput.value = '';
+            document.querySelectorAll('.lm-sidebar-item[data-field="ccaa"]')
+              .forEach(function (el) { el.classList.remove('lm-active'); });
+          }
+          // Si se elige un país concreto, marcar Internacional como activo
+          if (!esEspana && value !== '__intl__') {
+            document.querySelectorAll('.lm-sidebar-item[data-field="pais"]')
+              .forEach(function (el) { el.classList.remove('lm-active'); });
+            var intlItem = document.querySelector('.lm-sidebar-item[data-value="__intl__"]');
+            if (intlItem) intlItem.classList.add('lm-active');
           }
         }
 
         fetchResultados();
       });
     });
-
-    // Ocultar CCAA en carga inicial si país no es España
-    (function () {
-      var paisInput = document.getElementById('h-pais');
-      var ccaaSection = document.getElementById('sidebar-ccaa-section');
-      if (paisInput && ccaaSection && paisInput.value !== 'España') {
-        ccaaSection.style.display = 'none';
-      }
-    })();
 
     // "Ver todas / Ver menos" en CCAA
     document.querySelectorAll('.lm-sidebar-ver-todas').forEach(function (link) {

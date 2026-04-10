@@ -3,7 +3,7 @@
     <input type="hidden" name="ccaa"       id="h-ccaa"   value="{{ccaa}}">
     <input type="hidden" name="estado"     id="h-estado" value="{{estado}}">
     <input type="hidden" name="prange"     id="h-prange" value="{{prange}}">
-    <input type="hidden" name="pais"                     value="{{pais}}">
+    <input type="hidden" name="pais"       id="h-pais"   value="{{pais}}">
 
     <div class="lm-search-bar mb-3">
         <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
@@ -43,13 +43,18 @@
             </div>
 
             <div class="lm-sidebar-section">
-                <div class="lm-sidebar-title">País</div>
+                <div class="lm-sidebar-title">Territorio</div>
                 {{sidebar_pais}}
             </div>
 
-            <div class="lm-sidebar-section" id="sidebar-ccaa-section">
-                <div class="lm-sidebar-title">Comunidad autónoma</div>
-                {{sidebar_ccaa}}
+            <div class="lm-sidebar-section" id="sidebar-territorio-section">
+                <div class="lm-sidebar-title" id="sidebar-territorio-title">{{territorio_title}}</div>
+                <div id="sidebar-ccaa-items" style="{{ccaa_display}}">
+                    {{sidebar_ccaa}}
+                </div>
+                <div id="sidebar-paises-items" style="{{paises_display}}">
+                    {{sidebar_paises_ext}}
+                </div>
             </div>
 
             <div class="lm-sidebar-section">
