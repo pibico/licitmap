@@ -101,6 +101,8 @@ def upsert(db, entries):
             existing.pais = d["pais"]
             existing.url = d["url"]
             existing.cpv = d.get("cpv")
+            existing.municipio = d.get("municipio")
+            existing.codigo_postal = d.get("codigo_postal")
             actualizadas += 1
         else:
             db.add(Licitacion(
@@ -117,6 +119,8 @@ def upsert(db, entries):
                 pais=d["pais"],
                 url=d["url"],
                 cpv=d.get("cpv"),
+                municipio=d.get("municipio"),
+                codigo_postal=d.get("codigo_postal"),
             ))
             nuevas += 1
 

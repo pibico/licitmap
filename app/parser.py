@@ -127,6 +127,9 @@ def _parse_entries(root):
         cpv_nodes = status.findall(".//cac:RequiredCommodityClassification/cbc:ItemClassificationCode", NS)
         cpv = " ".join(n.text.strip() for n in cpv_nodes if n.text) or None
 
+        municipio = text(status, ".//cac-place-ext:LocatedContractingParty/cac:Party/cac:PostalAddress/cbc:CityName")
+        codigo_postal = text(status, ".//cac-place-ext:LocatedContractingParty/cac:Party/cac:PostalAddress/cbc:PostalZone")
+
         results.append({
             "atom_id": atom_id,
             "expediente": text(status, "cbc:ContractFolderID"),
@@ -141,6 +144,8 @@ def _parse_entries(root):
             "pais": extract_pais(status),
             "url": url,
             "cpv": cpv,
+            "municipio": municipio,
+            "codigo_postal": codigo_postal,
         })
     return results
 
