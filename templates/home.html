@@ -7,67 +7,85 @@
 
     <div class="lm-search-bar mb-3">
         <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
-        <input type="date" name="fecha_desde" class="form-control lm-search-date" value="{{fecha_desde}}" title="F. límite desde">
         <a href="/" class="btn btn-primary text-nowrap">Limpiar filtros</a>
     </div>
+
+    <div class="lm-stats-bar mb-3">
+        <div class="lm-stat-card">
+            <div class="lm-stat-value">{{total}}</div>
+            <div class="lm-stat-label">Total licitaciones</div>
+        </div>
+        <div class="lm-stat-card">
+            <div class="lm-stat-value lm-stat-accent" id="en-plazo-count">{{en_plazo}}</div>
+            <div class="lm-stat-label">En plazo ahora</div>
+        </div>
+        <div class="lm-stat-card">
+            <div class="lm-stat-value" id="resultados-count">{{resultados}}</div>
+            <div class="lm-stat-label">Resultados filtrados</div>
+        </div>
+        <div class="lm-stat-card">
+            <div class="lm-stat-value lm-stat-sync">{{ultima_sync}}</div>
+            <div class="lm-stat-label">Última sincronización</div>
+        </div>
+    </div>
+
+    <div class="row g-3 align-items-start">
+        <div class="col-lg-3">
+            <div class="lm-sidebar">
+                <div class="lm-sidebar-header">Filtros</div>
+
+                <div class="lm-sidebar-section">
+                    <div class="lm-sidebar-title">Fecha límite</div>
+                    <div class="lm-sidebar-date-wrap">
+                        <div class="lm-sidebar-date-field">
+                            <span class="lm-sidebar-date-label">Desde</span>
+                            <input type="date" name="fecha_desde" value="{{fecha_desde}}">
+                        </div>
+                        <div class="lm-sidebar-date-field">
+                            <span class="lm-sidebar-date-label">Hasta</span>
+                            <input type="date" name="fecha_hasta" value="{{fecha_hasta}}">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="lm-sidebar-section">
+                    <div class="lm-sidebar-title">Tipo de contrato</div>
+                    <div id="sidebar-tipo-items">{{sidebar_tipo}}</div>
+                </div>
+
+                <div class="lm-sidebar-section">
+                    <div class="lm-sidebar-title">Presupuesto</div>
+                    <div id="sidebar-prange-items">{{sidebar_prange}}</div>
+                </div>
+
+                <div class="lm-sidebar-section">
+                    <div class="lm-sidebar-title">Territorio</div>
+                    <div id="sidebar-territorio-items">{{sidebar_pais}}</div>
+                </div>
+
+                <div class="lm-sidebar-section" id="sidebar-territorio-section">
+                    <div class="lm-sidebar-title" id="sidebar-territorio-title">{{territorio_title}}</div>
+                    <div id="sidebar-ccaa-items" style="{{ccaa_display}}">
+                        {{sidebar_ccaa}}
+                    </div>
+                    <div id="sidebar-paises-items" style="{{paises_display}}">
+                        {{sidebar_paises_ext}}
+                    </div>
+                </div>
+
+                <div class="lm-sidebar-section">
+                    <div class="lm-sidebar-title">Estado</div>
+                    <div id="sidebar-estado-items">{{sidebar_estado}}</div>
+                </div>
+
+            </div>
+        </div>
+
+        <div class="col-lg-9">
+            <div id="cards-container">
+                {{filas}}
+            </div>
+            <div class="mt-3" id="paginacion-bottom">{{paginacion}}</div>
+        </div>
+    </div>
 </form>
-
-<div class="lm-stats-bar mb-3">
-    <div class="lm-stat-card">
-        <div class="lm-stat-value">{{total}}</div>
-        <div class="lm-stat-label">Total licitaciones</div>
-    </div>
-    <div class="lm-stat-card">
-        <div class="lm-stat-value">{{en_plazo}}</div>
-        <div class="lm-stat-label">En plazo ahora</div>
-    </div>
-    <div class="lm-stat-card">
-        <div class="lm-stat-value" id="resultados-count">{{resultados}}</div>
-        <div class="lm-stat-label">Resultados filtrados</div>
-    </div>
-</div>
-
-<div class="row g-3 align-items-start">
-    <div class="col-lg-3">
-        <div class="lm-sidebar">
-            <div class="lm-sidebar-header">Filtros</div>
-
-            <div class="lm-sidebar-section">
-                <div class="lm-sidebar-title">Tipo de contrato</div>
-                {{sidebar_tipo}}
-            </div>
-
-            <div class="lm-sidebar-section">
-                <div class="lm-sidebar-title">Presupuesto</div>
-                {{sidebar_prange}}
-            </div>
-
-            <div class="lm-sidebar-section">
-                <div class="lm-sidebar-title">Territorio</div>
-                {{sidebar_pais}}
-            </div>
-
-            <div class="lm-sidebar-section" id="sidebar-territorio-section">
-                <div class="lm-sidebar-title" id="sidebar-territorio-title">{{territorio_title}}</div>
-                <div id="sidebar-ccaa-items" style="{{ccaa_display}}">
-                    {{sidebar_ccaa}}
-                </div>
-                <div id="sidebar-paises-items" style="{{paises_display}}">
-                    {{sidebar_paises_ext}}
-                </div>
-            </div>
-
-            <div class="lm-sidebar-section">
-                <div class="lm-sidebar-title">Estado</div>
-                {{sidebar_estado}}
-            </div>
-        </div>
-    </div>
-
-    <div class="col-lg-9">
-        <div id="cards-container">
-            {{filas}}
-        </div>
-        <div class="mt-3" id="paginacion-bottom">{{paginacion}}</div>
-    </div>
-</div>

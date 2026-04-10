@@ -409,6 +409,12 @@ a:hover {
   text-transform: uppercase;
   letter-spacing: 0.04em;
 }
+.lm-stat-accent {
+  color: var(--ac-main);
+}
+.lm-stat-sync {
+  color: var(--tx-primary);
+}
 
 /* =============================================
    SIDEBAR DE FILTROS
@@ -547,25 +553,81 @@ a:hover {
 .lm-card-footer {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-end;
   gap: 0.5rem;
   padding-top: 0.5rem;
   border-top: 1px solid var(--bg-surface0);
+  overflow: hidden;
 }
 .lm-card-org {
   font-size: 0.78rem;
   color: var(--tx-muted);
+  flex: 1;
   min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+.lm-card-right {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+.lm-card-deadline {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--co-sky);
+  white-space: nowrap;
+}
+:root[data-theme="dark"] .lm-card-deadline {
+  color: var(--co-sky);
 }
 .lm-card-price {
   font-size: 0.9rem;
   font-weight: 700;
   color: var(--ac-main);
   white-space: nowrap;
-  flex-shrink: 0;
+}
+.lm-sidebar-date-wrap {
+  padding: 0.15rem 1rem 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.45rem;
+}
+.lm-sidebar-date-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+.lm-sidebar-date-label {
+  font-size: 0.68rem;
+  color: var(--tx-faint);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+.lm-sidebar-date-wrap input[type="date"] {
+  width: 100%;
+  background: var(--bg-base);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 6px;
+  color: var(--tx-primary);
+  font-size: 0.82rem;
+  padding: 0.28rem 0.5rem;
+  outline: none;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+  color-scheme: light;
+}
+:root[data-theme="dark"] .lm-sidebar-date-wrap input[type="date"] {
+  color-scheme: dark;
+}
+.lm-sidebar-date-wrap input[type="date"]:focus {
+  border-color: var(--ac-main);
+  box-shadow: 0 0 0 2px rgba(5, 150, 105, 0.15);
+}
+:root[data-theme="dark"] .lm-sidebar-date-wrap input[type="date"]:focus {
+  box-shadow: 0 0 0 2px rgba(52, 211, 153, 0.15);
 }
 
 /* =============================================
