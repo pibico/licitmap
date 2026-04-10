@@ -1,20 +1,20 @@
 /* =============================================
-   LIGHT — "Stone"
-   Base cálida off-white, texto carbón,
+   LIGHT — "Zinc"
+   Base gris neutro suave, texto carbón,
    acento esmeralda.
 ============================================= */
 :root {
-  --bg-base:     #f9f7f4;   /* página — apenas crema, casi blanco */
-  --bg-mantle:   #f2efea;   /* paneles, filtros */
-  --bg-crust:    #eae6e0;   /* navbar */
-  --bg-surface0: #dedad3;   /* bordes suaves */
-  --bg-surface1: #cec9c0;   /* bordes medios */
-  --bg-surface2: #bcb6ab;   /* bordes fuertes */
+  --bg-base:     #f4f4f5;   /* página — gris clarito neutro */
+  --bg-mantle:   #ececed;   /* paneles, filtros */
+  --bg-crust:    #e4e4e7;   /* navbar */
+  --bg-surface0: #d4d4d8;   /* bordes suaves */
+  --bg-surface1: #a1a1aa;   /* bordes medios */
+  --bg-surface2: #71717a;   /* bordes fuertes */
 
-  --tx-primary:  #1c1917;   /* texto principal */
-  --tx-secondary:#44403c;   /* texto secundario */
-  --tx-muted:    #78716c;   /* texto auxiliar */
-  --tx-faint:    #a8a29e;   /* placeholders, disabled */
+  --tx-primary:  #18181b;   /* texto principal */
+  --tx-secondary:#3f3f46;   /* texto secundario */
+  --tx-muted:    #71717a;   /* texto auxiliar */
+  --tx-faint:    #a1a1aa;   /* placeholders, disabled */
 
   --ac-main:     #059669;   /* esmeralda-600 — acento principal */
   --ac-hover:    #047857;   /* esmeralda-700 — hover */
@@ -272,6 +272,34 @@ a:hover {
 }
 .table > tbody > tr:hover > td {
   background-color: var(--bg-mantle) !important;
+}
+
+.lm-filter-label {
+  display: block;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--tx-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.2rem;
+}
+
+.lm-exp-id {
+  display: block;
+  font-size: 0.8rem;
+  font-weight: 600;
+  color: var(--ac-main) !important;
+  text-decoration: none;
+}
+.lm-exp-id:hover {
+  color: var(--ac-hover) !important;
+  text-decoration: underline;
+}
+.lm-exp-title {
+  font-size: 0.82rem;
+  color: var(--tx-secondary);
+  line-height: 1.3;
+  margin-top: 0.15rem;
 }
 
 /* =============================================
