@@ -1,0 +1,86 @@
+<div class="lm-stats-bar mb-3">
+    <div class="lm-stat-card">
+        <div class="lm-stat-value" id="mapa-total">{{total}}</div>
+        <div class="lm-stat-label">Licitaciones en España</div>
+    </div>
+    <div class="lm-stat-card">
+        <div class="lm-stat-value lm-stat-accent" id="mapa-en-plazo">{{en_plazo}}</div>
+        <div class="lm-stat-label">En plazo ahora</div>
+    </div>
+</div>
+
+<div class="row g-3 align-items-start">
+    <div class="col-lg-3">
+        <div class="lm-sidebar">
+            <div class="lm-sidebar-header">Filtros</div>
+
+            <div class="lm-sidebar-section">
+                <div style="padding: 0.5rem 1rem 0.6rem">
+                    <input type="text" id="mapa-q" class="form-control form-control-sm"
+                           placeholder="Título, órgano, expediente..." value="{{q}}">
+                </div>
+            </div>
+
+            <div class="lm-sidebar-section">
+                <button class="lm-sidebar-toggle" type="button" data-section="mapa-tipo">
+                    Tipo de contrato
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lm-sidebar-body" id="sc-mapa-tipo">{{sidebar_tipo}}</div>
+            </div>
+
+            <div class="lm-sidebar-section">
+                <button class="lm-sidebar-toggle" type="button" data-section="mapa-estado">
+                    Estado
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lm-sidebar-body" id="sc-mapa-estado">{{sidebar_estado}}</div>
+            </div>
+
+            <div class="lm-sidebar-section">
+                <button class="lm-sidebar-toggle" type="button" data-section="mapa-prange">
+                    Presupuesto
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lm-sidebar-body" id="sc-mapa-prange">{{sidebar_prange}}</div>
+            </div>
+
+            <div class="lm-sidebar-section">
+                <button class="lm-sidebar-toggle" type="button" data-section="mapa-fecha">
+                    Fecha límite
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lm-sidebar-body" id="sc-mapa-fecha">
+                    <div class="lm-sidebar-date-wrap">
+                        <div class="lm-sidebar-date-field">
+                            <span class="lm-sidebar-date-label">Desde</span>
+                            <input type="date" id="mapa-fecha-desde" value="{{fecha_desde}}">
+                        </div>
+                        <div class="lm-sidebar-date-field">
+                            <span class="lm-sidebar-date-label">Hasta</span>
+                            <input type="date" id="mapa-fecha-hasta" value="{{fecha_hasta}}">
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="padding: 0.6rem 1rem">
+                <a href="/mapa" class="btn btn-primary btn-sm w-100">Limpiar filtros</a>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        <div class="lm-map-container">
+            <div id="mapa-leaflet"></div>
+            <div id="mapa-legend" class="lm-map-legend"></div>
+        </div>
+        <p class="mt-2 text-center" style="font-size:0.75rem; color:var(--tx-faint)">
+            Haz clic en una comunidad para ver sus licitaciones en la búsqueda
+        </p>
+    </div>
+</div>
+
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script src="/static/js/mapa.js?v=35"></script>

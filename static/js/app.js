@@ -20,14 +20,32 @@
 
   function setupSidebarToggles() {
     var state = getSidebarState();
+    // Secciones a forzar abiertas: las que vienen del param ?open= (desde mapa)
+    var openParam = new URLSearchParams(window.location.search).get('open');
+    var forceOpen = openParam ? openParam.split(',') : [];
+
     document.querySelectorAll('.lm-sidebar-toggle').forEach(function(btn) {
       var section = btn.dataset.section;
       var body = document.getElementById('sc-' + section);
       if (!body) return;
-      if (state[section]) {
+
+      // Abre si: estaba abierto en localStorage, viene forzado desde mapa,
+      // o tiene ítems activos, o tiene inputs de fecha con valor
+      var hasActive = body.querySelector('.lm-active');
+      var hasDate = Array.from(body.querySelectorAll('input[type="date"]')).some(function(i) { return i.value; });
+      if (state[section] || forceOpen.indexOf(section) >= 0 || hasActive || hasDate) {
         btn.classList.add('open');
         body.classList.add('open');
       }
+
+      // Auto-scroll al ítem activo si la sección es scrollable
+      if (hasActive && body.classList.contains('lm-scrollable')) {
+        setTimeout(function() {
+          var activeEl = body.querySelector('.lm-active');
+          if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
+        }, 300);
+      }
+
       btn.addEventListener('click', function() {
         var open = btn.classList.toggle('open');
         body.classList.toggle('open', open);

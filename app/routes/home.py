@@ -99,11 +99,11 @@ def sidebar_item(label, count, field, value, active):
     active_class = " lm-active" if active else ""
     count_str = f"{count:,}".replace(",", ".")
     return (
-        f'<a href="#" class="lm-sidebar-item{active_class}" '
+        f'<div class="lm-sidebar-item{active_class}" '
         f'data-field="{field}" data-value="{value}">'
         f'<span>{label}</span>'
         f'<span class="lm-sidebar-count">{count_str}</span>'
-        f'</a>'
+        f'</div>'
     )
 
 
@@ -247,31 +247,11 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
     if intl_count > 0:
         sidebar_pais += sidebar_item("Internacional", intl_count, "pais", "__intl__", intl_active)
 
-    # HTML lista países extranjeros
-    top_paises = paises_ext_raw[:7]
-    rest_paises = paises_ext_raw[7:]
-    sidebar_paises_ext = "".join(sidebar_item(v, c, "pais", v, pais == v) for v, c in top_paises)
-    if rest_paises:
-        sidebar_paises_ext += (
-            f'<a href="#" class="lm-sidebar-ver-todas">Ver todos ({len(rest_paises)} más)...</a>'
-            f'<div class="lm-sidebar-extra" style="display:none">'
-            + "".join(sidebar_item(v, c, "pais", v, pais == v) for v, c in rest_paises)
-            + '<a href="#" class="lm-sidebar-ver-todas lm-sidebar-ver-menos">Ver menos...</a>'
-            + '</div>'
-        )
+    # HTML lista países extranjeros — todos visibles (scroll en CSS)
+    sidebar_paises_ext = "".join(sidebar_item(v, c, "pais", v, pais == v) for v, c in paises_ext_raw)
 
-    # HTML lista CCAA
-    top_ccaa = ccaa_counts_raw[:7]
-    rest_ccaa = ccaa_counts_raw[7:]
-    sidebar_ccaa = "".join(sidebar_item(v, c, "ccaa", v, v in ccaas_list) for v, c in top_ccaa)
-    if rest_ccaa:
-        sidebar_ccaa += (
-            f'<a href="#" class="lm-sidebar-ver-todas">Ver todas ({len(rest_ccaa)} más)...</a>'
-            f'<div class="lm-sidebar-extra" style="display:none">'
-            + "".join(sidebar_item(v, c, "ccaa", v, v in ccaas_list) for v, c in rest_ccaa)
-            + '<a href="#" class="lm-sidebar-ver-todas lm-sidebar-ver-menos">Ver menos...</a>'
-            + '</div>'
-        )
+    # HTML lista CCAA — todas visibles (scroll en CSS)
+    sidebar_ccaa = "".join(sidebar_item(v, c, "ccaa", v, v in ccaas_list) for v, c in ccaa_counts_raw)
 
     # HTML sidebar estado — siempre muestra todos los estados (0 si no hay resultados)
     sidebar_estado = "".join(
@@ -418,6 +398,8 @@ def home(
 
     return render(
         "home.html",
+        active_busqueda="lm-nav-tab-active",
+        active_mapa="",
         total=f"{total:,}".replace(",", "."),
         en_plazo=en_plazo_str,
         resultados=resultados_str,

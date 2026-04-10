@@ -490,6 +490,22 @@ a:hover {
 .lm-sidebar-body.open {
   max-height: 800px;
 }
+.lm-sidebar-body.lm-scrollable.open {
+  max-height: 280px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-surface1) transparent;
+}
+.lm-sidebar-body.lm-scrollable.open::-webkit-scrollbar {
+  width: 4px;
+}
+.lm-sidebar-body.lm-scrollable.open::-webkit-scrollbar-track {
+  background: transparent;
+}
+.lm-sidebar-body.lm-scrollable.open::-webkit-scrollbar-thumb {
+  background: var(--bg-surface1);
+  border-radius: 2px;
+}
 .lm-sidebar-item {
   display: flex;
   justify-content: space-between;
@@ -785,4 +801,105 @@ a:hover {
 .lm-stat {
   font-size: 0.85rem;
   color: var(--tx-muted);
+}
+
+/* =============================================
+   NAV TABS
+============================================= */
+.lm-nav-tabs {
+  display: flex;
+  gap: 0.15rem;
+}
+.lm-nav-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  font-weight: 500;
+  color: var(--tx-muted);
+  text-decoration: none !important;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.lm-nav-tab:hover {
+  background: var(--bg-surface0);
+  color: var(--tx-primary);
+  text-decoration: none !important;
+}
+.lm-nav-tab.lm-nav-tab-active {
+  background: var(--ac-soft);
+  color: var(--ac-main);
+  font-weight: 600;
+}
+:root[data-theme="dark"] .lm-nav-tab.lm-nav-tab-active {
+  background: rgba(52, 211, 153, 0.12);
+}
+
+/* =============================================
+   MAPA LEAFLET
+============================================= */
+.lm-map-container {
+  position: relative;
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 10px;
+  overflow: hidden;
+}
+#mapa-leaflet {
+  height: 540px;
+  width: 100%;
+  background: var(--bg-mantle);
+}
+.lm-map-legend {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: var(--bg-crust);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 6px;
+  padding: 0.4rem 0.7rem;
+  font-size: 0.72rem;
+  color: var(--tx-muted);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  z-index: 1000;
+  pointer-events: none;
+}
+.lm-legend-label {
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-size: 0.68rem;
+}
+.lm-legend-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.25rem;
+}
+.lm-legend-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  display: inline-block;
+  flex-shrink: 0;
+}
+.lm-map-tooltip {
+  background: var(--bg-crust) !important;
+  border: 1px solid var(--bg-surface1) !important;
+  border-radius: 6px !important;
+  color: var(--tx-primary) !important;
+  font-size: 0.82rem !important;
+  padding: 0.4rem 0.65rem !important;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.15) !important;
+}
+.lm-map-tooltip::before {
+  display: none !important;
+}
+/* Override Leaflet defaults para que el tooltip respete el tema */
+.leaflet-tooltip.lm-map-tooltip {
+  background: var(--bg-crust);
+  border-color: var(--bg-surface1);
+  color: var(--tx-primary);
 }
