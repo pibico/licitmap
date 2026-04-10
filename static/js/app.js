@@ -22,50 +22,107 @@
       });
     }
 
-    // CCAA filter: solo visible cuando país = España
-    var paisSel = document.getElementById('filtro-pais');
-    var ccaaWrap = document.getElementById('filtro-ccaa-wrap');
-    if (paisSel && ccaaWrap) {
-      function toggleCCAA() {
-        var esEspana = paisSel.value === 'España';
-        ccaaWrap.style.display = esEspana ? '' : 'none';
-        if (!esEspana) {
-          ccaaWrap.querySelector('select').value = '';
-        }
-      }
-      paisSel.addEventListener('change', toggleCCAA);
-      toggleCCAA();
-    }
-
-    // Auto-filtrado AJAX
     var form = document.getElementById('filtros-form');
-    if (form) {
-      function fetchResultados() {
-        var params = new URLSearchParams(new FormData(form));
-        params.set('partial', '1');
-        fetch('/?' + params.toString())
-          .then(function (r) { return r.json(); })
-          .then(function (data) {
-            document.getElementById('tabla-body').innerHTML = data.filas;
-            document.getElementById('paginacion-top').innerHTML = data.paginacion;
-            document.getElementById('paginacion-bottom').innerHTML = data.paginacion;
-            document.getElementById('resultados-count').textContent = data.resultados + ' resultado(s)';
-          });
-      }
+    if (!form) return;
 
-      // Selects y fechas: fetch inmediato al cambiar
-      form.querySelectorAll('select, input[type="date"]').forEach(function (el) {
-        el.addEventListener('change', fetchResultados);
-      });
-
-      // Inputs texto/número: fetch con debounce 600ms
-      var debounceTimer;
-      form.querySelectorAll('input[type="text"], input[type="number"]').forEach(function (inp) {
-        inp.addEventListener('input', function () {
-          clearTimeout(debounceTimer);
-          debounceTimer = setTimeout(fetchResultados, 600);
+    function fetchResultados() {
+      var params = new URLSearchParams(new FormData(form));
+      params.set('partial', '1');
+      fetch('/?' + params.toString())
+        .then(function (r) { return r.json(); })
+        .then(function (data) {
+          document.getElementById('cards-container').innerHTML = data.filas;
+          document.getElementById('paginacion-bottom').innerHTML = data.paginacion;
+          document.getElementById('resultados-count').textContent = data.resultados;
         });
+    }
+
+    // Búsqueda de texto: debounce 600ms
+    var debounceTimer;
+    var textInput = form.querySelector('input[type="text"]');
+    if (textInput) {
+      textInput.addEventListener('input', function () {
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(fetchResultados, 600);
       });
     }
+
+    // Fecha: fetch inmediato al cambiar
+    var dateInput = form.querySelector('input[type="date"]');
+    if (dateInput) {
+      dateInput.addEventListener('change', fetchResultados);
+    }
+
+    // Sidebar: click en item de filtro
+    document.querySelectorAll('.lm-sidebar-item[data-field]').forEach(function (item) {
+      item.addEventListener('click', function (e) {
+        e.preventDefault();
+        var field = this.dataset.field;
+        var value = this.dataset.value;
+        var input = document.getElementById('h-' + field);
+        if (!input) return;
+
+        var isActive = this.classList.contains('lm-active');
+
+        // Desactivar todos los items del mismo grupo
+        document.querySelectorAll('.lm-sidebar-item[data-field="' + field + '"]')
+          .forEach(function (el) { el.classList.remove('lm-active'); });
+
+        if (isActive) {
+          input.value = '';
+        } else {
+          input.value = value;
+          this.classList.add('lm-active');
+        }
+
+        // País → ocultar/mostrar CCAA y resetear ccaa si no es España
+        if (field === 'pais') {
+          var ccaaSection = document.getElementById('sidebar-ccaa-section');
+          var ccaaInput = document.getElementById('h-ccaa');
+          if (ccaaSection) {
+            var esEspana = (isActive ? '' : value) === 'España';
+            ccaaSection.style.display = esEspana ? '' : 'none';
+            if (!esEspana && ccaaInput) {
+              ccaaInput.value = '';
+              document.querySelectorAll('.lm-sidebar-item[data-field="ccaa"]')
+                .forEach(function (el) { el.classList.remove('lm-active'); });
+            }
+          }
+        }
+
+        fetchResultados();
+      });
+    });
+
+    // Ocultar CCAA en carga inicial si país no es España
+    (function () {
+      var paisInput = document.getElementById('h-pais');
+      var ccaaSection = document.getElementById('sidebar-ccaa-section');
+      if (paisInput && ccaaSection && paisInput.value !== 'España') {
+        ccaaSection.style.display = 'none';
+      }
+    })();
+
+    // "Ver todas / Ver menos" en CCAA
+    document.querySelectorAll('.lm-sidebar-ver-todas').forEach(function (link) {
+      link.addEventListener('click', function (e) {
+        e.preventDefault();
+        // "Ver menos" está dentro del bloque extra — cierra
+        if (this.classList.contains('lm-sidebar-ver-menos')) {
+          var extra = this.closest('.lm-sidebar-extra');
+          if (extra) {
+            extra.style.display = 'none';
+            var verTodas = extra.previousElementSibling;
+            if (verTodas) verTodas.style.display = '';
+          }
+          return;
+        }
+        // "Ver todas" — abre el bloque extra
+        var extra = this.nextElementSibling;
+        if (!extra) return;
+        extra.style.display = 'block';
+        this.style.display = 'none';
+      });
+    });
   });
 })();

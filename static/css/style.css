@@ -363,6 +363,212 @@ a:hover {
 }
 
 /* =============================================
+   BARRA DE BÚSQUEDA
+============================================= */
+.lm-search-bar {
+  display: flex;
+  gap: 0.5rem;
+  align-items: center;
+}
+.lm-search-bar .form-control {
+  flex: 1;
+}
+.lm-search-date {
+  max-width: 165px;
+  flex: none;
+}
+
+/* =============================================
+   STATS BAR
+============================================= */
+.lm-stats-bar {
+  display: flex;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+}
+.lm-stat-card {
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 10px;
+  padding: 0.75rem 1.25rem;
+  flex: 1;
+  min-width: 130px;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.lm-stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--tx-primary);
+  letter-spacing: -0.03em;
+  line-height: 1;
+}
+.lm-stat-label {
+  font-size: 0.72rem;
+  color: var(--tx-muted);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+/* =============================================
+   SIDEBAR DE FILTROS
+============================================= */
+.lm-sidebar {
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 10px;
+  overflow: hidden;
+  position: sticky;
+  top: 1rem;
+  transition: background-color 0.3s ease, border-color 0.3s ease;
+}
+.lm-sidebar-header {
+  padding: 0.65rem 1rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--tx-muted);
+  border-bottom: 1px solid var(--bg-surface0);
+  background: var(--bg-crust);
+  transition: background-color 0.3s ease;
+}
+.lm-sidebar-section {
+  padding: 0.65rem 0;
+  border-bottom: 1px solid var(--bg-surface0);
+}
+.lm-sidebar-section:last-child {
+  border-bottom: none;
+}
+.lm-sidebar-title {
+  font-size: 0.68rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--tx-muted);
+  margin: 0 1rem 0.35rem;
+}
+.lm-sidebar-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.28rem 1rem;
+  font-size: 0.84rem;
+  color: var(--tx-secondary) !important;
+  text-decoration: none !important;
+  border-left: 3px solid transparent;
+  transition: background-color 0.1s ease, color 0.1s ease;
+  cursor: pointer;
+}
+.lm-sidebar-item:hover {
+  background: var(--bg-surface0);
+  color: var(--tx-primary) !important;
+  text-decoration: none !important;
+}
+.lm-sidebar-item.lm-active {
+  color: var(--ac-main) !important;
+  font-weight: 600;
+  border-left-color: var(--ac-main);
+  background: var(--ac-soft);
+}
+:root[data-theme="dark"] .lm-sidebar-item.lm-active {
+  background: rgba(52, 211, 153, 0.08);
+}
+.lm-sidebar-count {
+  font-size: 0.73rem;
+  color: var(--tx-faint);
+  font-variant-numeric: tabular-nums;
+  flex-shrink: 0;
+}
+.lm-sidebar-item.lm-active .lm-sidebar-count {
+  color: var(--ac-main);
+  opacity: 0.8;
+}
+.lm-sidebar-ver-todas {
+  display: block;
+  padding: 0.2rem 1rem;
+  font-size: 0.78rem;
+  color: var(--ac-main) !important;
+  text-decoration: none !important;
+  cursor: pointer;
+}
+.lm-sidebar-ver-todas:hover {
+  text-decoration: underline !important;
+}
+
+/* =============================================
+   CARDS DE LICITACIÓN
+============================================= */
+.lm-card {
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 10px;
+  padding: 0.9rem 1.1rem;
+  margin-bottom: 0.55rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.lm-card:hover {
+  border-color: var(--bg-surface1);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+:root[data-theme="dark"] .lm-card:hover {
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+}
+.lm-card-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.35rem;
+}
+.lm-card-title {
+  font-size: 0.93rem;
+  font-weight: 600;
+  color: var(--tx-primary) !important;
+  text-decoration: none !important;
+  line-height: 1.35;
+}
+.lm-card-title:hover {
+  color: var(--ac-main) !important;
+}
+.lm-card-meta {
+  font-size: 0.78rem;
+  color: var(--tx-secondary);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  align-items: center;
+  margin-top: 0.3rem;
+  margin-bottom: 0.5rem;
+}
+.lm-dot {
+  color: var(--bg-surface1);
+}
+.lm-card-footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.5rem;
+  padding-top: 0.5rem;
+  border-top: 1px solid var(--bg-surface0);
+}
+.lm-card-org {
+  font-size: 0.78rem;
+  color: var(--tx-muted);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lm-card-price {
+  font-size: 0.9rem;
+  font-weight: 700;
+  color: var(--ac-main);
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+/* =============================================
    FOOTER
 ============================================= */
 .lm-footer {

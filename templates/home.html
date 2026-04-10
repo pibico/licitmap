@@ -1,81 +1,68 @@
-<div class="d-flex justify-content-between align-items-center mb-3">
-    <h4 class="lm-heading mb-0">Licitaciones</h4>
-    <span class="lm-stat">{{total}} en base de datos</span>
-</div>
+<form id="filtros-form" method="get" action="/">
+    <input type="hidden" name="tipo"       id="h-tipo"   value="{{tipo}}">
+    <input type="hidden" name="ccaa"       id="h-ccaa"   value="{{ccaa}}">
+    <input type="hidden" name="estado"     id="h-estado" value="{{estado}}">
+    <input type="hidden" name="prange"     id="h-prange" value="{{prange}}">
+    <input type="hidden" name="pais"                     value="{{pais}}">
 
-<div class="lm-filters mb-3">
-    <form method="get" action="/" class="row g-2" id="filtros-form">
-        <div class="col-12 col-md-4">
-            <label class="lm-filter-label">Búsqueda</label>
-            <input type="text" name="q" class="form-control form-control-sm" placeholder="Título, órgano o expediente..." value="{{q}}">
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="lm-filter-label">País</label>
-            <select name="pais" class="form-select form-select-sm" id="filtro-pais">
-                <option value="">Todos</option>
-                {{pais_options}}
-            </select>
-        </div>
-        <div class="col-6 col-md-2" id="filtro-ccaa-wrap">
-            <label class="lm-filter-label">Comunidad autónoma</label>
-            <select name="ccaa" class="form-select form-select-sm">
-                <option value="">Todas</option>
-                {{ccaa_options}}
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="lm-filter-label">Estado</label>
-            <select name="estado" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {{estado_options}}
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="lm-filter-label">Presup. mín. (€)</label>
-            <input type="number" name="pmin" class="form-control form-control-sm" placeholder="0" value="{{pmin}}" min="0" step="1">
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="lm-filter-label">Presup. máx. (€)</label>
-            <input type="number" name="pmax" class="form-control form-control-sm" placeholder="Sin límite" value="{{pmax}}" min="0" step="1">
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="lm-filter-label">Tipo de contrato</label>
-            <select name="tipo" class="form-select form-select-sm">
-                <option value="">Todos</option>
-                {{tipo_options}}
-            </select>
-        </div>
-        <div class="col-6 col-md-2">
-            <label class="lm-filter-label">F. límite desde</label>
-            <input type="date" name="fecha_desde" class="form-control form-control-sm" value="{{fecha_desde}}">
-        </div>
-        <div class="col-12 d-flex gap-2 align-items-center">
-            <a href="/" class="btn btn-primary btn-sm">Limpiar filtros</a>
-            <span class="ms-auto lm-stat" id="resultados-count">{{resultados}} resultado(s)</span>
-        </div>
-    </form>
-</div>
+    <div class="lm-search-bar mb-3">
+        <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
+        <input type="date" name="fecha_desde" class="form-control lm-search-date" value="{{fecha_desde}}" title="F. límite desde">
+        <a href="/" class="btn btn-primary text-nowrap">Limpiar filtros</a>
+    </div>
+</form>
 
-<div id="paginacion-top">{{paginacion}}</div>
-
-<div class="lm-table-wrapper mt-3">
-    <div class="table-responsive">
-        <table class="table table-hover">
-            <thead>
-                <tr>
-                    <th>Expediente / Título</th>
-                    <th>Órgano</th>
-                    <th>Territorio</th>
-                    <th class="text-end">Presupuesto</th>
-                    <th>F. Límite</th>
-                    <th>Estado</th>
-                </tr>
-            </thead>
-            <tbody id="tabla-body">
-                {{filas}}
-            </tbody>
-        </table>
+<div class="lm-stats-bar mb-3">
+    <div class="lm-stat-card">
+        <div class="lm-stat-value">{{total}}</div>
+        <div class="lm-stat-label">Total licitaciones</div>
+    </div>
+    <div class="lm-stat-card">
+        <div class="lm-stat-value">{{en_plazo}}</div>
+        <div class="lm-stat-label">En plazo ahora</div>
+    </div>
+    <div class="lm-stat-card">
+        <div class="lm-stat-value" id="resultados-count">{{resultados}}</div>
+        <div class="lm-stat-label">Resultados filtrados</div>
     </div>
 </div>
 
-<div class="mt-3" id="paginacion-bottom">{{paginacion}}</div>
+<div class="row g-3 align-items-start">
+    <div class="col-lg-3">
+        <div class="lm-sidebar">
+            <div class="lm-sidebar-header">Filtros</div>
+
+            <div class="lm-sidebar-section">
+                <div class="lm-sidebar-title">Tipo de contrato</div>
+                {{sidebar_tipo}}
+            </div>
+
+            <div class="lm-sidebar-section">
+                <div class="lm-sidebar-title">Presupuesto</div>
+                {{sidebar_prange}}
+            </div>
+
+            <div class="lm-sidebar-section">
+                <div class="lm-sidebar-title">País</div>
+                {{sidebar_pais}}
+            </div>
+
+            <div class="lm-sidebar-section" id="sidebar-ccaa-section">
+                <div class="lm-sidebar-title">Comunidad autónoma</div>
+                {{sidebar_ccaa}}
+            </div>
+
+            <div class="lm-sidebar-section">
+                <div class="lm-sidebar-title">Estado</div>
+                {{sidebar_estado}}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-9">
+        <div id="cards-container">
+            {{filas}}
+        </div>
+        <div class="mt-3" id="paginacion-bottom">{{paginacion}}</div>
+    </div>
+</div>

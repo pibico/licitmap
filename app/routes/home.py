@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 from pathlib import Path
 from urllib.parse import urlencode
 from datetime import date
@@ -11,7 +11,7 @@ from app.models import Licitacion
 
 router = APIRouter()
 
-PER_PAGE = 50
+PER_PAGE = 20
 
 ESTADOS = {
     "PUB": "Publicada",
@@ -36,6 +36,14 @@ TIPOS_CONTRATO = {
     "40": "Administrativo especial",
     "50": "Otros",
 }
+
+PRANGES = [
+    ("5k",   "Menos de 5.000 €",   None,        5_000),
+    ("15k",  "5.000 – 15.000 €",   5_000,       15_000),
+    ("100k", "15.000 – 100.000 €", 15_000,      100_000),
+    ("1m",   "100.000 – 1M €",     100_000,     1_000_000),
+    ("1m+",  "Más de 1M €",        1_000_000,   None),
+]
 
 
 def render(template, **kwargs):
@@ -83,6 +91,18 @@ def build_pagination(page, total_pages, params):
     return '<nav><ul class="pagination justify-content-center flex-wrap">' + "".join(items) + "</ul></nav>"
 
 
+def sidebar_item(label, count, field, value, active):
+    active_class = " lm-active" if active else ""
+    count_str = f"{count:,}".replace(",", ".")
+    return (
+        f'<a href="#" class="lm-sidebar-item{active_class}" '
+        f'data-field="{field}" data-value="{value}">'
+        f'<span>{label}</span>'
+        f'<span class="lm-sidebar-count">{count_str}</span>'
+        f'</a>'
+    )
+
+
 @router.get("/", response_class=HTMLResponse)
 def home(
     db: Session = Depends(get_db),
@@ -90,12 +110,11 @@ def home(
     ccaa: str = Query(default=""),
     pais: str = Query(default="España"),
     estado: str = Query(default=""),
-    pmin: str = Query(default=""),
-    pmax: str = Query(default=""),
     page: int = Query(default=1, ge=1),
     partial: str = Query(default=""),
     tipo: str = Query(default=""),
     fecha_desde: str = Query(default=""),
+    prange: str = Query(default=""),
 ):
     query = db.query(Licitacion)
 
@@ -114,16 +133,6 @@ def home(
         query = query.filter(Licitacion.comunidad_autonoma == ccaa)
     if estado:
         query = query.filter(Licitacion.estado == estado)
-    if pmin:
-        try:
-            query = query.filter(Licitacion.presupuesto >= float(pmin))
-        except ValueError:
-            pass
-    if pmax:
-        try:
-            query = query.filter(Licitacion.presupuesto <= float(pmax))
-        except ValueError:
-            pass
     if tipo:
         query = query.filter(Licitacion.tipo_contrato == tipo)
     if fecha_desde:
@@ -131,6 +140,15 @@ def home(
             query = query.filter(Licitacion.fecha_limite >= date.fromisoformat(fecha_desde))
         except ValueError:
             pass
+    if prange:
+        for code, _label, pmin_v, pmax_v in PRANGES:
+            if prange == code:
+                if pmin_v is not None:
+                    query = query.filter(Licitacion.presupuesto >= pmin_v)
+                if pmax_v is not None:
+                    query = query.filter(Licitacion.presupuesto < pmax_v)
+                break
+
     total = db.query(Licitacion).count()
     resultados = query.count()
     total_pages = max(1, (resultados + PER_PAGE - 1) // PER_PAGE)
@@ -143,78 +161,39 @@ def home(
         .all()
     )
 
-    # Filas
+    # Cards
     filas = ""
     for lic in licitaciones:
-        presupuesto = f"{lic.presupuesto:,.2f} €" if lic.presupuesto else "—"
+        presupuesto_str = ("€ " + f"{lic.presupuesto:,.0f}".replace(",", ".")) if lic.presupuesto else "—"
         estado_val = lic.estado or "—"
-        fecha_limite_str = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else "—"
+        estado_label = ESTADOS.get(estado_val, estado_val)
+        fecha_str = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else "—"
+        tipo_nombre = TIPOS_CONTRATO.get(lic.tipo_contrato or "", "—")
         if lic.comunidad_autonoma == "Extranjero":
             territorio = lic.pais or "Extranjero"
         else:
             territorio = lic.comunidad_autonoma or "—"
-        titulo = lic.titulo or "—"
-        filas += f"""<tr>
-            <td>
-                <a href="{lic.url}" target="_blank" class="lm-exp-id">{lic.expediente}</a>
-                <div class="lm-exp-title">{titulo}</div>
-            </td>
-            <td>{lic.organo_contratacion or '—'}</td>
-            <td>{territorio}</td>
-            <td class="text-end">{presupuesto}</td>
-            <td class="text-nowrap">{fecha_limite_str}</td>
-            <td><span class="badge badge-{estado_val}">{estado_val}</span></td>
-        </tr>"""
 
-    # País dropdown: España + países extranjeros
-    paises_ext = [
-        r[0] for r in db.query(Licitacion.pais)
-        .filter(Licitacion.pais != "España", Licitacion.pais.isnot(None))
-        .distinct().order_by(Licitacion.pais).all()
-    ]
+        filas += f"""<div class="lm-card">
+  <div class="lm-card-top">
+    <a href="{lic.url}" target="_blank" class="lm-card-title">{lic.titulo or '—'}</a>
+    <span class="badge badge-{estado_val} flex-shrink-0">{estado_label}</span>
+  </div>
+  <div class="lm-card-meta">
+    <span>Exp. {lic.expediente or '—'}</span>
+    <span class="lm-dot">·</span>
+    <span>Plazo {fecha_str}</span>
+    <span class="lm-dot">·</span>
+    <span>{tipo_nombre}</span>
+  </div>
+  <div class="lm-card-footer">
+    <span class="lm-card-org">{lic.organo_contratacion or '—'} · {territorio}</span>
+    <span class="lm-card-price">{presupuesto_str}</span>
+  </div>
+</div>"""
 
-    def opt_pais(val, label=None):
-        sel = '  selected' if pais == val else ''
-        return f'<option value="{val}"{sel}>{label or val}</option>'
-
-    pais_options = (
-        opt_pais("España") +
-        f'<optgroup label="Extranjero">{"".join(opt_pais(v) for v in paises_ext)}</optgroup>'
-    )
-
-    # Territorio dropdown (solo relevante cuando pais=España)
-    territorio_rows = [
-        r[0] for r in db.query(Licitacion.comunidad_autonoma)
-        .filter(Licitacion.comunidad_autonoma.isnot(None),
-                Licitacion.comunidad_autonoma != "Extranjero")
-        .distinct().order_by(Licitacion.comunidad_autonoma).all()
-    ]
-    ccaa_list = [v for v in territorio_rows if v not in TERRITORIOS_ESPECIALES]
-    especiales_list = [v for v in territorio_rows if v in TERRITORIOS_ESPECIALES]
-
-    def opt_ccaa(val):
-        sel = '  selected' if ccaa == val else ''
-        return f'<option value="{val}"{sel}>{val}</option>'
-
-    ccaa_options = (
-        f'<optgroup label="Comunidades Autónomas">{"".join(opt_ccaa(v) for v in ccaa_list)}</optgroup>'
-        f'<optgroup label="Otros ámbitos">{"".join(opt_ccaa(v) for v in especiales_list)}</optgroup>'
-    )
-
-    # Estado dropdown
-    estado_options = "".join(
-        f'<option value="{code}"{"  selected" if estado == code else ""}>{label}</option>'
-        for code, label in ESTADOS.items()
-    )
-
-    # Tipo de contrato dropdown
-    tipo_options = "".join(
-        f'<option value="{code}"{"  selected" if tipo == code else ""}>{label}</option>'
-        for code, label in TIPOS_CONTRATO.items()
-    )
-
-    params = {"q": q, "pais": pais, "ccaa": ccaa, "estado": estado, "pmin": pmin, "pmax": pmax, "tipo": tipo, "fecha_desde": fecha_desde}
-
+    params = {"q": q, "pais": pais, "ccaa": ccaa, "estado": estado, "tipo": tipo,
+              "fecha_desde": fecha_desde, "prange": prange}
     paginacion = build_pagination(page, total_pages, params)
 
     if partial == "1":
@@ -224,22 +203,96 @@ def home(
             "resultados": resultados,
         })
 
+    # --- Sidebar data (global counts) ---
+    tipo_counts_raw = dict(
+        db.query(Licitacion.tipo_contrato, func.count(Licitacion.id))
+        .filter(Licitacion.tipo_contrato.isnot(None))
+        .group_by(Licitacion.tipo_contrato).all()
+    )
+    ccaa_counts_raw = (
+        db.query(Licitacion.comunidad_autonoma, func.count(Licitacion.id))
+        .filter(
+            Licitacion.comunidad_autonoma.isnot(None),
+            Licitacion.comunidad_autonoma != "Extranjero",
+            ~Licitacion.comunidad_autonoma.in_(TERRITORIOS_ESPECIALES),
+        )
+        .group_by(Licitacion.comunidad_autonoma)
+        .order_by(func.count(Licitacion.id).desc()).all()
+    )
+    estado_counts_raw = dict(
+        db.query(Licitacion.estado, func.count(Licitacion.id))
+        .filter(Licitacion.estado.isnot(None))
+        .group_by(Licitacion.estado).all()
+    )
+    en_plazo_count = estado_counts_raw.get("PUB", 0)
+
+    sidebar_tipo = "".join(
+        sidebar_item(label, tipo_counts_raw.get(code, 0), "tipo", code, tipo == code)
+        for code, label in TIPOS_CONTRATO.items()
+        if tipo_counts_raw.get(code, 0) > 0
+    )
+
+    top_ccaa = ccaa_counts_raw[:7]
+    rest_ccaa = ccaa_counts_raw[7:]
+    sidebar_ccaa = "".join(sidebar_item(v, c, "ccaa", v, ccaa == v) for v, c in top_ccaa)
+    if rest_ccaa:
+        sidebar_ccaa += (
+            f'<a href="#" class="lm-sidebar-ver-todas">Ver todas ({len(rest_ccaa)} más)...</a>'
+            f'<div class="lm-sidebar-extra" style="display:none">'
+            + "".join(sidebar_item(v, c, "ccaa", v, ccaa == v) for v, c in rest_ccaa)
+            + '<a href="#" class="lm-sidebar-ver-todas lm-sidebar-ver-menos">Ver menos...</a>'
+            + '</div>'
+        )
+
+    # País sidebar
+    pais_counts_raw = (
+        db.query(Licitacion.pais, func.count(Licitacion.id))
+        .filter(Licitacion.pais.isnot(None))
+        .group_by(Licitacion.pais)
+        .order_by(func.count(Licitacion.id).desc()).all()
+    )
+    espana_count = next((c for v, c in pais_counts_raw if v == "España"), 0)
+    intl_count = sum(c for v, c in pais_counts_raw if v != "España")
+    sidebar_pais = sidebar_item("España", espana_count, "pais", "España", pais == "España")
+    if intl_count > 0:
+        sidebar_pais += sidebar_item("Internacional", intl_count, "pais", "", pais == "")
+
+    sidebar_estado = "".join(
+        sidebar_item(label, estado_counts_raw.get(code, 0), "estado", code, estado == code)
+        for code, label in ESTADOS.items()
+        if estado_counts_raw.get(code, 0) > 0
+    )
+
+    def prange_count(pmin_v, pmax_v):
+        rq = db.query(func.count(Licitacion.id)).filter(Licitacion.presupuesto.isnot(None))
+        if pmin_v is not None:
+            rq = rq.filter(Licitacion.presupuesto >= pmin_v)
+        if pmax_v is not None:
+            rq = rq.filter(Licitacion.presupuesto < pmax_v)
+        return rq.scalar() or 0
+
+    sidebar_prange = "".join(
+        sidebar_item(label, prange_count(pmin_v, pmax_v), "prange", code, prange == code)
+        for code, label, pmin_v, pmax_v in PRANGES
+    )
+
     return render(
         "home.html",
-        total=total,
+        total=f"{total:,}".replace(",", "."),
+        en_plazo=f"{en_plazo_count:,}".replace(",", "."),
         resultados=resultados,
         filas=filas,
-        pais_options=pais_options,
-        ccaa_options=ccaa_options,
-        estado_options=estado_options,
-        tipo_options=tipo_options,
+        sidebar_tipo=sidebar_tipo,
+        sidebar_pais=sidebar_pais,
+        sidebar_ccaa=sidebar_ccaa,
+        sidebar_estado=sidebar_estado,
+        sidebar_prange=sidebar_prange,
         q=q,
         pais=pais,
         ccaa=ccaa,
         estado=estado,
-        pmin=pmin,
-        pmax=pmax,
         tipo=tipo,
         fecha_desde=fecha_desde,
+        prange=prange,
         paginacion=paginacion,
     )
