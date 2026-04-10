@@ -3,7 +3,8 @@ from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 from pathlib import Path
-from datetime import date
+from datetime import date, datetime
+import json as _json
 
 from app.database import get_db
 from app.models import Licitacion
@@ -50,7 +51,7 @@ def render(template, **kwargs):
     return html
 
 
-def apply_common_filters(query, q, tipo, estado, prange, fecha_desde, fecha_hasta):
+def apply_common_filters(query, q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=""):
     """Aplica filtros comunes sin filtrar por territorio (eso se hace aparte)."""
     if q:
         query = query.filter(
@@ -58,9 +59,10 @@ def apply_common_filters(query, q, tipo, estado, prange, fecha_desde, fecha_hast
                 Licitacion.titulo.ilike(f"%{q}%"),
                 Licitacion.organo_contratacion.ilike(f"%{q}%"),
                 Licitacion.expediente.ilike(f"%{q}%"),
-                Licitacion.cpv.ilike(f"%{q}%"),
             )
         )
+    if cpv_q:
+        query = query.filter(Licitacion.cpv.ilike(f"%{cpv_q}%"))
 
     if tipo:
         tipos = [t for t in tipo.split("|") if t]
@@ -116,6 +118,7 @@ def apply_territorio_filter(query):
 @router.get("/mapa", response_class=HTMLResponse)
 def mapa_page(
     q: str = Query(default=""),
+    cpv_q: str = Query(default=""),
     tipo: str = Query(default=""),
     estado: str = Query(default=""),
     prange: str = Query(default=""),
@@ -123,11 +126,32 @@ def mapa_page(
     fecha_hasta: str = Query(default=""),
     db: Session = Depends(get_db),
 ):
-    query = apply_territorio_filter(
-        apply_common_filters(db.query(Licitacion), q, tipo, estado, prange, fecha_desde, fecha_hasta)
+    # Total España sin filtros del usuario (todas las de pais=España, no solo las del mapa)
+    total_espana = db.query(func.count(Licitacion.id)).filter(Licitacion.pais == "España").scalar()
+    total_espana_str = f"{total_espana:,}".replace(",", ".")
+
+    # Stats: toda España con filtros del usuario (no solo las del mapa)
+    stats_query = apply_common_filters(
+        db.query(Licitacion).filter(Licitacion.pais == "España"),
+        q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=cpv_q
     )
-    total = query.count()
-    en_plazo = query.filter(Licitacion.fecha_limite >= date.today()).count()
+    resultados = stats_query.count()
+    en_plazo = (
+        stats_query.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today()).count()
+    )
+
+    # Última sincronización
+    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
+    ultima_sync = "—"
+    if _state_file.exists():
+        try:
+            _state = _json.loads(_state_file.read_text())
+            _last = _state.get("last_sync")
+            if _last:
+                _diff = (date.today() - datetime.fromisoformat(_last).date()).days
+                ultima_sync = "Hoy" if _diff == 0 else "Ayer" if _diff == 1 else f"Hace {_diff} días"
+        except Exception:
+            pass
 
     # Sidebar tipo
     tipo_sel = set(tipo.split("|")) - {""} if tipo else set()
@@ -167,13 +191,16 @@ def mapa_page(
         active_busqueda="",
         active_mapa="lm-nav-tab-active",
         q=q,
+        cpv_q=cpv_q,
         tipo=tipo,
         estado=estado,
         prange=prange,
         fecha_desde=fecha_desde,
         fecha_hasta=fecha_hasta,
-        total=f"{total:,}".replace(",", "."),
+        total_espana=total_espana_str,
+        resultados=f"{resultados:,}".replace(",", "."),
         en_plazo=f"{en_plazo:,}".replace(",", "."),
+        ultima_sync=ultima_sync,
         sidebar_tipo=sidebar_tipo,
         sidebar_estado=sidebar_estado,
         sidebar_prange=sidebar_prange,
@@ -183,6 +210,7 @@ def mapa_page(
 @router.get("/api/mapa", response_class=JSONResponse)
 def api_mapa(
     q: str = Query(default=""),
+    cpv_q: str = Query(default=""),
     tipo: str = Query(default=""),
     estado: str = Query(default=""),
     prange: str = Query(default=""),
@@ -190,12 +218,21 @@ def api_mapa(
     fecha_hasta: str = Query(default=""),
     db: Session = Depends(get_db),
 ):
-    base = apply_territorio_filter(
-        apply_common_filters(db.query(Licitacion), q, tipo, estado, prange, fecha_desde, fecha_hasta)
-    )
+    common = apply_common_filters(db.query(Licitacion), q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=cpv_q)
+    base = apply_territorio_filter(common)
     rows = (
         base.with_entities(Licitacion.comunidad_autonoma, func.count().label("n"))
         .group_by(Licitacion.comunidad_autonoma)
         .all()
     )
-    return {row[0]: row[1] for row in rows if row[0]}
+    # Stats sobre toda España, no solo las asignables al mapa
+    stats_query = common.filter(Licitacion.pais == "España")
+    resultados = stats_query.count()
+    en_plazo = (
+        stats_query.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today()).count()
+    )
+    return {
+        "ccaa": {row[0]: row[1] for row in rows if row[0]},
+        "resultados": f"{resultados:,}".replace(",", "."),
+        "en_plazo": f"{en_plazo:,}".replace(",", "."),
+    }

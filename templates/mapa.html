@@ -1,11 +1,19 @@
 <div class="lm-stats-bar mb-3">
     <div class="lm-stat-card">
-        <div class="lm-stat-value" id="mapa-total">{{total}}</div>
+        <div class="lm-stat-value">{{total_espana}}</div>
         <div class="lm-stat-label">Licitaciones en España</div>
     </div>
     <div class="lm-stat-card">
         <div class="lm-stat-value lm-stat-accent" id="mapa-en-plazo">{{en_plazo}}</div>
         <div class="lm-stat-label">En plazo ahora</div>
+    </div>
+    <div class="lm-stat-card">
+        <div class="lm-stat-value" id="mapa-resultados">{{resultados}}</div>
+        <div class="lm-stat-label">Resultados filtrados</div>
+    </div>
+    <div class="lm-stat-card">
+        <div class="lm-stat-value lm-stat-sync">{{ultima_sync}}</div>
+        <div class="lm-stat-label">Última sincronización</div>
     </div>
 </div>
 
@@ -15,9 +23,13 @@
             <div class="lm-sidebar-header">Filtros</div>
 
             <div class="lm-sidebar-section">
-                <div style="padding: 0.5rem 1rem 0.6rem">
+                <div style="padding: 0.5rem 1rem 0.25rem">
                     <input type="text" id="mapa-q" class="form-control form-control-sm"
                            placeholder="Título, órgano, expediente..." value="{{q}}">
+                </div>
+                <div style="padding: 0.25rem 1rem 0.6rem">
+                    <input type="text" id="mapa-cpv-q" class="form-control form-control-sm"
+                           placeholder="Buscar por CPV..." value="{{cpv_q}}">
                 </div>
             </div>
 
@@ -83,4 +95,4 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/static/js/mapa.js?v=35"></script>
+<script src="/static/js/mapa.js?v=38"></script>

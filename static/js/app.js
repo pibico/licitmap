@@ -133,15 +133,14 @@
       window.location.href = '/?' + params.toString();
     });
 
-    // Búsqueda de texto: debounce 600ms
+    // Búsqueda de texto: debounce 600ms (cubre barra principal y CPV)
     var debounceTimer;
-    var textInput = form.querySelector('input[type="text"]');
-    if (textInput) {
+    form.querySelectorAll('input[type="text"]').forEach(function (textInput) {
       textInput.addEventListener('input', function () {
         clearTimeout(debounceTimer);
         debounceTimer = setTimeout(fetchResultados, 600);
       });
-    }
+    });
 
     // Fecha: fetch inmediato al cambiar (ambos inputs desde/hasta)
     form.querySelectorAll('input[type="date"]').forEach(function (input) {

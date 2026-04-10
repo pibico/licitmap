@@ -373,6 +373,10 @@ a:hover {
 .lm-search-bar .form-control {
   flex: 1;
 }
+.lm-search-cpv {
+  flex: 0 0 200px !important;
+  min-width: 0;
+}
 .lm-search-date {
   max-width: 165px;
   flex: none;

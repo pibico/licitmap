@@ -24,6 +24,7 @@ const CCAA_MAP = {
 // ─── Estado de filtros ────────────────────────────────────────────────────
 const filtros = {
     q:           document.getElementById('mapa-q')?.value || '',
+    cpv_q:       document.getElementById('mapa-cpv-q')?.value || '',
     tipo:        new Set(),
     estado:      new Set(),
     prange:      new Set(),
@@ -39,6 +40,7 @@ document.querySelectorAll('.lm-check-item.lm-active').forEach(el => {
 function buildParams(extra) {
     const p = new URLSearchParams();
     if (filtros.q)            p.set('q', filtros.q);
+    if (filtros.cpv_q)        p.set('cpv_q', filtros.cpv_q);
     if (filtros.tipo?.size)   p.set('tipo',   [...filtros.tipo].join('|'));
     if (filtros.estado?.size) p.set('estado', [...filtros.estado].join('|'));
     if (filtros.prange?.size) p.set('prange', [...filtros.prange].join('|'));
@@ -116,14 +118,14 @@ function onEachFeature(feature, layer) {
 }
 
 async function renderMapa() {
-    const [geojson, conteosData] = await Promise.all([
+    const [geojson, apiData] = await Promise.all([
         geojsonCache
             ? Promise.resolve(geojsonCache)
             : fetch('/static/data/ccaa.geojson').then(r => r.json()).then(d => { geojsonCache = d; return d; }),
         fetch('/api/mapa?' + buildParams().toString()).then(r => r.json()),
     ]);
 
-    conteos = conteosData;
+    conteos = apiData.ccaa || apiData;
     maxConteo = Math.max(1, ...Object.values(conteos));
 
     if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
@@ -139,14 +141,19 @@ async function renderMapa() {
     }).addTo(map);
 
     map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
-    actualizarStats();
+    actualizarStats(apiData);
     actualizarLeyenda();
 }
 
-function actualizarStats() {
-    const total = Object.values(conteos).reduce((a, b) => a + b, 0);
-    const el = document.getElementById('mapa-total');
-    if (el) el.textContent = total.toLocaleString('es');
+function actualizarStats(apiData) {
+    const enPlazo = document.getElementById('mapa-en-plazo');
+    const resultados = document.getElementById('mapa-resultados');
+    if (apiData && apiData.en_plazo != null) {
+        if (enPlazo) enPlazo.textContent = apiData.en_plazo;
+    }
+    if (apiData && apiData.resultados != null) {
+        if (resultados) resultados.textContent = apiData.resultados;
+    }
 }
 
 function actualizarLeyenda() {
@@ -184,21 +191,16 @@ document.getElementById('mapa-q')?.addEventListener('input', e => {
     clearTimeout(debounceTimer);
     debounceTimer = setTimeout(() => { actualizarUrl(); renderMapa(); }, 400);
 });
+document.getElementById('mapa-cpv-q')?.addEventListener('input', e => {
+    filtros.cpv_q = e.target.value;
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => { actualizarUrl(); renderMapa(); }, 400);
+});
 document.getElementById('mapa-fecha-desde')?.addEventListener('change', e => {
     filtros.fecha_desde = e.target.value; actualizarUrl(); renderMapa();
 });
 document.getElementById('mapa-fecha-hasta')?.addEventListener('change', e => {
     filtros.fecha_hasta = e.target.value; actualizarUrl(); renderMapa();
-});
-
-// ─── Sidebar toggles ──────────────────────────────────────────────────────
-document.querySelectorAll('.lm-sidebar-toggle[data-section]').forEach(btn => {
-    const body = document.getElementById('sc-' + btn.dataset.section);
-    if (!body) return;
-    btn.addEventListener('click', () => {
-        const open = btn.classList.toggle('open');
-        body.classList.toggle('open', open);
-    });
 });
 
 // ─── Reaccionar al cambio de tema ─────────────────────────────────────────
