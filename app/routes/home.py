@@ -1,9 +1,10 @@
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_
 from pathlib import Path
 from urllib.parse import urlencode
+from datetime import date
 
 from app.database import get_db
 from app.models import Licitacion
@@ -22,6 +23,19 @@ ESTADOS = {
 }
 
 TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
+
+TIPOS_CONTRATO = {
+    "1": "Obras",
+    "2": "Servicios",
+    "3": "Suministros",
+    "7": "Gestión de servicios públicos",
+    "8": "Colaboración público-privada",
+    "22": "Concesión de servicios",
+    "31": "Privado",
+    "32": "Patrimonial",
+    "40": "Administrativo especial",
+    "50": "Otros",
+}
 
 
 def render(template, **kwargs):
@@ -79,6 +93,9 @@ def home(
     pmin: str = Query(default=""),
     pmax: str = Query(default=""),
     page: int = Query(default=1, ge=1),
+    partial: str = Query(default=""),
+    tipo: str = Query(default=""),
+    fecha_desde: str = Query(default=""),
 ):
     query = db.query(Licitacion)
 
@@ -107,7 +124,13 @@ def home(
             query = query.filter(Licitacion.presupuesto <= float(pmax))
         except ValueError:
             pass
-
+    if tipo:
+        query = query.filter(Licitacion.tipo_contrato == tipo)
+    if fecha_desde:
+        try:
+            query = query.filter(Licitacion.fecha_limite >= date.fromisoformat(fecha_desde))
+        except ValueError:
+            pass
     total = db.query(Licitacion).count()
     resultados = query.count()
     total_pages = max(1, (resultados + PER_PAGE - 1) // PER_PAGE)
@@ -125,16 +148,21 @@ def home(
     for lic in licitaciones:
         presupuesto = f"{lic.presupuesto:,.2f} €" if lic.presupuesto else "—"
         estado_val = lic.estado or "—"
+        fecha_limite_str = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else "—"
         if lic.comunidad_autonoma == "Extranjero":
             territorio = lic.pais or "Extranjero"
         else:
             territorio = lic.comunidad_autonoma or "—"
+        titulo = lic.titulo or "—"
         filas += f"""<tr>
-            <td><a href="{lic.url}" target="_blank">{lic.expediente}</a></td>
-            <td>{lic.titulo or '—'}</td>
+            <td>
+                <a href="{lic.url}" target="_blank" class="lm-exp-id">{lic.expediente}</a>
+                <div class="lm-exp-title">{titulo}</div>
+            </td>
             <td>{lic.organo_contratacion or '—'}</td>
             <td>{territorio}</td>
             <td class="text-end">{presupuesto}</td>
+            <td class="text-nowrap">{fecha_limite_str}</td>
             <td><span class="badge badge-{estado_val}">{estado_val}</span></td>
         </tr>"""
 
@@ -179,7 +207,22 @@ def home(
         for code, label in ESTADOS.items()
     )
 
-    params = {"q": q, "pais": pais, "ccaa": ccaa, "estado": estado, "pmin": pmin, "pmax": pmax}
+    # Tipo de contrato dropdown
+    tipo_options = "".join(
+        f'<option value="{code}"{"  selected" if tipo == code else ""}>{label}</option>'
+        for code, label in TIPOS_CONTRATO.items()
+    )
+
+    params = {"q": q, "pais": pais, "ccaa": ccaa, "estado": estado, "pmin": pmin, "pmax": pmax, "tipo": tipo, "fecha_desde": fecha_desde}
+
+    paginacion = build_pagination(page, total_pages, params)
+
+    if partial == "1":
+        return JSONResponse({
+            "filas": filas,
+            "paginacion": paginacion,
+            "resultados": resultados,
+        })
 
     return render(
         "home.html",
@@ -189,11 +232,14 @@ def home(
         pais_options=pais_options,
         ccaa_options=ccaa_options,
         estado_options=estado_options,
+        tipo_options=tipo_options,
         q=q,
         pais=pais,
         ccaa=ccaa,
         estado=estado,
         pmin=pmin,
         pmax=pmax,
-        paginacion=build_pagination(page, total_pages, params),
+        tipo=tipo,
+        fecha_desde=fecha_desde,
+        paginacion=paginacion,
     )

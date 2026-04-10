@@ -37,6 +37,14 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                 except ValueError:
                     pass
 
+            fecha_limite = None
+            if d.get("fecha_limite"):
+                try:
+                    from datetime import date
+                    fecha_limite = date.fromisoformat(d["fecha_limite"])
+                except ValueError:
+                    pass
+
             if not d.get("atom_id"):
                 continue
 
@@ -48,6 +56,8 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                 existente.estado = d["estado"]
                 existente.presupuesto = d["presupuesto"]
                 existente.fecha_publicacion = fecha
+                existente.fecha_limite = fecha_limite
+                existente.tipo_contrato = d.get("tipo_contrato")
                 existente.comunidad_autonoma = d["comunidad_autonoma"]
                 existente.pais = d["pais"]
                 existente.url = d["url"]
@@ -62,6 +72,8 @@ with zipfile.ZipFile(ZIP_PATH) as zf:
                     estado=d["estado"],
                     presupuesto=d["presupuesto"],
                     fecha_publicacion=fecha,
+                    fecha_limite=fecha_limite,
+                    tipo_contrato=d.get("tipo_contrato"),
                     comunidad_autonoma=d["comunidad_autonoma"],
                     pais=d["pais"],
                     url=d["url"],

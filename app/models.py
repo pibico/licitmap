@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Float, DateTime
+from sqlalchemy import Column, Integer, String, Float, DateTime, Date
 from app.database import Base
 
 class Licitacion(Base):
@@ -12,6 +12,8 @@ class Licitacion(Base):
     estado = Column(String)
     presupuesto = Column(Float)
     fecha_publicacion = Column(DateTime)
+    fecha_limite = Column(Date)
+    tipo_contrato = Column(String)
     comunidad_autonoma = Column(String)
     pais = Column(String)
     url = Column(String)

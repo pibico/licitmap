@@ -132,6 +132,8 @@ def _parse_entries(root):
             "estado": text(status, "cbc-place-ext:ContractFolderStatusCode"),
             "presupuesto": float(presupuesto_text) if presupuesto_text else None,
             "fecha_publicacion": text(entry, "atom:updated"),
+            "fecha_limite": text(status, "cac:TenderingProcess/cac:TenderSubmissionDeadlinePeriod/cbc:EndDate"),
+            "tipo_contrato": text(status, "cac:ProcurementProject/cbc:TypeCode"),
             "comunidad_autonoma": extract_comunidad(status),
             "pais": extract_pais(status),
             "url": url,
