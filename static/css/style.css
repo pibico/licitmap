@@ -907,3 +907,71 @@ a:hover {
   border-color: var(--bg-surface1);
   color: var(--tx-primary);
 }
+
+/* ─── Autocomplete ────────────────────────────────────────────────────── */
+.lm-autocomplete {
+  position: relative;
+}
+.lm-autocomplete-list {
+  display: none;
+  position: absolute;
+  top: 100%;
+  left: 0; right: 0;
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-top: none;
+  border-radius: 0 0 6px 6px;
+  z-index: 9999;
+  max-height: 180px;
+  overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.lm-autocomplete-list.open { display: block; }
+.lm-autocomplete-item {
+  padding: 0.35rem 0.75rem;
+  font-size: 0.82rem;
+  cursor: pointer;
+  color: var(--tx-secondary);
+  transition: background 0.1s;
+}
+.lm-autocomplete-item:hover,
+.lm-autocomplete-item.lm-ac-active {
+  background: var(--bg-surface0);
+  color: var(--tx-primary);
+}
+:root[data-theme="dark"] .lm-autocomplete-list {
+  background: var(--bg-mantle);
+  border-color: var(--bg-surface0);
+  box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+}
+
+/* ─── Tooltip rico del mapa ──────────────────────────────────────────────── */
+.lm-tt-card {
+  min-width: 160px !important;
+}
+.lm-tt-title {
+  font-weight: 600;
+  font-size: 0.85rem;
+  margin-bottom: 0.35rem;
+  color: var(--tx-primary);
+  border-bottom: 1px solid var(--bg-surface0);
+  padding-bottom: 0.3rem;
+}
+.lm-tt-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  font-size: 0.78rem;
+  margin-top: 0.2rem;
+}
+.lm-tt-label {
+  color: var(--tx-muted);
+}
+.lm-tt-value {
+  font-weight: 600;
+  color: var(--tx-primary);
+}
+.lm-tt-accent {
+  color: var(--ac-main);
+}

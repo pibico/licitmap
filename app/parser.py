@@ -39,6 +39,62 @@ NUTS1_CCAA = {
 
 CCAA = set(NUTS2_CCAA.values())
 
+# Mapa código provincia (2 dígitos del CP) → nombre provincia (igual que GeoJSON)
+CP_PROVINCIA = {
+    "01": "Álava",
+    "02": "Albacete",
+    "03": "Alicante",
+    "04": "Almería",
+    "05": "Ávila",
+    "06": "Badajoz",
+    "07": "Islas Baleares",
+    "08": "Barcelona",
+    "09": "Burgos",
+    "10": "Cáceres",
+    "11": "Cádiz",
+    "12": "Castellón",
+    "13": "Ciudad Real",
+    "14": "Córdoba",
+    "15": "La Coruña",
+    "16": "Cuenca",
+    "17": "Gerona",
+    "18": "Granada",
+    "19": "Guadalajara",
+    "20": "Guipúzcoa",
+    "21": "Huelva",
+    "22": "Huesca",
+    "23": "Jaén",
+    "24": "León",
+    "25": "Lleida",
+    "26": "La Rioja",
+    "27": "Lugo",
+    "28": "Madrid",
+    "29": "Málaga",
+    "30": "Murcia",
+    "31": "Navarra",
+    "32": "Orense",
+    "33": "Asturias",
+    "34": "Palencia",
+    "35": "Las Palmas",
+    "36": "Pontevedra",
+    "37": "Salamanca",
+    "38": "Santa Cruz de Tenerife",
+    "39": "Cantabria",
+    "40": "Segovia",
+    "41": "Sevilla",
+    "42": "Soria",
+    "43": "Tarragona",
+    "44": "Teruel",
+    "45": "Toledo",
+    "46": "Valencia",
+    "47": "Valladolid",
+    "48": "Vizcaya",
+    "49": "Zamora",
+    "50": "Zaragoza",
+    "51": "Ceuta",
+    "52": "Melilla",
+}
+
 
 def text(element, xpath):
     node = element.find(xpath, NS)
@@ -129,6 +185,7 @@ def _parse_entries(root):
 
         municipio = text(status, ".//cac-place-ext:LocatedContractingParty/cac:Party/cac:PostalAddress/cbc:CityName")
         codigo_postal = text(status, ".//cac-place-ext:LocatedContractingParty/cac:Party/cac:PostalAddress/cbc:PostalZone")
+        provincia = CP_PROVINCIA.get(codigo_postal[:2]) if codigo_postal and len(codigo_postal) >= 2 else None
 
         results.append({
             "atom_id": atom_id,
@@ -146,6 +203,7 @@ def _parse_entries(root):
             "cpv": cpv,
             "municipio": municipio,
             "codigo_postal": codigo_postal,
+            "provincia": provincia,
         })
     return results
 

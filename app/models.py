@@ -20,3 +20,4 @@ class Licitacion(Base):
     cpv = Column(String)
     municipio = Column(String, index=True)
     codigo_postal = Column(String, index=True)
+    provincia = Column(String, index=True)

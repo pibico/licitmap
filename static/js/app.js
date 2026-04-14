@@ -56,6 +56,76 @@
     });
   }
 
+  // ─── Autocomplete con posición fija (escapa overflow:hidden del sidebar) ──
+  function stripAccents(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+  }
+
+  function setupAutocomplete(inputId, listId, getOptions, onSelect) {
+    var input = document.getElementById(inputId);
+    var list  = document.getElementById(listId);
+    if (!input || !list) return;
+    list.style.position = 'fixed';
+    list.style.zIndex   = '9999';
+
+    var activeIdx = -1;
+
+    function updatePos() {
+      var r = input.getBoundingClientRect();
+      list.style.top   = r.bottom + 'px';
+      list.style.left  = r.left + 'px';
+      list.style.width = r.width + 'px';
+    }
+
+    function showList(items) {
+      if (!items.length) { list.classList.remove('open'); return; }
+      list.innerHTML = items.slice(0, 10).map(function(item) {
+        return '<div class="lm-autocomplete-item" data-val="' + item + '">' + item + '</div>';
+      }).join('');
+      updatePos();
+      list.classList.add('open');
+      activeIdx = -1;
+      list.querySelectorAll('.lm-autocomplete-item').forEach(function(el) {
+        el.addEventListener('mousedown', function(e) {
+          e.preventDefault();
+          input.value = el.dataset.val;
+          list.classList.remove('open');
+          onSelect(el.dataset.val);
+        });
+      });
+    }
+
+    function setActive(idx) {
+      var items = list.querySelectorAll('.lm-autocomplete-item');
+      items.forEach(function(el) { el.classList.remove('lm-ac-active'); });
+      if (idx >= 0 && idx < items.length) { items[idx].classList.add('lm-ac-active'); activeIdx = idx; }
+    }
+
+    input.addEventListener('input', function() {
+      var val = stripAccents(input.value.trim());
+      if (!val) { list.classList.remove('open'); onSelect(''); return; }
+      var matches = getOptions().filter(function(o) { return stripAccents(o).includes(val); });
+      showList(matches);
+    });
+
+    input.addEventListener('keydown', function(e) {
+      var items = list.querySelectorAll('.lm-autocomplete-item');
+      if (e.key === 'ArrowDown')  { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+      else if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+      else if (e.key === 'Enter' && activeIdx >= 0 && items[activeIdx]) {
+        input.value = items[activeIdx].dataset.val;
+        list.classList.remove('open');
+        onSelect(input.value);
+      } else if (e.key === 'Escape') { list.classList.remove('open'); }
+    });
+
+    document.addEventListener('click', function(e) {
+      if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('open');
+    });
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+  }
+
   document.addEventListener('DOMContentLoaded', function () {
     setupSidebarToggles();
 
@@ -133,14 +203,28 @@
       window.location.href = '/?' + params.toString();
     });
 
-    // Municipio: sincronizar hidden input antes del debounce (el debounce lo cubre el bloque genérico)
-    var municipioInput = document.getElementById('sidebar-municipio-input');
-    if (municipioInput) {
-      municipioInput.addEventListener('input', function() {
-        var h = document.getElementById('h-municipio');
-        if (h) h.value = municipioInput.value;
-      });
-    }
+    // Cargar nombres para autocomplete
+    var nombresProvincias = [], nombresMunicipios = [];
+    fetch('/api/mapa/nombres').then(function(r) { return r.json(); }).then(function(data) {
+      nombresProvincias = data.provincias || [];
+      nombresMunicipios = data.municipios || [];
+
+      setupAutocomplete('sidebar-provincia-input', 'sidebar-provincia-list',
+        function() { return nombresProvincias; },
+        function(val) {
+          var h = document.getElementById('h-provincia');
+          if (h) { h.value = val; fetchResultados(); }
+        }
+      );
+
+      setupAutocomplete('sidebar-municipio-input', 'sidebar-municipio-list',
+        function() { return nombresMunicipios; },
+        function(val) {
+          var h = document.getElementById('h-municipio');
+          if (h) { h.value = val; fetchResultados(); }
+        }
+      );
+    });
 
     // Búsqueda de texto: debounce 600ms (cubre barra principal, CPV y municipio)
     var debounceTimer;
@@ -223,6 +307,22 @@
             sidebar.querySelectorAll('.lm-sidebar-item[data-field="ccaa"]')
               .forEach(function (el) { el.classList.remove('lm-active'); });
           }
+          // Reset provincia y municipio al salir de España
+          if (!esEspana) {
+            var hProv = document.getElementById('h-provincia');
+            var hMun  = document.getElementById('h-municipio');
+            var inProv = document.getElementById('sidebar-provincia-input');
+            var inMun  = document.getElementById('sidebar-municipio-input');
+            if (hProv) hProv.value = '';
+            if (hMun)  hMun.value  = '';
+            if (inProv) inProv.value = '';
+            if (inMun)  inMun.value  = '';
+          }
+          // Mostrar/ocultar secciones España-only
+          var secProv = document.getElementById('sidebar-provincia-section');
+          var secMun  = document.getElementById('sidebar-municipio-section');
+          if (secProv) secProv.style.display = esEspana ? '' : 'none';
+          if (secMun)  secMun.style.display  = esEspana ? '' : 'none';
 
           if (!esEspana && value !== '__intl__') {
             sidebar.querySelectorAll('.lm-sidebar-item[data-field="pais"]')

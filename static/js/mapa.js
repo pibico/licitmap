@@ -1,24 +1,24 @@
-// Mapeo nombre GeoJSON → comunidad_autonoma en BD
+// Mapeo nombre GeoJSON CCAA → comunidad_autonoma en BD
 const CCAA_MAP = {
-    'Castilla-Leon':     'Castilla y León',
-    'Cataluña':          'Cataluña',
-    'Ceuta':             'Ciudad Autónoma de Ceuta',
-    'Murcia':            'Región de Murcia',
-    'La Rioja':          'La Rioja',
-    'Baleares':          'Illes Balears',
-    'Canarias':          'Canarias',
-    'Cantabria':         'Cantabria',
-    'Andalucia':         'Andalucía',
-    'Asturias':          'Principado de Asturias',
-    'Valencia':          'Comunidad Valenciana',
-    'Melilla':           'Ciudad Autónoma de Melilla',
-    'Navarra':           'Comunidad Foral de Navarra',
-    'Galicia':           'Galicia',
-    'Aragon':            'Aragón',
-    'Madrid':            'Comunidad de Madrid',
-    'Extremadura':       'Extremadura',
-    'Castilla-La Mancha':'Castilla-La Mancha',
-    'Pais Vasco':        'País Vasco',
+    'Castilla-Leon':      'Castilla y León',
+    'Cataluña':           'Cataluña',
+    'Ceuta':              'Ciudad Autónoma de Ceuta',
+    'Murcia':             'Región de Murcia',
+    'La Rioja':           'La Rioja',
+    'Baleares':           'Illes Balears',
+    'Canarias':           'Canarias',
+    'Cantabria':          'Cantabria',
+    'Andalucia':          'Andalucía',
+    'Asturias':           'Principado de Asturias',
+    'Valencia':           'Comunidad Valenciana',
+    'Melilla':            'Ciudad Autónoma de Melilla',
+    'Navarra':            'Comunidad Foral de Navarra',
+    'Galicia':            'Galicia',
+    'Aragon':             'Aragón',
+    'Madrid':             'Comunidad de Madrid',
+    'Extremadura':        'Extremadura',
+    'Castilla-La Mancha': 'Castilla-La Mancha',
+    'Pais Vasco':         'País Vasco',
 };
 
 // ─── Estado de filtros ────────────────────────────────────────────────────
@@ -30,6 +30,8 @@ const filtros = {
     prange:      new Set(),
     fecha_desde: document.getElementById('mapa-fecha-desde')?.value || '',
     fecha_hasta: document.getElementById('mapa-fecha-hasta')?.value || '',
+    provincia:   '',
+    municipio:   '',
 };
 
 document.querySelectorAll('.lm-check-item.lm-active').forEach(el => {
@@ -46,6 +48,8 @@ function buildParams(extra) {
     if (filtros.prange?.size) p.set('prange', [...filtros.prange].join('|'));
     if (filtros.fecha_desde)  p.set('fecha_desde', filtros.fecha_desde);
     if (filtros.fecha_hasta)  p.set('fecha_hasta', filtros.fecha_hasta);
+    if (filtros.provincia)    p.set('provincia', filtros.provincia);
+    if (filtros.municipio)    p.set('municipio', filtros.municipio);
     if (extra) Object.entries(extra).forEach(([k, v]) => { if (v) p.set(k, v); else p.delete(k); });
     return p;
 }
@@ -73,186 +77,230 @@ const map = L.map('mapa-leaflet', {
     center: [40.4, -3.7], zoom: 5,
     zoomControl: true, attributionControl: false,
 });
-let tileLayer = L.tileLayer(tileUrl(), { maxZoom: 12 }).addTo(map);
+let tileLayer = L.tileLayer(tileUrl(), { maxZoom: 13 }).addTo(map);
 
+// ─── Colores coropleta ────────────────────────────────────────────────────
 function getColor(n, max) {
     if (!n) return isDark() ? '#2a2e38' : '#e8e8ec';
     const t = Math.sqrt(n / max);
     if (isDark()) {
-        return `rgb(${Math.round(2+t*10)},${Math.round(60+t*151)},${Math.round(80+t*73)})`;
+        return `rgb(${Math.round(2 + t * 10)},${Math.round(60 + t * 151)},${Math.round(80 + t * 73)})`;
     }
-    return `rgb(${Math.round(236-t*181)},${Math.round(253-t*93)},${Math.round(245-t*176)})`;
+    return `rgb(${Math.round(236 - t * 181)},${Math.round(253 - t * 93)},${Math.round(245 - t * 176)})`;
 }
 
-let geojsonLayer = null;
-let conteos = {};
-let maxConteo = 1;
-let geojsonCache = null;
-let coordsCache = null;
-
-// ─── Drill-down estado ────────────────────────────────────────────────────
-let drillCCAA = null;
-let drillMarkers = [];
-
-function getDbName(feature) {
-    return CCAA_MAP[feature.properties.name] || feature.properties.name;
+function baseStyle(fillColor) {
+    return { fillColor, fillOpacity: 0.82, color: isDark() ? '#3a3f52' : '#c0c0cc', weight: 0.8 };
+}
+function hoverStyle() {
+    return { weight: 2.5, color: isDark() ? '#34d399' : '#059669', fillOpacity: 0.92 };
 }
 
-function onEachFeature(feature, layer) {
-    const dbName = getDbName(feature);
+// ─── Capas y cachés ───────────────────────────────────────────────────────
+const layers   = { ccaa: null, provincias: null, municipios: null };
+const conteos  = { ccaa: {}, provincias: {}, municipios: {} };
+const maxC     = { ccaa: 1,   provincias: 1,   municipios: 1 };
+const geojsons = { ccaa: null, provincias: null, municipios: null };
 
-    layer.on('mouseover', function() {
-        this.setStyle({ weight: 2, color: isDark() ? '#34d399' : '#059669' });
-        const n = conteos[dbName] || 0;
-        this._tt = L.tooltip({ sticky: true, className: 'lm-map-tooltip' })
-            .setContent(`<strong>${dbName}</strong><br>${n.toLocaleString('es')} licitaciones`)
-            .addTo(map);
-    });
-    layer.on('mousemove', function(e) {
-        if (this._tt) this._tt.setLatLng(e.latlng);
-    });
-    layer.on('mouseout', function() {
-        geojsonLayer.resetStyle(this);
-        if (this._tt) { map.removeLayer(this._tt); this._tt = null; }
-    });
-    layer.on('click', function() {
-        drillDown(dbName, layer);
-    });
-}
+// Caché de respuestas API (evita refetch al volver al mismo nivel)
+const apiCache = { ccaa: null, provincias: null, municipios: null };
+const apiCacheTs = { ccaa: 0, provincias: 0, municipios: 0 };
+const API_CACHE_TTL = 30000; // 30 s
 
-// ─── Drill-down municipal ──────────────────────────────────────────────────
-async function drillDown(ccaa, layer) {
-    drillCCAA = ccaa;
+let nivelActual = null;
+let renderPending = false;
 
-    // Zoom a los bounds de la CCAA
-    try { map.fitBounds(layer.getBounds(), { padding: [30, 30] }); } catch(e) {}
+// ─── Helpers nombre ───────────────────────────────────────────────────────
+const getNameCCAA      = f => CCAA_MAP[f.properties.name] || f.properties.name;
+const getNameProvincia = f => f.properties.Texto || f.properties.name || '';
 
-    // Mostrar botón volver
-    const btnVolver = document.getElementById('btn-volver-ccaa');
-    if (btnVolver) {
-        btnVolver.textContent = `← Volver a España`;
-        btnVolver.style.display = 'inline-flex';
+function getDatosPorFeature(nivel, feature) {
+    let entry;
+    if (nivel === 'ccaa')       entry = conteos.ccaa[getNameCCAA(feature)];
+    else if (nivel === 'provincias') entry = conteos.provincias[getNameProvincia(feature)];
+    else {
+        const dbs = feature.properties.db_names || [];
+        const total    = dbs.reduce((s, n) => s + (conteos.municipios[n]?.total    || 0), 0);
+        const en_plazo = dbs.reduce((s, n) => s + (conteos.municipios[n]?.en_plazo || 0), 0);
+        return { total, en_plazo };
     }
-    const hint = document.getElementById('mapa-hint');
-    if (hint) hint.textContent = 'Haz clic en un municipio para ver sus licitaciones';
-
-    // Cargar coords si no están en caché
-    if (!coordsCache) {
-        coordsCache = await fetch('/static/data/municipios_coords.json').then(r => r.json()).catch(() => ({}));
-    }
-
-    // Fetch datos municipales
-    const params = buildParams({ ccaa });
-    const data = await fetch('/api/mapa/municipios?' + params.toString()).then(r => r.json()).catch(() => ({ municipios: {} }));
-    const municipios = data.municipios || {};
-
-    // Limpiar marcadores anteriores
-    clearDrillMarkers();
-
-    const maxN = Math.max(1, ...Object.values(municipios));
-
-    Object.entries(municipios).forEach(([nombre, n]) => {
-        const coords = coordsCache[nombre];
-        if (!coords) return;
-
-        const t = Math.sqrt(n / maxN);
-        const radius = 6 + t * 22;
-        const color = isDark() ? '#34d399' : '#059669';
-        const fillColor = isDark()
-            ? `rgba(52,211,153,${0.15 + t * 0.55})`
-            : `rgba(5,150,105,${0.12 + t * 0.5})`;
-
-        const circle = L.circleMarker(coords, {
-            radius,
-            color,
-            weight: 1.5,
-            fillColor,
-            fillOpacity: 1,
-        }).addTo(map);
-
-        const tt = L.tooltip({ sticky: true, className: 'lm-map-tooltip' })
-            .setContent(`<strong>${nombre}</strong><br>${n.toLocaleString('es')} licitaciones`);
-        circle.bindTooltip(tt);
-
-        circle.on('click', () => {
-            const secs = seccionesActivas();
-            const p = buildParams({ pais: 'España', ccaa, municipio: nombre, open: secs.join(',') });
-            window.location.href = '/?' + p.toString();
-        });
-
-        drillMarkers.push(circle);
-    });
+    return entry || { total: 0, en_plazo: 0 };
 }
 
-function clearDrillMarkers() {
-    drillMarkers.forEach(m => map.removeLayer(m));
-    drillMarkers = [];
+function getLabel(nivel, feature) {
+    if (nivel === 'ccaa')       return getNameCCAA(feature);
+    if (nivel === 'provincias') return getNameProvincia(feature);
+    const name = feature.properties.name || '';
+    return name.split('/')[0].split(' - ')[0].trim();
 }
 
-function resetDrill() {
-    drillCCAA = null;
-    clearDrillMarkers();
-    map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
-    const btnVolver = document.getElementById('btn-volver-ccaa');
-    if (btnVolver) btnVolver.style.display = 'none';
-    const hint = document.getElementById('mapa-hint');
-    if (hint) hint.textContent = 'Haz clic en una comunidad para ver sus municipios';
+// ─── Tooltip rico ─────────────────────────────────────────────────────────
+function buildTooltipHtml(label, datos) {
+    const total    = (datos.total    || 0).toLocaleString('es');
+    const en_plazo = (datos.en_plazo || 0).toLocaleString('es');
+    return `
+        <div class="lm-tt-title">${label}</div>
+        <div class="lm-tt-row">
+            <span class="lm-tt-label">Licitaciones</span>
+            <span class="lm-tt-value">${total}</span>
+        </div>
+        <div class="lm-tt-row">
+            <span class="lm-tt-label">En plazo</span>
+            <span class="lm-tt-value lm-tt-accent">${en_plazo}</span>
+        </div>`;
 }
 
-// ─── Render CCAA ──────────────────────────────────────────────────────────
-async function renderMapa() {
-    const [geojson, apiData] = await Promise.all([
-        geojsonCache
-            ? Promise.resolve(geojsonCache)
-            : fetch('/static/data/ccaa.geojson').then(r => r.json()).then(d => { geojsonCache = d; return d; }),
-        fetch('/api/mapa?' + buildParams().toString()).then(r => r.json()),
-    ]);
+// ─── Construcción de capa GeoJSON ─────────────────────────────────────────
+function buildLayer(nivel, geojson) {
+    if (layers[nivel]) { map.removeLayer(layers[nivel]); layers[nivel] = null; }
 
-    conteos = apiData.ccaa || apiData;
-    maxConteo = Math.max(1, ...Object.values(conteos));
+    layers[nivel] = L.geoJSON(geojson, {
+        style: f => baseStyle(getColor(getDatosPorFeature(nivel, f).total, maxC[nivel])),
+        onEachFeature(feature, layer) {
+            layer.bindTooltip(function() {
+                return buildTooltipHtml(getLabel(nivel, feature), getDatosPorFeature(nivel, feature));
+            }, { sticky: true, className: 'lm-map-tooltip lm-tt-card' });
 
-    if (geojsonLayer) { map.removeLayer(geojsonLayer); geojsonLayer = null; }
-
-    geojsonLayer = L.geoJSON(geojson, {
-        style: f => ({
-            fillColor: getColor(conteos[getDbName(f)] || 0, maxConteo),
-            fillOpacity: 0.85,
-            color: isDark() ? '#3a3f52' : '#c8c8d0',
-            weight: 1,
-        }),
-        onEachFeature,
+            layer.on('mouseover', function () {
+                this.bringToFront();
+                this.setStyle(hoverStyle());
+            });
+            layer.on('mouseout', function () {
+                const lyr = layers[nivel];
+                if (lyr) lyr.resetStyle(this);
+            });
+            layer.on('click', function () {
+                if (nivel === 'ccaa') {
+                    const ccaaName = getNameCCAA(feature);
+                    const p = buildParams({ pais: 'España', ccaa: ccaaName, open: seccionesActivas().join(',') });
+                    window.location.href = '/?' + p.toString();
+                } else if (nivel === 'provincias') {
+                    const provName = getNameProvincia(feature);
+                    const secs = [...seccionesActivas(), 'provincia'];
+                    const p = buildParams({ pais: 'España', provincia: provName, open: secs.join(',') });
+                    window.location.href = '/?' + p.toString();
+                } else {
+                    const dbs = feature.properties.db_names || [];
+                    const municipio = dbs[0] || feature.properties.name;
+                    const p = buildParams({ pais: 'España', municipio, open: seccionesActivas().join(',') });
+                    window.location.href = '/?' + p.toString();
+                }
+            });
+        },
     }).addTo(map);
+}
 
-    map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
-    actualizarStats(apiData);
-    actualizarLeyenda();
+// ─── Fetch GeoJSON (caché permanente) ────────────────────────────────────
+async function fetchGeoJSON(nivel) {
+    if (geojsons[nivel]) return geojsons[nivel];
+    const urls = {
+        ccaa:       '/static/data/ccaa.geojson',
+        provincias: '/static/data/provincias.geojson',
+        municipios: '/static/data/municipios.geojson',
+    };
+    geojsons[nivel] = await fetch(urls[nivel]).then(r => r.json());
+    return geojsons[nivel];
+}
 
-    // Si había drill activo, re-aplicar
-    if (drillCCAA) {
-        geojsonLayer.eachLayer(layer => {
-            if (getDbName(layer.feature) === drillCCAA) {
-                drillDown(drillCCAA, layer);
-            }
-        });
+// ─── Fetch API (caché 30 s por nivel) ────────────────────────────────────
+async function fetchApi(nivel) {
+    const params = buildParams().toString();
+    const cacheKey = nivel + '|' + params;
+    const now = Date.now();
+    if (apiCache[nivel]?.key === cacheKey && now - apiCacheTs[nivel] < API_CACHE_TTL) {
+        return apiCache[nivel].data;
+    }
+    const urls = {
+        ccaa:       '/api/mapa',
+        provincias: '/api/mapa/provincias',
+        municipios: '/api/mapa/municipios',
+    };
+    const data = await fetch(urls[nivel] + '?' + params).then(r => r.json());
+    apiCache[nivel] = { key: cacheKey, data };
+    apiCacheTs[nivel] = now;
+    return data;
+}
+
+// ─── Zoom → nivel ─────────────────────────────────────────────────────────
+function nivelParaZoom(zoom) {
+    if (zoom >= 9) return 'municipios';
+    if (zoom >= 7) return 'provincias';
+    return 'ccaa';
+}
+
+// ─── Render principal ─────────────────────────────────────────────────────
+async function renderMapa() {
+    if (renderPending) return;
+    renderPending = true;
+    try {
+        const nivel = nivelParaZoom(map.getZoom());
+
+        // Fetch en paralelo: GeoJSON (probablemente ya en caché) + API
+        const [geojson, apiData] = await Promise.all([fetchGeoJSON(nivel), fetchApi(nivel)]);
+
+        if (nivel === 'ccaa') {
+            conteos.ccaa = apiData.ccaa || {};
+            maxC.ccaa    = Math.max(1, ...Object.values(conteos.ccaa).map(v => v.total || 0));
+            actualizarStats(apiData);
+        } else if (nivel === 'provincias') {
+            conteos.provincias = apiData.provincias || {};
+            maxC.provincias    = Math.max(1, ...Object.values(conteos.provincias).map(v => v.total || 0));
+        } else {
+            conteos.municipios = apiData.municipios || {};
+            maxC.municipios    = Math.max(1, ...Object.values(conteos.municipios).map(v => v.total || 0));
+        }
+
+        // Eliminar capas de otros niveles
+        for (const n of ['ccaa', 'provincias', 'municipios']) {
+            if (n !== nivel && layers[n]) { map.removeLayer(layers[n]); layers[n] = null; }
+        }
+        buildLayer(nivel, geojson);
+
+        nivelActual = nivel;
+        actualizarLeyenda(conteos[nivel], maxC[nivel]);
+        actualizarIndicadorNivel();
+        actualizarUrl();
+    } finally {
+        renderPending = false;
     }
 }
 
+// ─── Zoom switching ───────────────────────────────────────────────────────
+let zoomTimer = null;
+map.on('zoomend', () => {
+    clearTimeout(zoomTimer);
+    zoomTimer = setTimeout(async () => {
+        const nuevo = nivelParaZoom(map.getZoom());
+        if (nuevo !== nivelActual) await renderMapa();
+        else actualizarIndicadorNivel();
+        actualizarUrl();
+    }, 120);
+});
+
+// ─── Stats y leyenda ──────────────────────────────────────────────────────
 function actualizarStats(apiData) {
-    const enPlazo = document.getElementById('mapa-en-plazo');
+    const enPlazo    = document.getElementById('mapa-en-plazo');
     const resultados = document.getElementById('mapa-resultados');
-    if (apiData?.en_plazo != null && enPlazo) enPlazo.textContent = apiData.en_plazo;
+    if (apiData?.en_plazo   != null && enPlazo)    enPlazo.textContent   = apiData.en_plazo;
     if (apiData?.resultados != null && resultados) resultados.textContent = apiData.resultados;
 }
 
-function actualizarLeyenda() {
+function actualizarLeyenda(cnt, max) {
     const legend = document.getElementById('mapa-legend');
     if (!legend) return;
     const steps = [0, 0.25, 0.5, 0.75, 1];
     legend.innerHTML = '<span class="lm-legend-label">Licitaciones:</span>'
         + steps.map(t => `<span class="lm-legend-item">
-            <span class="lm-legend-dot" style="background:${getColor(t * maxConteo, maxConteo)}"></span>
-            ${Math.round(t * t * maxConteo).toLocaleString('es')}
+            <span class="lm-legend-dot" style="background:${getColor(t * max, max)}"></span>
+            ${Math.round(t * t * max).toLocaleString('es')}
         </span>`).join('');
+}
+
+function actualizarIndicadorNivel() {
+    const el = document.getElementById('mapa-nivel');
+    if (!el) return;
+    const labels = { ccaa: 'Comunidades Autónomas', provincias: 'Provincias', municipios: 'Municipios' };
+    el.textContent = labels[nivelParaZoom(map.getZoom())] || '';
 }
 
 function actualizarUrl() {
@@ -260,7 +308,91 @@ function actualizarUrl() {
     history.replaceState(null, '', '/mapa' + (p.toString() ? '?' + p.toString() : ''));
 }
 
-// ─── Sidebar: checkboxes ──────────────────────────────────────────────────
+// ─── Autocomplete ─────────────────────────────────────────────────────────
+function stripAccents(s) {
+    return s.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase();
+}
+
+function setupAutocomplete(inputId, listId, getOptions, onSelect) {
+    const input = document.getElementById(inputId);
+    const list  = document.getElementById(listId);
+    if (!input || !list) return;
+    list.style.position = 'fixed';
+    list.style.zIndex   = '9999';
+
+    let activeIdx = -1;
+
+    function updatePos() {
+        const r = input.getBoundingClientRect();
+        list.style.top = r.bottom + 'px'; list.style.left = r.left + 'px'; list.style.width = r.width + 'px';
+    }
+
+    function showList(items) {
+        if (!items.length) { list.classList.remove('open'); return; }
+        list.innerHTML = items.slice(0, 10).map(item =>
+            `<div class="lm-autocomplete-item" data-val="${item}">${item}</div>`
+        ).join('');
+        updatePos();
+        list.classList.add('open');
+        activeIdx = -1;
+        list.querySelectorAll('.lm-autocomplete-item').forEach(el => {
+            el.addEventListener('mousedown', e => {
+                e.preventDefault();
+                input.value = el.dataset.val;
+                list.classList.remove('open');
+                onSelect(el.dataset.val);
+            });
+        });
+    }
+
+    function setActive(idx) {
+        const items = list.querySelectorAll('.lm-autocomplete-item');
+        items.forEach(el => el.classList.remove('lm-ac-active'));
+        if (idx >= 0 && idx < items.length) { items[idx].classList.add('lm-ac-active'); activeIdx = idx; }
+    }
+
+    input.addEventListener('input', () => {
+        const val = stripAccents(input.value.trim());
+        if (!val) { list.classList.remove('open'); onSelect(''); return; }
+        const matches = getOptions().filter(o => stripAccents(o).includes(val));
+        showList(matches);
+    });
+
+    input.addEventListener('keydown', e => {
+        const items = list.querySelectorAll('.lm-autocomplete-item');
+        if (e.key === 'ArrowDown')  { e.preventDefault(); setActive(Math.min(activeIdx + 1, items.length - 1)); }
+        else if (e.key === 'ArrowUp')   { e.preventDefault(); setActive(Math.max(activeIdx - 1, 0)); }
+        else if (e.key === 'Enter' && activeIdx >= 0 && items[activeIdx]) {
+            input.value = items[activeIdx].dataset.val;
+            list.classList.remove('open');
+            onSelect(input.value);
+        } else if (e.key === 'Escape') { list.classList.remove('open'); }
+    });
+
+    document.addEventListener('click', e => {
+        if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('open');
+    });
+}
+
+// ─── Cargar nombres para autocomplete ────────────────────────────────────
+let nombresProvincias = [];
+let nombresMunicipios = [];
+
+fetch('/api/mapa/nombres').then(r => r.json()).then(data => {
+    nombresProvincias = data.provincias || [];
+    nombresMunicipios = data.municipios || [];
+
+    setupAutocomplete('mapa-provincia', 'mapa-provincia-list',
+        () => nombresProvincias,
+        val => { filtros.provincia = val; renderMapa(); }
+    );
+    setupAutocomplete('mapa-municipio', 'mapa-municipio-list',
+        () => nombresMunicipios,
+        val => { filtros.municipio = val; renderMapa(); }
+    );
+});
+
+// ─── Sidebar: checkboxes e inputs ─────────────────────────────────────────
 document.querySelectorAll('.lm-check-item').forEach(el => {
     el.addEventListener('click', () => {
         const g = el.dataset.group, v = el.dataset.value;
@@ -268,45 +400,42 @@ document.querySelectorAll('.lm-check-item').forEach(el => {
         if (!filtros[g]) filtros[g] = new Set();
         if (filtros[g].has(v)) { filtros[g].delete(v); el.classList.remove('lm-active'); }
         else                   { filtros[g].add(v);    el.classList.add('lm-active'); }
-        clearDrillMarkers();
-        drillCCAA = null;
-        actualizarUrl();
-        renderMapa();
+        actualizarUrl(); renderMapa();
     });
 });
 
 let debounceTimer;
-document.getElementById('mapa-q')?.addEventListener('input', e => {
-    filtros.q = e.target.value;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => { clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa(); }, 400);
-});
-document.getElementById('mapa-cpv-q')?.addEventListener('input', e => {
-    filtros.cpv_q = e.target.value;
-    clearTimeout(debounceTimer);
-    debounceTimer = setTimeout(() => { clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa(); }, 400);
+['mapa-q', 'mapa-cpv-q'].forEach(id => {
+    document.getElementById(id)?.addEventListener('input', e => {
+        filtros[id === 'mapa-q' ? 'q' : 'cpv_q'] = e.target.value;
+        clearTimeout(debounceTimer);
+        debounceTimer = setTimeout(() => { actualizarUrl(); renderMapa(); }, 400);
+    });
 });
 document.getElementById('mapa-fecha-desde')?.addEventListener('change', e => {
-    filtros.fecha_desde = e.target.value; clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa();
+    filtros.fecha_desde = e.target.value; actualizarUrl(); renderMapa();
 });
 document.getElementById('mapa-fecha-hasta')?.addEventListener('change', e => {
-    filtros.fecha_hasta = e.target.value; clearDrillMarkers(); drillCCAA = null; actualizarUrl(); renderMapa();
+    filtros.fecha_hasta = e.target.value; actualizarUrl(); renderMapa();
 });
 
-// Botón volver
-document.getElementById('btn-volver-ccaa')?.addEventListener('click', resetDrill);
-
-// ─── Reaccionar al cambio de tema ─────────────────────────────────────────
+// ─── Cambio de tema ───────────────────────────────────────────────────────
 new MutationObserver(() => {
     tileLayer.setUrl(tileUrl());
-    if (geojsonLayer) geojsonLayer.setStyle(f => ({
-        fillColor: getColor(conteos[getDbName(f)] || 0, maxConteo),
-        fillOpacity: 0.85,
-        color: isDark() ? '#3a3f52' : '#c8c8d0',
-        weight: 1,
-    }));
-    actualizarLeyenda();
+    for (const nivel of ['ccaa', 'provincias', 'municipios']) {
+        if (!layers[nivel]) continue;
+        layers[nivel].setStyle(f => baseStyle(getColor(getDatosPorFeature(nivel, f).total, maxC[nivel])));
+    }
+    const n = nivelParaZoom(map.getZoom());
+    actualizarLeyenda(conteos[n], maxC[n]);
 }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
 
+// ─── Prefetch silencioso de los 3 GeoJSONs ───────────────────────────────
+// CCAA es inmediato, provincias en 300ms, municipios en 1s (3MB, no urgente)
+fetchGeoJSON('ccaa');
+setTimeout(() => fetchGeoJSON('provincias'), 300);
+setTimeout(() => fetchGeoJSON('municipios'), 1000);
+
 // ─── Arrancar ─────────────────────────────────────────────────────────────
+map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
 renderMapa();

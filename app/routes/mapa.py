@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
-from sqlalchemy import or_, and_, func
+from sqlalchemy import or_, and_, func, case
 from pathlib import Path
 from datetime import date, datetime
 import json as _json
@@ -207,6 +207,55 @@ def mapa_page(
     )
 
 
+@router.get("/api/mapa/nombres", response_class=JSONResponse)
+def api_nombres(db: Session = Depends(get_db)):
+    """Devuelve listas de provincias y municipios para autocomplete."""
+    provincias = [
+        r[0] for r in db.query(Licitacion.provincia).filter(
+            Licitacion.provincia.isnot(None)
+        ).distinct().order_by(Licitacion.provincia).all()
+    ]
+    municipios = [
+        r[0] for r in db.query(Licitacion.municipio).filter(
+            Licitacion.municipio.isnot(None),
+            Licitacion.pais == "España",
+        ).distinct().order_by(Licitacion.municipio).all()
+    ]
+    return {"provincias": provincias, "municipios": municipios}
+
+
+@router.get("/api/mapa/provincias", response_class=JSONResponse)
+def api_provincias(
+    q: str = Query(default=""),
+    cpv_q: str = Query(default=""),
+    tipo: str = Query(default=""),
+    estado: str = Query(default=""),
+    prange: str = Query(default=""),
+    fecha_desde: str = Query(default=""),
+    fecha_hasta: str = Query(default=""),
+    provincia: str = Query(default=""),
+    municipio: str = Query(default=""),
+    db: Session = Depends(get_db),
+):
+    base = apply_common_filters(
+        db.query(Licitacion).filter(Licitacion.pais == "España", Licitacion.provincia.isnot(None)),
+        q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=cpv_q,
+    )
+    if provincia:
+        base = base.filter(Licitacion.provincia == provincia)
+    if municipio:
+        base = base.filter(Licitacion.municipio.ilike(f"%{municipio}%"))
+    hoy = date.today()
+    en_plazo_expr = func.count(case((and_(Licitacion.estado == "PUB", Licitacion.fecha_limite >= hoy), 1)))
+    rows = (
+        base.with_entities(Licitacion.provincia, func.count().label("n"), en_plazo_expr.label("ep"))
+        .group_by(Licitacion.provincia)
+        .order_by(func.count().desc())
+        .all()
+    )
+    return {"provincias": {row[0]: {"total": row[1], "en_plazo": row[2]} for row in rows if row[0]}}
+
+
 @router.get("/api/mapa/municipios", response_class=JSONResponse)
 def api_municipios(
     ccaa: str = Query(default=""),
@@ -217,6 +266,8 @@ def api_municipios(
     prange: str = Query(default=""),
     fecha_desde: str = Query(default=""),
     fecha_hasta: str = Query(default=""),
+    provincia: str = Query(default=""),
+    municipio: str = Query(default=""),
     db: Session = Depends(get_db),
 ):
     base = apply_common_filters(
@@ -225,15 +276,21 @@ def api_municipios(
     )
     if ccaa:
         base = base.filter(Licitacion.comunidad_autonoma == ccaa)
+    if provincia:
+        base = base.filter(Licitacion.provincia == provincia)
+    if municipio:
+        base = base.filter(Licitacion.municipio.ilike(f"%{municipio}%"))
 
+    hoy = date.today()
+    en_plazo_expr = func.count(case((and_(Licitacion.estado == "PUB", Licitacion.fecha_limite >= hoy), 1)))
     rows = (
-        base.with_entities(Licitacion.municipio, func.count().label("n"))
+        base.with_entities(Licitacion.municipio, func.count().label("n"), en_plazo_expr.label("ep"))
         .group_by(Licitacion.municipio)
         .order_by(func.count().desc())
-        .limit(150)
+        .limit(300)
         .all()
     )
-    return {"municipios": {row[0]: row[1] for row in rows if row[0]}}
+    return {"municipios": {row[0]: {"total": row[1], "en_plazo": row[2]} for row in rows if row[0]}}
 
 
 @router.get("/api/mapa", response_class=JSONResponse)
@@ -245,23 +302,29 @@ def api_mapa(
     prange: str = Query(default=""),
     fecha_desde: str = Query(default=""),
     fecha_hasta: str = Query(default=""),
+    provincia: str = Query(default=""),
+    municipio: str = Query(default=""),
     db: Session = Depends(get_db),
 ):
     common = apply_common_filters(db.query(Licitacion), q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=cpv_q)
+    if provincia:
+        common = common.filter(Licitacion.provincia == provincia)
+    if municipio:
+        common = common.filter(Licitacion.municipio.ilike(f"%{municipio}%"))
     base = apply_territorio_filter(common)
+    hoy = date.today()
+    en_plazo_expr = func.count(case((and_(Licitacion.estado == "PUB", Licitacion.fecha_limite >= hoy), 1)))
     rows = (
-        base.with_entities(Licitacion.comunidad_autonoma, func.count().label("n"))
+        base.with_entities(Licitacion.comunidad_autonoma, func.count().label("n"), en_plazo_expr.label("ep"))
         .group_by(Licitacion.comunidad_autonoma)
         .all()
     )
-    # Stats sobre toda España, no solo las asignables al mapa
+    # Stats globales sobre toda España
     stats_query = common.filter(Licitacion.pais == "España")
     resultados = stats_query.count()
-    en_plazo = (
-        stats_query.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today()).count()
-    )
+    en_plazo_total = stats_query.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= hoy).count()
     return {
-        "ccaa": {row[0]: row[1] for row in rows if row[0]},
+        "ccaa": {row[0]: {"total": row[1], "en_plazo": row[2]} for row in rows if row[0]},
         "resultados": f"{resultados:,}".replace(",", "."),
-        "en_plazo": f"{en_plazo:,}".replace(",", "."),
+        "en_plazo": f"{en_plazo_total:,}".replace(",", "."),
     }

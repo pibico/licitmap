@@ -109,7 +109,7 @@ def sidebar_item(label, count, field, value, active):
 
 def apply_filters(query, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange,
                   skip_pais=False, skip_ccaa=False, skip_estado=False,
-                  skip_tipo=False, skip_prange=False, cpv_q="", municipio=""):
+                  skip_tipo=False, skip_prange=False, cpv_q="", municipio="", provincia=""):
     if q:
         like = f"%{q}%"
         query = query.filter(or_(
@@ -121,6 +121,8 @@ def apply_filters(query, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, 
         query = query.filter(Licitacion.cpv.ilike(f"%{cpv_q}%"))
     if municipio:
         query = query.filter(Licitacion.municipio.ilike(f"%{municipio}%"))
+    if provincia:
+        query = query.filter(Licitacion.provincia == provincia)
     if not skip_pais:
         if pais == "España":
             query = query.filter(Licitacion.pais == "España")
@@ -169,19 +171,19 @@ def apply_filters(query, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, 
     return query
 
 
-def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, cpv_q="", municipio=""):
+def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, cpv_q="", municipio="", provincia=""):
     base = db.query(Licitacion)
 
     # Tipo: todos los filtros excepto tipo
     tipo_counts_raw = dict(
-        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_tipo=True, cpv_q=cpv_q, municipio=municipio)
+        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_tipo=True, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
         .with_entities(Licitacion.tipo_contrato, func.count(Licitacion.id))
         .filter(Licitacion.tipo_contrato.isnot(None))
         .group_by(Licitacion.tipo_contrato).all()
     )
 
     # Presupuesto: todos los filtros excepto prange
-    prange_base = apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_prange=True, cpv_q=cpv_q, municipio=municipio)
+    prange_base = apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_prange=True, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
 
     def prange_count(pmin_v, pmax_v):
         rq = prange_base.with_entities(func.count(Licitacion.id)).filter(Licitacion.presupuesto.isnot(None))
@@ -193,7 +195,7 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
 
     # País: todos los filtros excepto pais y ccaa
     pais_counts_raw = (
-        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_pais=True, skip_ccaa=True, cpv_q=cpv_q, municipio=municipio)
+        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_pais=True, skip_ccaa=True, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
         .with_entities(Licitacion.pais, func.count(Licitacion.id))
         .filter(Licitacion.pais.isnot(None))
         .group_by(Licitacion.pais)
@@ -202,7 +204,7 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
 
     # CCAA: todos los filtros excepto ccaa (pero mantiene el filtro de pais)
     ccaa_counts_raw = (
-        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_ccaa=True, cpv_q=cpv_q, municipio=municipio)
+        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_ccaa=True, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
         .with_entities(Licitacion.comunidad_autonoma, func.count(Licitacion.id))
         .filter(
             Licitacion.comunidad_autonoma.isnot(None),
@@ -215,7 +217,7 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
 
     # Estado: todos los filtros excepto estado
     estado_counts_raw = dict(
-        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_estado=True, cpv_q=cpv_q, municipio=municipio)
+        apply_filters(base, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_estado=True, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
         .with_entities(Licitacion.estado, func.count(Licitacion.id))
         .filter(Licitacion.estado.isnot(None))
         .group_by(Licitacion.estado).all()
@@ -289,13 +291,14 @@ def home(
     orden: str = Query(default="asc"),
     cpv_q: str = Query(default=""),
     municipio: str = Query(default=""),
+    provincia: str = Query(default=""),
 ):
     if per_page not in (5, 10, 15, 20):
         per_page = 20
     if orden not in ("asc", "desc"):
         orden = "asc"
 
-    query = apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, cpv_q=cpv_q, municipio=municipio)
+    query = apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
 
     total = db.query(func.count(Licitacion.id)).scalar()
     resultados = query.count()
@@ -352,16 +355,16 @@ def home(
 
     params = {"q": q, "cpv_q": cpv_q, "pais": pais, "ccaa": ccaa, "estado": estado, "tipo": tipo,
               "fecha_desde": fecha_desde, "fecha_hasta": fecha_hasta, "prange": prange,
-              "municipio": municipio,
+              "municipio": municipio, "provincia": provincia,
               "per_page": per_page if per_page != 20 else "",
               "orden": orden if orden != "asc" else ""}
     paginacion = build_pagination(page, total_pages, params)
 
-    sidebar = compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, cpv_q=cpv_q, municipio=municipio)
+    sidebar = compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
 
     # En plazo con filtros activos (ignorando filtro de estado, siempre cuenta PUB + fecha válida)
     en_plazo_count = (
-        apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_estado=True, cpv_q=cpv_q, municipio=municipio)
+        apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, prange, skip_estado=True, cpv_q=cpv_q, municipio=municipio, provincia=provincia)
         .filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today())
         .count()
     )
@@ -402,6 +405,7 @@ def home(
     ccaa_display = "" if mostrar_ccaa else "display:none"
     paises_display = "display:none" if mostrar_ccaa else ""
     territorio_title = "Comunidad autónoma" if mostrar_ccaa else "País"
+    espana_only_display = "" if mostrar_ccaa else "display:none"
 
     return render(
         "home.html",
@@ -431,6 +435,8 @@ def home(
         fecha_hasta=fecha_hasta,
         prange=prange,
         municipio=municipio,
+        provincia=provincia,
+        espana_only_display=espana_only_display,
         per_page=per_page,
         orden=orden,
         orden_label="Pronta finalización" if orden == "asc" else "Más tiempo",

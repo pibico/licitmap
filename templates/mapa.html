@@ -58,6 +58,38 @@
             </div>
 
             <div class="lm-sidebar-section">
+                <button class="lm-sidebar-toggle" type="button" data-section="mapa-provincia">
+                    Provincia
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lm-sidebar-body" id="sc-mapa-provincia">
+                    <div style="padding: 0.4rem 0.75rem 0.6rem">
+                        <div class="lm-autocomplete">
+                            <input type="text" id="mapa-provincia" class="form-control form-control-sm"
+                                   placeholder="Buscar provincia..." autocomplete="off">
+                            <div class="lm-autocomplete-list" id="mapa-provincia-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lm-sidebar-section">
+                <button class="lm-sidebar-toggle" type="button" data-section="mapa-municipio">
+                    Municipio
+                    <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                </button>
+                <div class="lm-sidebar-body" id="sc-mapa-municipio">
+                    <div style="padding: 0.4rem 0.75rem 0.6rem">
+                        <div class="lm-autocomplete">
+                            <input type="text" id="mapa-municipio" class="form-control form-control-sm"
+                                   placeholder="Buscar municipio..." autocomplete="off">
+                            <div class="lm-autocomplete-list" id="mapa-municipio-list"></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lm-sidebar-section">
                 <button class="lm-sidebar-toggle" type="button" data-section="mapa-fecha">
                     Fecha límite
                     <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
@@ -85,17 +117,18 @@
     <div class="col-lg-9">
         <div class="d-flex align-items-center gap-2 mb-2">
             <button id="btn-volver-ccaa" class="lm-orden-btn" style="display:none">← Volver a España</button>
+            <span id="mapa-nivel" style="font-size:0.75rem; color:var(--tx-faint); margin-left:auto"></span>
         </div>
         <div class="lm-map-container">
             <div id="mapa-leaflet"></div>
             <div id="mapa-legend" class="lm-map-legend"></div>
         </div>
         <p class="mt-2 text-center" id="mapa-hint" style="font-size:0.75rem; color:var(--tx-faint)">
-            Haz clic en una comunidad para ver sus municipios
+            Haz zoom para ver provincias y municipios · Haz clic en una zona para ver sus licitaciones
         </p>
     </div>
 </div>
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/static/js/mapa.js?v=39"></script>
+<script src="/static/js/mapa.js?v=45"></script>
