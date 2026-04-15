@@ -393,14 +393,15 @@ a:hover {
   border: none;
   padding: 3px 4px;
   cursor: pointer;
-  color: var(--tx-faint);
+  color: var(--ac-main);
   border-radius: 4px;
   display: flex; align-items: center; justify-content: center;
   transition: color 0.15s, background 0.12s;
   line-height: 1;
+  opacity: 0.75;
 }
-.lm-cpv-help-btn:hover { color: var(--ac-main); background: var(--bg-surface0); }
-.lm-cpv-help-btn.active { color: var(--ac-main); }
+.lm-cpv-help-btn:hover { opacity: 1; background: var(--bg-surface0); }
+.lm-cpv-help-btn.active { opacity: 1; background: var(--bg-surface0); }
 
 /* ── Popup CPV ── */
 .lm-cpv-popup {
