@@ -79,6 +79,9 @@ const map = L.map('mapa-leaflet', {
 });
 let tileLayer = L.tileLayer(tileUrl(), { maxZoom: 13 }).addTo(map);
 
+// Tooltip único compartido — evita acumulación de tooltips stuck durante drag
+const sharedTooltip = L.tooltip({ className: 'lm-map-tooltip lm-tt-card', opacity: 1 });
+
 // ─── Colores coropleta ────────────────────────────────────────────────────
 function getColor(n, max) {
     if (!n) return isDark() ? '#2a2e38' : '#e8e8ec';
@@ -108,7 +111,13 @@ const apiCacheTs = { ccaa: 0, provincias: 0, municipios: 0 };
 const API_CACHE_TTL = 30000; // 30 s
 
 let nivelActual = null;
+let nivelFijado = null;   // null = Auto; 'ccaa' | 'provincias' | 'municipios' = fijado
 let renderPending = false;
+let renderQueued  = false;
+
+function nivelEfectivo() {
+    return nivelFijado || nivelParaZoom(map.getZoom());
+}
 
 // ─── Helpers nombre ───────────────────────────────────────────────────────
 const getNameCCAA      = f => CCAA_MAP[f.properties.name] || f.properties.name;
@@ -153,19 +162,27 @@ function buildTooltipHtml(label, datos) {
 // ─── Construcción de capa GeoJSON ─────────────────────────────────────────
 function buildLayer(nivel, geojson) {
     if (layers[nivel]) { map.removeLayer(layers[nivel]); layers[nivel] = null; }
+    sharedTooltip.remove();
+    hoveredFeatureLayer = null;
 
     layers[nivel] = L.geoJSON(geojson, {
         style: f => baseStyle(getColor(getDatosPorFeature(nivel, f).total, maxC[nivel])),
         onEachFeature(feature, layer) {
-            layer.bindTooltip(function() {
-                return buildTooltipHtml(getLabel(nivel, feature), getDatosPorFeature(nivel, feature));
-            }, { sticky: true, className: 'lm-map-tooltip lm-tt-card' });
-
-            layer.on('mouseover', function () {
+            layer.on('mouseover', function (e) {
+                hoveredFeatureLayer = this;
                 this.bringToFront();
                 this.setStyle(hoverStyle());
+                sharedTooltip
+                    .setContent(buildTooltipHtml(getLabel(nivel, feature), getDatosPorFeature(nivel, feature)))
+                    .setLatLng(e.latlng)
+                    .addTo(map);
+            });
+            layer.on('mousemove', function (e) {
+                sharedTooltip.setLatLng(e.latlng);
             });
             layer.on('mouseout', function () {
+                hoveredFeatureLayer = null;
+                sharedTooltip.remove();
                 const lyr = layers[nivel];
                 if (lyr) lyr.resetStyle(this);
             });
@@ -230,10 +247,11 @@ function nivelParaZoom(zoom) {
 
 // ─── Render principal ─────────────────────────────────────────────────────
 async function renderMapa() {
-    if (renderPending) return;
+    if (renderPending) { renderQueued = true; return; }
     renderPending = true;
+    renderQueued  = false;
     try {
-        const nivel = nivelParaZoom(map.getZoom());
+        const nivel = nivelEfectivo();
 
         // Fetch en paralelo: GeoJSON (probablemente ya en caché) + API
         const [geojson, apiData] = await Promise.all([fetchGeoJSON(nivel), fetchApi(nivel)]);
@@ -262,17 +280,33 @@ async function renderMapa() {
         actualizarUrl();
     } finally {
         renderPending = false;
+        if (renderQueued) { renderQueued = false; renderMapa(); }
     }
 }
+
+// ─── Limpiar artefactos al arrastrar ─────────────────────────────────────
+// dragstart solo se dispara en drag del usuario (no en fitBounds/flyTo)
+let hoveredFeatureLayer = null;
+
+map.on('dragstart', () => {
+    sharedTooltip.remove();
+    if (hoveredFeatureLayer) {
+        const lyr = layers[nivelActual];
+        if (lyr) lyr.resetStyle(hoveredFeatureLayer);
+        hoveredFeatureLayer = null;
+    }
+});
 
 // ─── Zoom switching ───────────────────────────────────────────────────────
 let zoomTimer = null;
 map.on('zoomend', () => {
     clearTimeout(zoomTimer);
     zoomTimer = setTimeout(async () => {
-        const nuevo = nivelParaZoom(map.getZoom());
-        if (nuevo !== nivelActual) await renderMapa();
-        else actualizarIndicadorNivel();
+        if (!nivelFijado) {
+            const nuevo = nivelParaZoom(map.getZoom());
+            if (nuevo !== nivelActual) await renderMapa();
+        }
+        actualizarIndicadorNivel();
         actualizarUrl();
     }, 120);
 });
@@ -297,10 +331,10 @@ function actualizarLeyenda(cnt, max) {
 }
 
 function actualizarIndicadorNivel() {
-    const el = document.getElementById('mapa-nivel');
-    if (!el) return;
-    const labels = { ccaa: 'Comunidades Autónomas', provincias: 'Provincias', municipios: 'Municipios' };
-    el.textContent = labels[nivelParaZoom(map.getZoom())] || '';
+    const activo = nivelFijado || 'auto';
+    document.querySelectorAll('#nivel-selector button').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.nivel === activo);
+    });
 }
 
 function actualizarUrl() {
@@ -429,6 +463,15 @@ new MutationObserver(() => {
     const n = nivelParaZoom(map.getZoom());
     actualizarLeyenda(conteos[n], maxC[n]);
 }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+// ─── Selector de nivel ────────────────────────────────────────────────────
+document.querySelectorAll('#nivel-selector button').forEach(btn => {
+    btn.addEventListener('click', () => {
+        nivelFijado = btn.dataset.nivel === 'auto' ? null : btn.dataset.nivel;
+        actualizarIndicadorNivel();
+        renderMapa();
+    });
+});
 
 // ─── Prefetch silencioso de los 3 GeoJSONs ───────────────────────────────
 // CCAA es inmediato, provincias en 300ms, municipios en 1s (3MB, no urgente)

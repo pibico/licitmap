@@ -333,9 +333,9 @@ def home(
         else:
             territorio = lic.comunidad_autonoma or "—"
 
-        filas += f"""<div class="lm-card">
+        filas += f"""<div class="lm-card" data-lic-id="{lic.id}">
   <div class="lm-card-top">
-    <a href="{lic.url}" target="_blank" class="lm-card-title">{lic.titulo or '—'}</a>
+    <span class="lm-card-title">{lic.titulo or '—'}</span>
     <span class="badge badge-{estado_val} flex-shrink-0">{estado_label}</span>
   </div>
   <div class="lm-card-meta">
@@ -444,3 +444,29 @@ def home(
         orden_icon_asc="" if orden == "asc" else "display:none",
         paginacion=paginacion,
     )
+
+
+@router.get("/api/licitacion/{lic_id}")
+def get_licitacion(lic_id: int, db: Session = Depends(get_db)):
+    lic = db.query(Licitacion).filter(Licitacion.id == lic_id).first()
+    if not lic:
+        return JSONResponse({"error": "not found"}, status_code=404)
+    return JSONResponse({
+        "id": lic.id,
+        "titulo": lic.titulo or "—",
+        "expediente": lic.expediente or "—",
+        "estado": lic.estado or "",
+        "estado_label": ESTADOS.get(lic.estado or "", lic.estado or "—"),
+        "presupuesto": (f"{lic.presupuesto:,.0f}".replace(",", ".") + " €") if lic.presupuesto is not None else "Sin especificar",
+        "fecha_publicacion": lic.fecha_publicacion.strftime("%d/%m/%Y") if lic.fecha_publicacion else None,
+        "fecha_limite": lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else None,
+        "tipo_contrato": TIPOS_CONTRATO.get(lic.tipo_contrato or "", "—"),
+        "organo_contratacion": lic.organo_contratacion or "—",
+        "comunidad_autonoma": lic.comunidad_autonoma or None,
+        "pais": lic.pais or None,
+        "municipio": lic.municipio or None,
+        "provincia": lic.provincia or None,
+        "codigo_postal": lic.codigo_postal or None,
+        "cpv": lic.cpv or None,
+        "url": lic.url or "",
+    })

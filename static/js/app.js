@@ -138,6 +138,136 @@
       });
     }
 
+    // ─── Panel de detalle ─────────────────────────────────────────────────
+    var detailPanel    = document.getElementById('lm-detail-panel');
+    var detailBackdrop = document.getElementById('lm-detail-backdrop');
+    var detailIds = [];
+    var detailIdx = -1;
+
+    function escHtml(s) {
+      return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+    }
+
+    function updateNavButtons() {
+      var prevBtn = document.getElementById('lm-detail-prev');
+      var nextBtn = document.getElementById('lm-detail-next');
+      if (prevBtn) prevBtn.style.display = detailIdx > 0 ? '' : 'none';
+      if (nextBtn) nextBtn.style.display = (detailIdx >= 0 && detailIdx < detailIds.length - 1) ? '' : 'none';
+    }
+
+    function loadDetailContent(licId) {
+      document.getElementById('lm-detail-title').textContent = '';
+      document.getElementById('lm-detail-organo').textContent = '';
+      var estadoEl = document.getElementById('lm-detail-estado');
+      estadoEl.textContent = ''; estadoEl.className = 'badge';
+      document.getElementById('lm-detail-body').innerHTML = '<div class="lm-detail-skeleton">Cargando...</div>';
+
+      fetch('/api/licitacion/' + licId)
+        .then(function(r) { return r.json(); })
+        .then(function(d) {
+          document.getElementById('lm-detail-title').textContent = d.titulo;
+          document.getElementById('lm-detail-organo').textContent = d.organo_contratacion || '';
+          estadoEl.textContent = d.estado_label; estadoEl.className = 'badge badge-' + d.estado;
+          var urlBtn = document.getElementById('lm-detail-url');
+          if (urlBtn) urlBtn.href = d.url || '#';
+
+          // ── Stats: presupuesto + fechas ──
+          var statsItems = [
+            d.presupuesto ? ['Presupuesto', '<span class="lm-stat-price">' + escHtml(d.presupuesto) + '</span>'] : null,
+            d.fecha_publicacion ? ['Publicación', escHtml(d.fecha_publicacion)] : null,
+            d.fecha_limite ? ['Fecha límite', escHtml(d.fecha_limite)] : null,
+          ].filter(Boolean);
+          var statsHtml = statsItems.length
+            ? '<div class="lm-detail-stats">' + statsItems.map(function(s) {
+                return '<div class="lm-detail-stat">' +
+                  '<span class="lm-detail-stat-label">' + escHtml(s[0]) + '</span>' +
+                  '<span class="lm-detail-stat-value">' + s[1] + '</span>' +
+                  '</div>';
+              }).join('') + '</div>'
+            : '';
+
+          // ── Info grid (expediente incluido) ──
+          var fieldDefs = [
+            d.expediente ? ['Expediente', d.expediente] : null,
+            d.tipo_contrato ? ['Tipo', d.tipo_contrato] : null,
+            d.comunidad_autonoma ? ['CCAA', d.comunidad_autonoma] : null,
+            d.provincia ? ['Provincia', d.provincia] : null,
+            d.municipio ? ['Municipio', d.municipio] : null,
+            d.codigo_postal ? ['C.P.', d.codigo_postal] : null,
+            (d.pais && d.pais !== 'España') ? ['País', d.pais] : null,
+          ].filter(Boolean);
+          var fieldsHtml = fieldDefs.length
+            ? '<div class="lm-detail-fields">' + fieldDefs.map(function(r) {
+                return '<div class="lm-detail-field">' +
+                  '<span class="lm-detail-label">' + escHtml(r[0]) + '</span>' +
+                  '<span class="lm-detail-value">' + escHtml(r[1]) + '</span>' +
+                  '</div>';
+              }).join('') + '</div>'
+            : '';
+
+          // ── CPV tags ──
+          var cpvHtml = '';
+          if (d.cpv && d.cpv.trim()) {
+            var codes = d.cpv.trim().split(/\s+/);
+            var shown = codes.slice(0, 6);
+            var extra = codes.length - shown.length;
+            cpvHtml = '<div class="lm-detail-cpv-section">' +
+              '<span class="lm-detail-label">Códigos CPV</span>' +
+              '<div class="lm-detail-cpv-tags">' +
+              shown.map(function(c) { return '<span class="lm-cpv-tag">' + escHtml(c) + '</span>'; }).join('') +
+              (extra > 0 ? '<span class="lm-cpv-tag lm-cpv-more">+' + extra + ' más</span>' : '') +
+              '</div></div>';
+          }
+
+          document.getElementById('lm-detail-body').innerHTML = statsHtml + fieldsHtml + cpvHtml;
+        })
+        .catch(function() {
+          document.getElementById('lm-detail-body').innerHTML = '<div class="lm-detail-skeleton">Error al cargar los datos.</div>';
+        });
+    }
+
+    function openDetailPanel(licId) {
+      if (!detailPanel) return;
+      detailIds = Array.from(document.querySelectorAll('.lm-card[data-lic-id]')).map(function(c) { return c.dataset.licId; });
+      detailIdx = detailIds.indexOf(String(licId));
+      updateNavButtons();
+      loadDetailContent(licId);
+      detailPanel.classList.add('open');
+      detailBackdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closeDetailPanel() {
+      if (!detailPanel || !detailPanel.classList.contains('open')) return;
+      detailPanel.classList.remove('open');
+      detailBackdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    document.addEventListener('click', function(e) {
+      if (e.target.closest('.lm-detail-panel')) return;
+      var card = e.target.closest('.lm-card[data-lic-id]');
+      if (card) { openDetailPanel(card.dataset.licId); return; }
+      if (detailBackdrop && detailBackdrop.contains(e.target)) closeDetailPanel();
+    });
+
+    var detailCloseBtn = document.getElementById('lm-detail-close');
+    if (detailCloseBtn) detailCloseBtn.addEventListener('click', closeDetailPanel);
+
+    var prevBtn = document.getElementById('lm-detail-prev');
+    var nextBtn = document.getElementById('lm-detail-next');
+    if (prevBtn) prevBtn.addEventListener('click', function() {
+      if (detailIdx > 0) { detailIdx--; loadDetailContent(detailIds[detailIdx]); updateNavButtons(); }
+    });
+    if (nextBtn) nextBtn.addEventListener('click', function() {
+      if (detailIdx < detailIds.length - 1) { detailIdx++; loadDetailContent(detailIds[detailIdx]); updateNavButtons(); }
+    });
+
+    document.addEventListener('keydown', function(e) {
+      if (e.key === 'Escape') closeDetailPanel();
+    });
+    // ──────────────────────────────────────────────────────────────────────
+
     var form = document.getElementById('filtros-form');
     if (!form) return;
 

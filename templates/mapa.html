@@ -117,7 +117,12 @@
     <div class="col-lg-9">
         <div class="d-flex align-items-center gap-2 mb-2">
             <button id="btn-volver-ccaa" class="lm-orden-btn" style="display:none">← Volver a España</button>
-            <span id="mapa-nivel" style="font-size:0.75rem; color:var(--tx-faint); margin-left:auto"></span>
+            <div class="btn-group btn-group-sm ms-auto" id="nivel-selector" role="group" aria-label="Nivel del mapa">
+                <button type="button" class="btn btn-outline-secondary active" data-nivel="auto">Auto</button>
+                <button type="button" class="btn btn-outline-secondary" data-nivel="ccaa">CCAA</button>
+                <button type="button" class="btn btn-outline-secondary" data-nivel="provincias">Provincias</button>
+                <button type="button" class="btn btn-outline-secondary" data-nivel="municipios">Municipios</button>
+            </div>
         </div>
         <div class="lm-map-container">
             <div id="mapa-leaflet"></div>
@@ -131,4 +136,4 @@
 
 <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
 <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="/static/js/mapa.js?v=45"></script>
+<script src="/static/js/mapa.js?v=46"></script>
