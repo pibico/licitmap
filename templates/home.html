@@ -11,7 +11,20 @@
 
     <div class="lm-search-bar mb-3">
         <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
-        <input type="text" name="cpv_q" class="form-control lm-search-cpv" placeholder="Buscar por CPV..." value="{{cpv_q}}">
+        <div class="lm-cpv-wrap">
+          <input type="text" name="cpv_q" id="cpv-q-input" class="form-control lm-search-cpv" placeholder="Código CPV..." value="{{cpv_q}}" autocomplete="off">
+          <button type="button" class="lm-cpv-help-btn" id="cpv-help-btn" title="Buscar CPV por descripción" aria-label="Buscar CPV por descripción">
+            <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg>
+          </button>
+          <div class="lm-cpv-popup" id="cpv-popup" role="dialog" aria-label="Buscador de códigos CPV">
+            <div class="lm-cpv-popup-header">
+              <input type="text" id="cpv-search-input" class="lm-cpv-search-field" placeholder="ej: instalación frigorífica, limpieza viaria..." autocomplete="off" spellcheck="false">
+            </div>
+            <div class="lm-cpv-results" id="cpv-results">
+              <div class="lm-cpv-hint">Escribe para buscar en el vocabulario CPV</div>
+            </div>
+          </div>
+        </div>
         <a href="/" class="btn btn-primary text-nowrap">Limpiar filtros</a>
     </div>
 

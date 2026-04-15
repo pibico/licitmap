@@ -268,6 +268,93 @@
     });
     // ──────────────────────────────────────────────────────────────────────
 
+    // ─── Buscador CPV ─────────────────────────────────────────────────────
+    var cpvHelpBtn    = document.getElementById('cpv-help-btn');
+    var cpvPopup      = document.getElementById('cpv-popup');
+    var cpvSearchInput = document.getElementById('cpv-search-input');
+    var cpvResults    = document.getElementById('cpv-results');
+    var cpvQInput     = document.getElementById('cpv-q-input');
+    var cpvTimer      = null;
+
+    function openCpvPopup() {
+      if (!cpvPopup) return;
+      cpvPopup.classList.add('open');
+      cpvHelpBtn.classList.add('active');
+      if (cpvSearchInput) { cpvSearchInput.focus(); cpvSearchInput.select(); }
+    }
+
+    function closeCpvPopup() {
+      if (!cpvPopup) return;
+      cpvPopup.classList.remove('open');
+      cpvHelpBtn.classList.remove('active');
+    }
+
+    function renderCpvResults(items) {
+      if (!items.length) {
+        cpvResults.innerHTML = '<div class="lm-cpv-hint">Sin resultados para esta búsqueda</div>';
+        return;
+      }
+      cpvResults.innerHTML = items.map(function(item) {
+        return '<div class="lm-cpv-result-item" data-code="' + item.code + '">' +
+          '<span class="lm-cpv-result-code">' + item.code + '</span>' +
+          '<span class="lm-cpv-result-label">' + item.label + '</span>' +
+          '</div>';
+      }).join('');
+    }
+
+    function doCpvSearch(q) {
+      if (!q.trim()) {
+        cpvResults.innerHTML = '<div class="lm-cpv-hint">Escribe para buscar en el vocabulario CPV</div>';
+        return;
+      }
+      cpvResults.innerHTML = '<div class="lm-cpv-hint">Buscando...</div>';
+      fetch('/api/cpv/buscar?q=' + encodeURIComponent(q))
+        .then(function(r) { return r.json(); })
+        .then(renderCpvResults)
+        .catch(function() {
+          cpvResults.innerHTML = '<div class="lm-cpv-hint">Error al buscar</div>';
+        });
+    }
+
+    if (cpvHelpBtn) {
+      cpvHelpBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        cpvPopup.classList.contains('open') ? closeCpvPopup() : openCpvPopup();
+      });
+    }
+
+    if (cpvSearchInput) {
+      cpvSearchInput.addEventListener('input', function() {
+        clearTimeout(cpvTimer);
+        cpvTimer = setTimeout(function() { doCpvSearch(cpvSearchInput.value); }, 280);
+      });
+      cpvSearchInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { e.stopPropagation(); closeCpvPopup(); }
+      });
+    }
+
+    if (cpvResults) {
+      cpvResults.addEventListener('click', function(e) {
+        var item = e.target.closest('.lm-cpv-result-item');
+        if (!item) return;
+        var code = item.dataset.code;
+        if (cpvQInput) cpvQInput.value = code;
+        closeCpvPopup();
+        // Disparar búsqueda automáticamente
+        var form = document.getElementById('filtros-form');
+        if (form) form.dispatchEvent(new Event('submit', {bubbles: true}));
+      });
+    }
+
+    document.addEventListener('click', function(e) {
+      if (cpvPopup && cpvPopup.classList.contains('open')) {
+        if (!cpvPopup.contains(e.target) && e.target !== cpvHelpBtn) {
+          closeCpvPopup();
+        }
+      }
+    });
+    // ──────────────────────────────────────────────────────────────────────
+
     var form = document.getElementById('filtros-form');
     if (!form) return;
 

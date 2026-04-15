@@ -5,11 +5,51 @@ from sqlalchemy import or_, and_, func
 from pathlib import Path
 from urllib.parse import urlencode
 from datetime import date, datetime
+import json
+import unicodedata
+import re
 
 from app.database import get_db
 from app.models import Licitacion
 
 router = APIRouter()
+
+# ─── Índice CPV ──────────────────────────────────────────────────────────────
+_CPV_INDEX: list[dict] | None = None
+
+def _load_cpv() -> list[dict]:
+    global _CPV_INDEX
+    if _CPV_INDEX is None:
+        p = Path(__file__).parent.parent.parent / "static" / "data" / "cpv_es.json"
+        if p.exists():
+            _CPV_INDEX = json.loads(p.read_text(encoding="utf-8"))
+        else:
+            _CPV_INDEX = []
+    return _CPV_INDEX
+
+def _normalize(s: str) -> str:
+    s = unicodedata.normalize("NFD", s.lower())
+    return re.sub(r"[\u0300-\u036f]", "", s)
+
+def cpv_search(q: str, limit: int = 15) -> list[dict]:
+    raw_terms = _normalize(q).split()
+    if not raw_terms:
+        return []
+
+    # Para cada término usar la raíz (primeros 6 chars) para cubrir flexiones
+    stems = [t[:6] if len(t) > 5 else t for t in raw_terms]
+
+    # Puntuar cada entrada: número de raíces que aparecen en la descripción normalizada
+    scored = []
+    for entry in _load_cpv():
+        norm = _normalize(entry["label"])
+        score = sum(1 for s in stems if s in norm)
+        if score:
+            scored.append((score, entry))
+
+    # Ordenar: más coincidencias primero
+    scored.sort(key=lambda x: -x[0])
+    return [e for _, e in scored[:limit]]
 
 PER_PAGE = 20
 
@@ -444,6 +484,13 @@ def home(
         orden_icon_asc="" if orden == "asc" else "display:none",
         paginacion=paginacion,
     )
+
+
+@router.get("/api/cpv/buscar")
+def api_cpv_buscar(q: str = Query(default="")):
+    if not q.strip():
+        return JSONResponse([])
+    return JSONResponse(cpv_search(q.strip(), limit=20))
 
 
 @router.get("/api/licitacion/{lic_id}")
