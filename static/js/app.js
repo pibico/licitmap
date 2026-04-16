@@ -355,6 +355,117 @@
     });
     // ──────────────────────────────────────────────────────────────────────
 
+    // ─── Panel lateral: búsqueda por organismo ────────────────────────────
+    var orgSearchBtn  = document.getElementById('org-search-btn');
+    var orgPanel      = document.getElementById('lm-org-panel');
+    var orgBackdrop   = document.getElementById('lm-org-backdrop');
+    var orgClose      = document.getElementById('lm-org-close');
+    var orgInput      = document.getElementById('lm-org-input');
+    var orgResults    = document.getElementById('lm-org-results');
+    var orgClearBtn   = document.getElementById('lm-org-clear-btn');
+    var orgActiveEl   = document.getElementById('lm-org-active');
+    var orgActiveName = document.getElementById('lm-org-active-name');
+    var hOrganismo    = document.getElementById('h-organismo');
+    var orgTimer      = null;
+    var orgItemsCache = [];
+
+    function openOrgPanel() {
+      if (!orgPanel) return;
+      orgPanel.classList.add('open');
+      if (orgBackdrop) orgBackdrop.classList.add('open');
+      document.body.style.overflow = 'hidden';
+      if (orgInput) { orgInput.focus(); }
+      doOrgSearch(orgInput ? orgInput.value : '');
+    }
+
+    function closeOrgPanel() {
+      if (!orgPanel) return;
+      orgPanel.classList.remove('open');
+      if (orgBackdrop) orgBackdrop.classList.remove('open');
+      document.body.style.overflow = '';
+    }
+
+    function updateOrgActive() {
+      var val = hOrganismo ? hOrganismo.value : '';
+      if (val) {
+        if (orgActiveEl)   orgActiveEl.style.display = '';
+        if (orgActiveName) orgActiveName.textContent = val;
+        if (orgSearchBtn)  orgSearchBtn.classList.add('active');
+      } else {
+        if (orgActiveEl)   orgActiveEl.style.display = 'none';
+        if (orgSearchBtn)  orgSearchBtn.classList.remove('active');
+      }
+    }
+
+    function doOrgSearch(q) {
+      if (!orgResults) return;
+      clearTimeout(orgTimer);
+      orgTimer = setTimeout(function() {
+        fetch('/api/organismos/buscar?q=' + encodeURIComponent(q || ''))
+          .then(function(r) { return r.json(); })
+          .then(function(items) {
+            orgItemsCache = items;
+            if (!items.length) {
+              orgResults.innerHTML = '<div class="lm-org-hint">Sin resultados para esta búsqueda</div>';
+              return;
+            }
+            var currentOrg = hOrganismo ? hOrganismo.value : '';
+            orgResults.innerHTML = items.map(function(item, idx) {
+              var isActive = item.nombre === currentOrg;
+              return '<div class="lm-org-item' + (isActive ? ' lm-active' : '') + '" data-idx="' + idx + '">' +
+                '<span class="lm-org-item-name">' + escHtml(item.nombre) + '</span>' +
+                '<span class="lm-org-item-count">' + item.count + '</span>' +
+                '</div>';
+            }).join('');
+          })
+          .catch(function() {
+            orgResults.innerHTML = '<div class="lm-org-hint">Error al buscar</div>';
+          });
+      }, 280);
+    }
+
+    if (orgSearchBtn) {
+      orgSearchBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        orgPanel && orgPanel.classList.contains('open') ? closeOrgPanel() : openOrgPanel();
+      });
+    }
+    if (orgClose)    orgClose.addEventListener('click', closeOrgPanel);
+    if (orgBackdrop) orgBackdrop.addEventListener('click', closeOrgPanel);
+
+    if (orgInput) {
+      orgInput.addEventListener('input', function() { doOrgSearch(orgInput.value); });
+      orgInput.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') { e.stopPropagation(); closeOrgPanel(); }
+      });
+    }
+
+    if (orgResults) {
+      orgResults.addEventListener('click', function(e) {
+        var item = e.target.closest('.lm-org-item');
+        if (!item) return;
+        var idx = parseInt(item.dataset.idx, 10);
+        var entry = orgItemsCache[idx];
+        if (!entry) return;
+        if (hOrganismo) hOrganismo.value = entry.nombre;
+        updateOrgActive();
+        closeOrgPanel();
+        fetchResultados();
+      });
+    }
+
+    if (orgClearBtn) {
+      orgClearBtn.addEventListener('click', function() {
+        if (hOrganismo) hOrganismo.value = '';
+        updateOrgActive();
+        fetchResultados();
+      });
+    }
+
+    // Init: mostrar chip si viene del servidor con organismo activo
+    updateOrgActive();
+    // ──────────────────────────────────────────────────────────────────────
+
     var form = document.getElementById('filtros-form');
     if (!form) return;
 

@@ -6,11 +6,17 @@
     <input type="hidden" name="pais"       id="h-pais"     value="{{pais}}">
     <input type="hidden" name="municipio"  id="h-municipio" value="{{municipio}}">
     <input type="hidden" name="provincia"  id="h-provincia" value="{{provincia}}">
+    <input type="hidden" name="organismo"  id="h-organismo" value="{{organismo}}">
     <input type="hidden" name="per_page"   id="h-per_page" value="{{per_page}}">
     <input type="hidden" name="orden"      id="h-orden"    value="{{orden}}">
 
     <div class="lm-search-bar mb-3">
-        <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
+        <div class="lm-q-wrap">
+            <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
+            <button type="button" class="lm-org-btn" id="org-search-btn" title="Buscar por organismo" aria-label="Buscar por organismo">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4"/><path d="M5 21V10.85M19 21V10.85"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/></svg>
+            </button>
+        </div>
         <div class="lm-cpv-wrap">
           <input type="text" name="cpv_q" id="cpv-q-input" class="form-control lm-search-cpv" placeholder="Código CPV..." value="{{cpv_q}}" autocomplete="off">
           <button type="button" class="lm-cpv-help-btn" id="cpv-help-btn" title="Buscar CPV por descripción" aria-label="Buscar CPV por descripción">
@@ -26,6 +32,13 @@
           </div>
         </div>
         <a href="/" class="btn btn-primary text-nowrap">Limpiar filtros</a>
+    </div>
+    <div class="lm-org-active" id="lm-org-active" style="{{organismo_display}}">
+        <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.6"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4"/><path d="M5 21V10.85M19 21V10.85"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/></svg>
+        <span id="lm-org-active-name">{{organismo}}</span>
+        <button type="button" class="lm-org-clear-btn" id="lm-org-clear-btn" aria-label="Quitar filtro de organismo">
+            <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+        </button>
     </div>
 
     <div class="lm-stats-bar mb-3">
@@ -183,4 +196,21 @@
             <div class="mt-3" id="paginacion-bottom">{{paginacion}}</div>
         </div>
     </div>
+
+    <!-- Panel lateral: búsqueda por organismo -->
+    <div class="lm-org-backdrop" id="lm-org-backdrop"></div>
+    <aside class="lm-org-panel" id="lm-org-panel" role="dialog" aria-modal="true" aria-label="Búsqueda por organismo">
+        <div class="lm-org-header">
+            <span class="lm-org-title">Buscar por organismo</span>
+            <button class="lm-detail-close" id="lm-org-close" aria-label="Cerrar">
+                <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            </button>
+        </div>
+        <div class="lm-org-search-wrap">
+            <input type="text" id="lm-org-input" class="lm-org-search-field" placeholder="Nombre del organismo..." autocomplete="off" spellcheck="false">
+        </div>
+        <div class="lm-org-results" id="lm-org-results">
+            <div class="lm-org-hint">Escribe para buscar organismos</div>
+        </div>
+    </aside>
 </form>
