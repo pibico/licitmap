@@ -1623,3 +1623,28 @@ a:hover {
   color: var(--tx-secondary);
 }
 .lm-login-submit { margin-top: 0.5rem; font-weight: 600; }
+
+/* ── Botón exportar Excel ────────────────────────────────────────────────── */
+.lm-btn-export {
+  background: var(--ac-soft);
+  color: var(--ac-hover);
+  border: 1px solid var(--ac-main);
+  font-size: 0.82rem;
+  font-weight: 600;
+  padding: 0.42rem 0.9rem;
+  border-radius: 6px;
+  transition: background 0.15s, color 0.15s;
+}
+.lm-btn-export:hover {
+  background: var(--ac-main);
+  color: var(--ac-text);
+}
+:root[data-theme="dark"] .lm-btn-export {
+  background: rgba(52,211,153,0.1);
+  color: var(--ac-main);
+  border-color: var(--ac-main);
+}
+:root[data-theme="dark"] .lm-btn-export:hover {
+  background: var(--ac-main);
+  color: #111;
+}

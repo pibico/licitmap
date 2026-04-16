@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Depends, Query, Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, StreamingResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
 from pathlib import Path
@@ -600,6 +600,126 @@ def api_cpv_buscar(q: str = Query(default="")):
     if not q.strip():
         return JSONResponse([])
     return JSONResponse(cpv_search(q.strip(), limit=20))
+
+
+@router.get("/api/exportar")
+def api_exportar(
+    request: Request,
+    db: Session = Depends(get_db),
+    q: str = Query(default=""),
+    ccaa: str = Query(default=""),
+    pais: str = Query(default=""),
+    estado: str = Query(default=""),
+    tipo: str = Query(default=""),
+    fecha_desde: str = Query(default=""),
+    fecha_hasta: str = Query(default=""),
+    prange: str = Query(default=""),
+    orden: str = Query(default="asc"),
+    cpv_q: str = Query(default=""),
+    municipio: str = Query(default=""),
+    provincia: str = Query(default=""),
+    organismo: str = Query(default=""),
+):
+    if not request.session.get("username"):
+        return JSONResponse({"error": "no autenticado"}, status_code=401)
+
+    import io
+    import openpyxl
+    from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
+    from openpyxl.utils import get_column_letter
+
+    if orden not in ("asc", "desc"):
+        orden = "asc"
+    sort_col = Licitacion.fecha_limite.asc().nullslast() if orden == "asc" else Licitacion.fecha_limite.desc().nullslast()
+
+    lics = (
+        apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo,
+                      fecha_desde, fecha_hasta, prange, cpv_q=cpv_q,
+                      municipio=municipio, provincia=provincia, organismo=organismo)
+        .order_by(sort_col)
+        .all()
+    )
+
+    wb = openpyxl.Workbook()
+    ws = wb.active
+    ws.title = "Licitaciones"
+
+    headers = [
+        "Expediente", "Título", "Órgano de contratación", "Estado",
+        "Tipo de contrato", "Presupuesto (€)", "Fecha publicación",
+        "Fecha límite", "CPV", "Municipio", "Provincia", "CCAA", "País", "URL",
+    ]
+
+    # Estilo cabecera
+    header_fill = PatternFill("solid", fgColor="1a7a55")
+    header_font = Font(bold=True, color="FFFFFF", size=10)
+    thin = Side(style="thin", color="cccccc")
+    border = Border(bottom=Side(style="medium", color="1a7a55"))
+
+    for col_idx, h in enumerate(headers, 1):
+        cell = ws.cell(row=1, column=col_idx, value=h)
+        cell.font = header_font
+        cell.fill = header_fill
+        cell.alignment = Alignment(horizontal="center", vertical="center", wrap_text=False)
+        cell.border = border
+
+    ws.row_dimensions[1].height = 20
+
+    # Filas de datos
+    row_fill_alt = PatternFill("solid", fgColor="f0f7f4")
+    data_font = Font(size=9)
+    data_font_url = Font(size=9, color="1a7a55", underline="single")
+
+    for row_idx, lic in enumerate(lics, 2):
+        fill = row_fill_alt if row_idx % 2 == 0 else None
+        presupuesto = f"{lic.presupuesto:,.2f}".replace(",", "X").replace(".", ",").replace("X", ".") if lic.presupuesto is not None else ""
+        fecha_pub = lic.fecha_publicacion.strftime("%d/%m/%Y") if lic.fecha_publicacion else ""
+        fecha_lim = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else ""
+
+        values = [
+            lic.expediente or "",
+            lic.titulo or "",
+            lic.organo_contratacion or "",
+            ESTADOS.get(lic.estado or "", lic.estado or ""),
+            TIPOS_CONTRATO.get(lic.tipo_contrato or "", lic.tipo_contrato or ""),
+            presupuesto,
+            fecha_pub,
+            fecha_lim,
+            lic.cpv or "",
+            lic.municipio or "",
+            lic.provincia or "",
+            lic.comunidad_autonoma or "",
+            lic.pais or "",
+            lic.url or "",
+        ]
+        for col_idx, val in enumerate(values, 1):
+            cell = ws.cell(row=row_idx, column=col_idx, value=val)
+            cell.font = data_font_url if col_idx == 14 and val else data_font
+            cell.alignment = Alignment(vertical="top", wrap_text=col_idx == 2)
+            if fill:
+                cell.fill = fill
+
+    # Anchos de columna aproximados
+    col_widths = [18, 50, 40, 14, 20, 16, 16, 14, 22, 16, 16, 22, 14, 50]
+    for i, w in enumerate(col_widths, 1):
+        ws.column_dimensions[get_column_letter(i)].width = w
+
+    # Congelar primera fila
+    ws.freeze_panes = "A2"
+
+    # Autofiltro
+    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+
+    buf = io.BytesIO()
+    wb.save(buf)
+    buf.seek(0)
+
+    filename = f"licitaciones_export.xlsx"
+    return StreamingResponse(
+        buf,
+        media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+    )
 
 
 @router.get("/api/licitacion/{lic_id}")

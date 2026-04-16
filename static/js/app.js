@@ -723,4 +723,19 @@
       }
     });
   });
+
+  // ── Exportar a Excel ──────────────────────────────────────────────────────
+  document.addEventListener('DOMContentLoaded', function () {
+    var exportBtn = document.getElementById('export-btn');
+    if (!exportBtn) return;
+    exportBtn.addEventListener('click', function () {
+      var params = new URLSearchParams(window.location.search);
+      // Eliminar params de paginación que no aplican a la exportación
+      params.delete('page');
+      params.delete('partial');
+      params.delete('per_page');
+      window.location.href = '/api/exportar?' + params.toString();
+    });
+  });
+
 })();
