@@ -1,0 +1,50 @@
+<div class="row justify-content-center">
+  <div class="col-lg-8">
+    <h4 class="mb-4">Gestión de usuarios</h4>
+
+    {{error_block}}
+    {{ok_block}}
+
+    <!-- Tabla de usuarios -->
+    <div class="card lm-card mb-4">
+      <div class="card-body p-0">
+        <table class="table table-sm mb-0">
+          <thead>
+            <tr>
+              <th style="width:3rem">#</th>
+              <th>Usuario</th>
+              <th>Estado</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {{users_rows}}
+          </tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Formulario nuevo usuario -->
+    <div class="card lm-card">
+      <div class="card-body">
+        <h6 class="mb-3">Nuevo usuario</h6>
+        <form method="post" action="/admin/usuarios/nuevo" class="row g-2 align-items-end">
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm">Usuario</label>
+            <input type="text" name="username" class="form-control form-control-sm" required
+              autocomplete="off" autocapitalize="none">
+          </div>
+          <div class="col-sm-4">
+            <label class="form-label form-label-sm">Contraseña</label>
+            <input type="password" name="password" class="form-control form-control-sm" required
+              autocomplete="new-password">
+          </div>
+          <div class="col-sm-4">
+            <button type="submit" class="btn btn-primary btn-sm w-100">Crear usuario</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+  </div>
+</div>

@@ -1,13 +1,21 @@
-from fastapi import APIRouter, Request, Form
+import bcrypt
+from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, RedirectResponse
 from pathlib import Path
+from sqlalchemy.orm import Session
+
+from app.database import get_db
+from app.models import User
 
 router = APIRouter()
 
-# Credenciales hardcodeadas — sustituir por DB cuando se implemente el sistema de cuentas
-USERS: dict[str, str] = {
-    "admin": "admin",
-}
+
+def verify_password(plain: str, hashed: str) -> bool:
+    return bcrypt.checkpw(plain.encode(), hashed.encode())
+
+
+def get_user(db: Session, username: str) -> User | None:
+    return db.query(User).filter_by(username=username, is_active=True).first()
 
 
 def _render_login(error: str = "") -> str:
@@ -38,9 +46,11 @@ async def login_post(
     request: Request,
     username: str = Form(...),
     password: str = Form(...),
+    db: Session = Depends(get_db),
 ):
-    if USERS.get(username) == password:
-        request.session["username"] = username
+    user = get_user(db, username)
+    if user and verify_password(password, user.hashed_password):
+        request.session["username"] = user.username
         return RedirectResponse("/", status_code=303)
     return HTMLResponse(_render_login("Usuario o contraseña incorrectos"), status_code=401)
 

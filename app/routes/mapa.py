@@ -8,6 +8,7 @@ import json as _json
 
 from app.database import get_db
 from app.models import Licitacion
+from app.utils import _nav_context
 
 router = APIRouter()
 
@@ -115,17 +116,6 @@ def apply_territorio_filter(query):
     )
 
 
-def _nav_context(request: Request):
-    username = request.session.get("username", "")
-    if username:
-        auth_block = (
-            f'<div class="lm-nav-user">'
-            f'<span class="lm-nav-username">{username}</span>'
-            f'<a href="/logout" class="lm-nav-logout">Salir</a>'
-            f'</div>'
-        )
-        return auth_block, ""
-    return '<a href="/login" class="lm-btn-login">Iniciar sesión</a>', "display:none"
 
 
 @router.get("/mapa", response_class=HTMLResponse)
