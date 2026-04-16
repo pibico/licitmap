@@ -494,12 +494,16 @@ def home(
 
 @router.get("/api/organismos/buscar")
 def api_organismos_buscar(q: str = Query(default=""), db: Session = Depends(get_db)):
-    like = f"%{q}%" if q.strip() else "%"
-    results = (
+    base = (
         db.query(Licitacion.organo_contratacion, func.count(Licitacion.id))
         .filter(Licitacion.organo_contratacion.isnot(None))
         .filter(Licitacion.organo_contratacion != "")
-        .filter(Licitacion.organo_contratacion.ilike(like))
+    )
+    # Cada palabra del query como filtro independiente (AND) para cubrir "ministerio defensa" → "Ministerio de Defensa"
+    for term in [t for t in q.strip().split() if t]:
+        base = base.filter(Licitacion.organo_contratacion.ilike(f"%{term}%"))
+    results = (
+        base
         .group_by(Licitacion.organo_contratacion)
         .order_by(func.count(Licitacion.id).desc())
         .limit(30)
