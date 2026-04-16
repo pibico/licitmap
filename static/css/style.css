@@ -1528,15 +1528,32 @@ a:hover {
 
 .lm-landing-cards {
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: minmax(0, 1fr); /* minmax(0,…) permite que el track se estreche por debajo del min-content */
   gap: 0.5rem;
   pointer-events: none;
   user-select: none;
 }
 
-/* Cards de preview: sin cursor pointer */
+/* Cards de preview: sin cursor pointer, footer siempre responsive */
 .lm-card-preview { cursor: default; }
 .lm-card-preview:hover { border-color: var(--bg-surface0) !important; background: var(--bg-mantle) !important; }
+
+/* Footer de preview: wrappea a cualquier ancho, sin recortar */
+.lm-card-preview .lm-card-footer {
+  flex-wrap: wrap;
+  overflow: visible;
+  align-items: flex-start;
+}
+.lm-card-preview .lm-card-org {
+  white-space: normal;
+  min-width: 0;
+  flex: 1 1 60%;
+}
+.lm-card-preview .lm-card-right {
+  flex: 0 1 auto;
+  flex-wrap: wrap;
+  gap: 0.4rem;
+}
 
 /* Fade gradient tapando las últimas cards */
 .lm-landing-fade {
