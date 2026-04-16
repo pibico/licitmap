@@ -725,15 +725,29 @@
   });
 
   // ── Exportar a Excel ──────────────────────────────────────────────────────
+  var EXPORT_LIMIT = 5000;
+
   document.addEventListener('DOMContentLoaded', function () {
     var exportBtn = document.getElementById('export-btn');
     if (!exportBtn) return;
+
     exportBtn.addEventListener('click', function () {
       var params = new URLSearchParams(window.location.search);
-      // Eliminar params de paginación que no aplican a la exportación
       params.delete('page');
       params.delete('partial');
       params.delete('per_page');
+
+      // Leer el conteo de resultados filtrados del DOM
+      var countEl = document.getElementById('resultados-count');
+      var count = countEl ? parseInt(countEl.textContent.replace(/\./g, ''), 10) : 0;
+
+      if (count > EXPORT_LIMIT) {
+        var msg = 'El filtro actual tiene ' + count.toLocaleString('es-ES') + ' resultados.\n' +
+                  'Solo se exportarán los primeros ' + EXPORT_LIMIT.toLocaleString('es-ES') + '.\n\n' +
+                  '¿Continuar con la exportación parcial?';
+        if (!window.confirm(msg)) return;
+      }
+
       window.location.href = '/api/exportar?' + params.toString();
     });
   });

@@ -628,17 +628,21 @@ def api_exportar(
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
+    MAX_EXPORT = 5_000
+
     if orden not in ("asc", "desc"):
         orden = "asc"
     sort_col = Licitacion.fecha_limite.asc().nullslast() if orden == "asc" else Licitacion.fecha_limite.desc().nullslast()
 
-    lics = (
-        apply_filters(db.query(Licitacion), q, pais, ccaa, estado, tipo,
-                      fecha_desde, fecha_hasta, prange, cpv_q=cpv_q,
-                      municipio=municipio, provincia=provincia, organismo=organismo)
-        .order_by(sort_col)
-        .all()
-    )
+    base_query = apply_filters(
+        db.query(Licitacion), q, pais, ccaa, estado, tipo,
+        fecha_desde, fecha_hasta, prange, cpv_q=cpv_q,
+        municipio=municipio, provincia=provincia, organismo=organismo,
+    ).order_by(sort_col)
+
+    total_results = base_query.count()
+    truncated = total_results > MAX_EXPORT
+    lics = base_query.limit(MAX_EXPORT).all()
 
     wb = openpyxl.Workbook()
     ws = wb.active
@@ -708,17 +712,32 @@ def api_exportar(
     ws.freeze_panes = "A2"
 
     # Autofiltro
-    ws.auto_filter.ref = f"A1:{get_column_letter(len(headers))}1"
+    last_col = get_column_letter(len(headers))
+    last_row = len(lics) + 1
+    ws.auto_filter.ref = f"A1:{last_col}{last_row}"
+
+    # Nota de truncado al final si aplica
+    if truncated:
+        note_row = last_row + 2
+        note_cell = ws.cell(row=note_row, column=1,
+            value=f"⚠ Exportación limitada a {MAX_EXPORT:,} filas. El filtro actual tiene {total_results:,} resultados. Añade más filtros para reducir el conjunto.")
+        note_cell.font = Font(size=9, color="b45309", italic=True)
+        ws.merge_cells(start_row=note_row, start_column=1, end_row=note_row, end_column=len(headers))
 
     buf = io.BytesIO()
     wb.save(buf)
     buf.seek(0)
 
-    filename = f"licitaciones_export.xlsx"
+    filename = f"licitaciones_{len(lics)}_resultados.xlsx"
+    resp_headers = {
+        "Content-Disposition": f'attachment; filename="{filename}"',
+        "X-Total-Results": str(total_results),
+        "X-Exported-Results": str(len(lics)),
+    }
     return StreamingResponse(
         buf,
         media_type="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
-        headers={"Content-Disposition": f'attachment; filename="{filename}"'},
+        headers=resp_headers,
     )
 
 
