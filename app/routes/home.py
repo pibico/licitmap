@@ -11,7 +11,7 @@ import re
 
 from app.database import get_db
 from app.models import Licitacion
-from app.utils import _nav_context
+from app.utils import _nav_context, get_setting
 
 router = APIRouter()
 
@@ -572,6 +572,7 @@ def home(
         orden_icon_desc="display:none" if orden == "asc" else "",
         orden_icon_asc="" if orden == "asc" else "display:none",
         paginacion=paginacion,
+        export_limit=int(get_setting(db, "export_limit", "5000")),
     )
 
 
@@ -628,7 +629,7 @@ def api_exportar(
     from openpyxl.styles import Font, PatternFill, Alignment, Border, Side
     from openpyxl.utils import get_column_letter
 
-    MAX_EXPORT = 5_000
+    MAX_EXPORT = int(get_setting(db, "export_limit", "5000"))
 
     if orden not in ("asc", "desc"):
         orden = "asc"

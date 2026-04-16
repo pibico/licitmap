@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.database import get_db
 from app.models import User
-from app.utils import _nav_context
+from app.utils import _nav_context, get_setting, set_setting
 
 router = APIRouter(prefix="/admin")
 
@@ -82,6 +82,42 @@ async def admin_crear_usuario(
     db.add(User(username=username, hashed_password=hashed, is_active=True))
     db.commit()
     return RedirectResponse(f"/admin/usuarios?ok=Usuario+'{username}'+creado", status_code=303)
+
+
+@router.get("/config", response_class=HTMLResponse)
+def admin_config(request: Request, ok: str = "", db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    auth_block, busqueda_display = _nav_context(request)
+    export_limit = get_setting(db, "export_limit", "5000")
+    ok_block = f'<div class="alert alert-success mt-2">{ok}</div>' if ok else ""
+    base = Path("templates/base.html").read_text()
+    page = Path("templates/admin_config.html").read_text()
+    html = base.replace("{{content}}", page)
+    for key, value in {
+        "active_busqueda": "",
+        "active_mapa": "",
+        "nav_auth_block": auth_block,
+        "nav_busqueda_display": busqueda_display,
+        "export_limit": export_limit,
+        "ok_block": ok_block,
+        "error_block": "",
+    }.items():
+        html = html.replace("{{" + key + "}}", value)
+    return html
+
+
+@router.post("/config/guardar")
+def admin_config_guardar(
+    request: Request,
+    export_limit: int = Form(...),
+    db: Session = Depends(get_db),
+):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    export_limit = max(100, min(50_000, export_limit))
+    set_setting(db, "export_limit", str(export_limit))
+    return RedirectResponse(f"/admin/config?ok=Configuración+guardada", status_code=303)
 
 
 @router.post("/usuarios/{user_id}/toggle")

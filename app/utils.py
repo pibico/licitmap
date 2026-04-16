@@ -1,4 +1,21 @@
 from fastapi import Request
+from sqlalchemy.orm import Session
+
+
+def get_setting(db: Session, key: str, default: str = "") -> str:
+    from app.models import Setting
+    row = db.query(Setting).filter_by(key=key).first()
+    return row.value if row else default
+
+
+def set_setting(db: Session, key: str, value: str) -> None:
+    from app.models import Setting
+    row = db.query(Setting).filter_by(key=key).first()
+    if row:
+        row.value = value
+    else:
+        db.add(Setting(key=key, value=value))
+    db.commit()
 
 
 def _nav_context(request: Request) -> tuple[str, str]:
@@ -7,6 +24,7 @@ def _nav_context(request: Request) -> tuple[str, str]:
     if username:
         admin_link = (
             '<a href="/admin/usuarios" class="lm-nav-logout">Usuarios</a>'
+            '<a href="/admin/config" class="lm-nav-logout">Config</a>'
             if username == "admin"
             else ""
         )

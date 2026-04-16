@@ -11,6 +11,13 @@ class User(Base):
     is_active = Column(Boolean, default=True, nullable=False)
 
 
+class Setting(Base):
+    __tablename__ = "settings"
+
+    key = Column(String, primary_key=True)
+    value = Column(String, nullable=False)
+
+
 class Licitacion(Base):
     __tablename__ = "licitaciones"
 
