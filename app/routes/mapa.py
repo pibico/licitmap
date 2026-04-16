@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func, case
@@ -115,8 +115,22 @@ def apply_territorio_filter(query):
     )
 
 
+def _nav_context(request: Request):
+    username = request.session.get("username", "")
+    if username:
+        auth_block = (
+            f'<div class="lm-nav-user">'
+            f'<span class="lm-nav-username">{username}</span>'
+            f'<a href="/logout" class="lm-nav-logout">Salir</a>'
+            f'</div>'
+        )
+        return auth_block, ""
+    return '<a href="/login" class="lm-btn-login">Iniciar sesión</a>', "display:none"
+
+
 @router.get("/mapa", response_class=HTMLResponse)
 def mapa_page(
+    request: Request,
     q: str = Query(default=""),
     cpv_q: str = Query(default=""),
     tipo: str = Query(default=""),
@@ -186,10 +200,13 @@ def mapa_page(
         )
     sidebar_prange = "\n".join(prange_items)
 
+    auth_block, busqueda_display = _nav_context(request)
     return render(
         "mapa.html",
         active_busqueda="",
         active_mapa="lm-nav-tab-active",
+        nav_auth_block=auth_block,
+        nav_busqueda_display=busqueda_display,
         q=q,
         cpv_q=cpv_q,
         tipo=tipo,

@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Query
+from fastapi import APIRouter, Depends, Query, Request
 from fastapi.responses import HTMLResponse, JSONResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_, func
@@ -93,6 +93,93 @@ def render(template, **kwargs):
     for key, value in kwargs.items():
         html = html.replace("{{" + key + "}}", str(value))
     return html
+
+
+def _nav_context(request: Request):
+    username = request.session.get("username", "")
+    if username:
+        auth_block = (
+            f'<div class="lm-nav-user">'
+            f'<span class="lm-nav-username">{username}</span>'
+            f'<a href="/logout" class="lm-nav-logout">Salir</a>'
+            f'</div>'
+        )
+        return auth_block, ""
+    return '<a href="/login" class="lm-btn-login">Iniciar sesión</a>', "display:none"
+
+
+def _render_landing(request: Request, db) -> str:
+    total = db.query(func.count(Licitacion.id)).scalar() or 0
+    en_plazo = (
+        db.query(func.count(Licitacion.id))
+        .filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today())
+        .scalar()
+    ) or 0
+
+    preview_lics = (
+        db.query(Licitacion)
+        .filter(Licitacion.fecha_limite >= date.today(), Licitacion.estado == "PUB")
+        .order_by(Licitacion.fecha_limite.asc())
+        .limit(9)
+        .all()
+    )
+
+    cards = ""
+    for lic in preview_lics:
+        presupuesto_str = (
+            f"{lic.presupuesto:,.0f}".replace(",", ".") + " €"
+            if lic.presupuesto is not None else "Sin especificar"
+        )
+        estado_val = lic.estado or "—"
+        estado_label = ESTADOS.get(estado_val, estado_val)
+        fecha_str = lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else "no indicado"
+        tipo_nombre = TIPOS_CONTRATO.get(lic.tipo_contrato or "", "—")
+        cpv_str = lic.cpv.split()[0] if lic.cpv else None
+        territorio = lic.pais if lic.comunidad_autonoma == "Extranjero" else (lic.comunidad_autonoma or "—")
+        cards += f"""<div class="lm-card lm-card-preview">
+  <div class="lm-card-top">
+    <span class="lm-card-title">{lic.titulo or '—'}</span>
+    <span class="badge badge-{estado_val} flex-shrink-0">{estado_label}</span>
+  </div>
+  <div class="lm-card-meta">
+    <span>Exp. {lic.expediente or '—'}</span>
+    {('<span class="lm-dot">·</span><span class="lm-card-cpv">CPV ' + cpv_str + '</span>') if cpv_str else ''}
+    <span class="lm-dot">·</span><span>{tipo_nombre}</span>
+  </div>
+  <div class="lm-card-footer">
+    <span class="lm-card-org">{lic.organo_contratacion or '—'} · {territorio}</span>
+    <div class="lm-card-right">
+      <span class="lm-card-deadline">Plazo {fecha_str}</span>
+      <span class="lm-card-price">{presupuesto_str}</span>
+    </div>
+  </div>
+</div>"""
+
+    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
+    ultima_sync = "—"
+    if _state_file.exists():
+        try:
+            import json as _json
+            _state = _json.loads(_state_file.read_text())
+            _last = _state.get("last_sync")
+            if _last:
+                _diff = (date.today() - datetime.fromisoformat(_last).date()).days
+                ultima_sync = "Hoy" if _diff == 0 else "Ayer" if _diff == 1 else f"Hace {_diff} días"
+        except Exception:
+            pass
+
+    auth_block, busqueda_display = _nav_context(request)
+    return render(
+        "landing.html",
+        active_busqueda="",
+        active_mapa="",
+        nav_auth_block=auth_block,
+        nav_busqueda_display=busqueda_display,
+        total=f"{total:,}".replace(",", "."),
+        en_plazo=f"{en_plazo:,}".replace(",", "."),
+        ultima_sync=ultima_sync,
+        preview_cards=cards,
+    )
 
 
 def build_pagination(page, total_pages, params):
@@ -318,6 +405,7 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
 
 @router.get("/", response_class=HTMLResponse)
 def home(
+    request: Request,
     db: Session = Depends(get_db),
     q: str = Query(default=""),
     ccaa: str = Query(default=""),
@@ -336,6 +424,9 @@ def home(
     provincia: str = Query(default=""),
     organismo: str = Query(default=""),
 ):
+    if not request.session.get("username"):
+        return HTMLResponse(_render_landing(request, db))
+
     if per_page not in (5, 10, 15, 20):
         per_page = 20
     if orden not in ("asc", "desc"):
@@ -451,10 +542,13 @@ def home(
     territorio_title = "Comunidad autónoma" if mostrar_ccaa else "País"
     espana_only_display = "" if mostrar_ccaa else "display:none"
 
+    auth_block, busqueda_display = _nav_context(request)
     return render(
         "home.html",
         active_busqueda="lm-nav-tab-active",
         active_mapa="",
+        nav_auth_block=auth_block,
+        nav_busqueda_display=busqueda_display,
         total=f"{total:,}".replace(",", "."),
         en_plazo=en_plazo_str,
         resultados=resultados_str,

@@ -1413,3 +1413,209 @@ a:hover {
 @media (max-width: 600px) {
   .lm-org-panel { width: 100vw; max-width: 100vw; }
 }
+
+/* =============================================
+   NAV AUTH (usuario / botón login)
+============================================= */
+.lm-btn-login {
+  font-size: 0.8rem; font-weight: 600;
+  padding: 0.35rem 0.85rem;
+  border-radius: 7px;
+  background: var(--ac-main);
+  color: var(--ac-text) !important;
+  text-decoration: none !important;
+  transition: background 0.15s;
+  white-space: nowrap;
+}
+.lm-btn-login:hover { background: var(--ac-hover); color: var(--ac-text) !important; }
+
+.lm-nav-user {
+  display: flex; align-items: center; gap: 0.55rem;
+  font-size: 0.8rem;
+}
+.lm-nav-username {
+  font-weight: 600; color: var(--tx-primary);
+}
+.lm-nav-logout {
+  font-size: 0.75rem; color: var(--tx-muted);
+  text-decoration: none;
+  padding: 0.2rem 0.5rem;
+  border-radius: 5px;
+  border: 1px solid var(--bg-surface0);
+  transition: background 0.13s, color 0.13s;
+}
+.lm-nav-logout:hover { background: var(--bg-surface0); color: var(--tx-primary); text-decoration: none; }
+
+/* =============================================
+   LANDING PAGE
+============================================= */
+.lm-landing-hero {
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 14px;
+  padding: 3rem 2rem 2.5rem;
+  margin-bottom: 2rem;
+  text-align: center;
+}
+.lm-landing-hero-inner { max-width: 600px; margin: 0 auto; }
+
+.lm-landing-title {
+  font-size: 1.75rem; font-weight: 800;
+  color: var(--tx-primary); margin: 0 0 0.65rem;
+  letter-spacing: -0.03em; line-height: 1.2;
+}
+.lm-landing-subtitle {
+  font-size: 0.92rem; color: var(--tx-muted);
+  line-height: 1.6; margin: 0 0 1.75rem;
+}
+
+.lm-landing-stats {
+  display: flex; align-items: center; justify-content: center;
+  gap: 0; margin-bottom: 1.75rem;
+  background: var(--bg-base); border-radius: 10px;
+  border: 1px solid var(--bg-surface0);
+  overflow: hidden;
+}
+.lm-landing-stat {
+  display: flex; flex-direction: column; align-items: center;
+  padding: 0.85rem 2rem;
+  flex: 1;
+}
+.lm-landing-stat-sep {
+  width: 1px; height: 2.5rem;
+  background: var(--bg-surface0); flex-shrink: 0;
+}
+.lm-landing-stat-value {
+  font-size: 1.3rem; font-weight: 800;
+  color: var(--tx-primary); line-height: 1.1;
+}
+.lm-landing-stat-label {
+  font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
+  letter-spacing: 0.08em; color: var(--tx-faint); margin-top: 0.2rem;
+}
+
+.lm-landing-cta {
+  font-size: 0.9rem; font-weight: 600;
+  padding: 0.65rem 1.8rem; border-radius: 8px;
+}
+
+/* Preview section */
+.lm-landing-preview {
+  position: relative;
+}
+.lm-landing-preview-header {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 1rem; margin-bottom: 1rem; flex-wrap: wrap;
+}
+.lm-landing-preview-title {
+  font-size: 1rem; font-weight: 700;
+  color: var(--tx-primary); margin: 0;
+}
+.lm-landing-lock-badge {
+  display: inline-flex; align-items: center; gap: 0.35rem;
+  font-size: 0.75rem; font-weight: 600;
+  color: var(--tx-muted); text-decoration: none !important;
+  padding: 0.3rem 0.7rem;
+  border: 1px solid var(--bg-surface0);
+  border-radius: 20px;
+  transition: border-color 0.15s, color 0.15s;
+}
+.lm-landing-lock-badge:hover { border-color: var(--ac-main); color: var(--ac-main); }
+
+.lm-landing-cards {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 0.5rem;
+  pointer-events: none;
+  user-select: none;
+}
+
+/* Cards de preview: sin cursor pointer */
+.lm-card-preview { cursor: default; }
+.lm-card-preview:hover { border-color: var(--bg-surface0) !important; background: var(--bg-mantle) !important; }
+
+/* Fade gradient tapando las últimas cards */
+.lm-landing-fade {
+  position: absolute;
+  bottom: 120px; left: 0; right: 0;
+  height: 180px;
+  background: linear-gradient(to bottom, transparent, var(--bg-base) 80%);
+  pointer-events: none;
+}
+
+/* CTA gate al fondo de preview */
+.lm-landing-gate {
+  position: relative; z-index: 1;
+  text-align: center;
+  padding: 1.5rem 1rem 0.5rem;
+}
+.lm-landing-gate-inner {
+  display: flex; flex-direction: column; align-items: center;
+  gap: 0.75rem;
+}
+.lm-landing-gate-icon { color: var(--ac-main); opacity: 0.7; }
+.lm-landing-gate-text {
+  font-size: 0.87rem; color: var(--tx-muted);
+  max-width: 380px; line-height: 1.5; margin: 0;
+}
+.lm-landing-gate .btn { min-width: 200px; }
+.lm-landing-gate .btn-outline-secondary {
+  color: var(--tx-muted); border-color: var(--bg-surface1);
+}
+.lm-landing-gate .btn-outline-secondary:hover {
+  background: var(--bg-surface0); color: var(--tx-primary);
+}
+
+@media (max-width: 767px) {
+  .lm-landing-hero { padding: 2rem 1.25rem 1.75rem; }
+  .lm-landing-title { font-size: 1.35rem; }
+  .lm-landing-stat { padding: 0.7rem 1rem; }
+  .lm-landing-stat-value { font-size: 1.1rem; }
+}
+
+/* =============================================
+   LOGIN PAGE
+============================================= */
+.lm-login-wrap {
+  display: flex; justify-content: center;
+  padding: 3rem 1rem;
+}
+.lm-login-card {
+  width: 100%; max-width: 380px;
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 14px;
+  padding: 2rem 2rem 2.25rem;
+}
+.lm-login-logo {
+  display: flex; align-items: center; gap: 0.5rem;
+  color: var(--ac-main); font-size: 1.05rem; font-weight: 700;
+  margin-bottom: 1.5rem; justify-content: center;
+}
+.lm-login-title {
+  font-size: 1.25rem; font-weight: 800;
+  color: var(--tx-primary); text-align: center;
+  margin: 0 0 0.3rem;
+}
+.lm-login-subtitle {
+  font-size: 0.82rem; color: var(--tx-muted);
+  text-align: center; margin: 0 0 1.5rem;
+  line-height: 1.45;
+}
+.lm-login-error {
+  background: #fef2f2; border: 1px solid #fecaca;
+  color: #dc2626; border-radius: 7px;
+  padding: 0.55rem 0.85rem; font-size: 0.82rem;
+  margin-bottom: 1rem;
+}
+:root[data-theme="dark"] .lm-login-error {
+  background: rgba(220,38,38,0.12); border-color: rgba(220,38,38,0.3);
+  color: #f87171;
+}
+.lm-login-form { display: flex; flex-direction: column; gap: 1rem; }
+.lm-login-field { display: flex; flex-direction: column; gap: 0.35rem; }
+.lm-login-label {
+  font-size: 0.78rem; font-weight: 600;
+  color: var(--tx-secondary);
+}
+.lm-login-submit { margin-top: 0.5rem; font-weight: 600; }
