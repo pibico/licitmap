@@ -765,6 +765,7 @@ a:hover {
   padding: 0.9rem 1.1rem;
   margin-bottom: 0.55rem;
   cursor: pointer;
+  color: var(--tx-primary);
   transition: border-color 0.15s ease, box-shadow 0.15s ease;
 }
 .lm-card:hover {
@@ -1488,6 +1489,9 @@ a:hover {
 .lm-landing-stat-value {
   font-size: 1.3rem; font-weight: 800;
   color: var(--tx-primary); line-height: 1.1;
+}
+.lm-landing-stat-value.lm-stat-accent {
+  color: var(--ac-main);
 }
 .lm-landing-stat-label {
   font-size: 0.68rem; font-weight: 600; text-transform: uppercase;
