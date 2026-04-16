@@ -1570,11 +1570,48 @@ a:hover {
   background: var(--bg-surface0); color: var(--tx-primary);
 }
 
+/* ── Tablet / phablet ≤ 767px ───────────────────────────────────────────── */
 @media (max-width: 767px) {
   .lm-landing-hero { padding: 2rem 1.25rem 1.75rem; }
   .lm-landing-title { font-size: 1.35rem; }
   .lm-landing-stat { padding: 0.7rem 1rem; }
   .lm-landing-stat-value { font-size: 1.1rem; }
+
+  /* Card footer: permite wrap para que lm-card-right no aplaste el organismo */
+  .lm-card-footer { flex-wrap: wrap; gap: 0.35rem; }
+  .lm-card-org { white-space: normal; min-width: 100%; }
+  .lm-card-right { width: 100%; justify-content: flex-start; }
+}
+
+/* ── Móvil ≤ 575px ──────────────────────────────────────────────────────── */
+@media (max-width: 575px) {
+  /* Navbar: ocultar nombre de usuario para ganar espacio */
+  .lm-nav-username { display: none; }
+
+  /* Nav tabs: solo iconos */
+  .lm-nav-tab span, .lm-nav-tab { font-size: 0; }
+  .lm-nav-tab svg { display: inline-block; width: 16px; height: 16px; }
+  .lm-nav-tab { padding: 0.3rem 0.55rem; gap: 0; }
+
+  /* Hero */
+  .lm-landing-hero { padding: 1.5rem 1rem 1.5rem; border-radius: 10px; }
+  .lm-landing-title { font-size: 1.15rem; }
+  .lm-landing-subtitle { font-size: 0.83rem; }
+
+  /* Stats: compactar, ocultar separadores verticales */
+  .lm-landing-stat-sep { display: none; }
+  .lm-landing-stat { padding: 0.55rem 0.5rem; }
+  .lm-landing-stat-value { font-size: 1rem; }
+  .lm-landing-stat-label { font-size: 0.62rem; }
+
+  /* Preview header: apila en columna */
+  .lm-landing-preview-header { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .lm-landing-lock-badge { font-size: 0.7rem; }
+
+  /* Gate: botones ocupan todo el ancho disponible */
+  .lm-landing-gate-inner { width: 100%; }
+  .lm-landing-gate .btn { min-width: 0; width: 100%; max-width: 340px; }
+  .lm-landing-gate-text { font-size: 0.82rem; }
 }
 
 /* =============================================
