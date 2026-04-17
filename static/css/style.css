@@ -1756,6 +1756,25 @@ a:hover {
   color: #111;
 }
 
+/* Input OTP — centrado, monospace, grande */
+.lm-login-otp {
+  text-align: center;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: 0.35em;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Enlace "volver" bajo el formulario de login */
+.lm-login-back {
+  text-align: center;
+  margin-top: 1rem;
+  font-size: 0.8rem;
+  color: var(--tx-muted);
+}
+.lm-login-back a { color: var(--tx-muted); }
+.lm-login-back a:hover { color: var(--ac-main); }
+
 /* =============================================
    ADMIN PANEL
 ============================================= */

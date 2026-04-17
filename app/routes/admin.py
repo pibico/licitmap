@@ -69,24 +69,28 @@ def admin_usuarios(request: Request, ok: str = "", db: Session = Depends(get_db)
 async def admin_crear_usuario(
     request: Request,
     username: str = Form(...),
-    password: str = Form(...),
+    email: str = Form(...),
     db: Session = Depends(get_db),
 ):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    username = username.strip()
-    if not username or not password:
+    username = username.strip().lower()
+    email = email.strip().lower()
+
+    def _err(msg):
         return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
             "users_rows": _users_rows(db),
-            "error_block": '<div class="alert alert-danger mt-2">Usuario y contraseña son obligatorios.</div>',
+            "error_block": f'<div class="alert alert-danger mt-2">{msg}</div>',
         }))
+
+    if not username or not email:
+        return _err("Usuario y correo electrónico son obligatorios.")
     if db.query(User).filter_by(username=username).first():
-        return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
-            "users_rows": _users_rows(db),
-            "error_block": f'<div class="alert alert-danger mt-2">El usuario \'{username}\' ya existe.</div>',
-        }))
-    hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
-    db.add(User(username=username, hashed_password=hashed, is_active=True))
+        return _err(f"El usuario '{username}' ya existe.")
+    if db.query(User).filter_by(email=email).first():
+        return _err(f"El correo '{email}' ya está registrado.")
+
+    db.add(User(username=username, email=email, is_active=True))
     db.commit()
     return RedirectResponse(f"/admin/usuarios?ok=Usuario+'{username}'+creado", status_code=303)
 
@@ -168,10 +172,16 @@ def _users_rows(db: Session) -> str:
     for u in db.query(User).order_by(User.id).all():
         estado = "Activo" if u.is_active else "Inactivo"
         toggle_label = "Desactivar" if u.is_active else "Activar"
+        email_cell = (
+            f'<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
+            if u.username == "admin"
+            else (u.email or '<span style="color:var(--co-red);font-size:0.8rem">sin correo</span>')
+        )
         rows += f"""
         <tr>
           <td style="padding-left:1rem;color:var(--tx-faint)">{u.id}</td>
           <td style="font-weight:500">{u.username}</td>
+          <td style="font-size:0.85rem">{email_cell}</td>
           <td><span class="badge {'bg-success' if u.is_active else 'bg-secondary'}">{estado}</span></td>
           <td>
             <form method="post" action="/admin/usuarios/{u.id}/toggle" style="display:inline">

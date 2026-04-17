@@ -7,18 +7,15 @@
       <span>LicitMap</span>
     </div>
     <h1 class="lm-login-title">Acceder</h1>
-    <p class="lm-login-subtitle">Inicia sesión para buscar y filtrar licitaciones</p>
+    <p class="lm-login-subtitle">Introduce tu nombre de usuario para continuar</p>
     {{error_block}}
     <form method="post" action="/login" class="lm-login-form">
       <div class="lm-login-field">
         <label class="lm-login-label" for="login-user">Usuario</label>
-        <input type="text" id="login-user" name="username" class="form-control" required autofocus autocomplete="username">
+        <input type="text" id="login-user" name="username" class="form-control"
+          required autofocus autocomplete="username" autocapitalize="none">
       </div>
-      <div class="lm-login-field">
-        <label class="lm-login-label" for="login-pass">Contraseña</label>
-        <input type="password" id="login-pass" name="password" class="form-control" required autocomplete="current-password">
-      </div>
-      <button type="submit" class="btn btn-primary w-100 lm-login-submit">Entrar</button>
+      <button type="submit" class="btn btn-primary w-100 lm-login-submit">Continuar</button>
     </form>
   </div>
 </div>

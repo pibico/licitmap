@@ -7,7 +7,10 @@ class User(Base):
 
     id = Column(Integer, primary_key=True, index=True)
     username = Column(String, unique=True, index=True, nullable=False)
-    hashed_password = Column(String, nullable=False)
+    hashed_password = Column(String, nullable=True)   # solo admin
+    email = Column(String, nullable=True)              # usuarios no-admin
+    otp_code = Column(String, nullable=True)
+    otp_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
 
 
