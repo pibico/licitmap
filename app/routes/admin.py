@@ -40,6 +40,8 @@ def _render(request: Request, page_tpl: str, active: str, extra: dict | None = N
     return html
 
 
+# ── Dashboard ─────────────────────────────────────────────────────────────────
+
 @router.get("", response_class=HTMLResponse)
 @router.get("/", response_class=HTMLResponse)
 def admin_dashboard(request: Request, db: Session = Depends(get_db)):
@@ -47,13 +49,14 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     total_users = db.query(User).count()
     active_users = db.query(User).filter_by(is_active=True).count()
-    export_limit = get_setting(db, "export_limit", "5000")
     return HTMLResponse(_render(request, "admin_dashboard.html", "dashboard", {
         "total_users": str(total_users),
         "active_users": str(active_users),
-        "export_limit": export_limit,
+        "export_limit": get_setting(db, "export_limit", "5000"),
     }))
 
+
+# ── Usuarios ──────────────────────────────────────────────────────────────────
 
 @router.get("/usuarios", response_class=HTMLResponse)
 def admin_usuarios(request: Request, ok: str = "", db: Session = Depends(get_db)):
@@ -92,59 +95,69 @@ async def admin_crear_usuario(
 
     db.add(User(username=username, email=email, is_active=True))
     db.commit()
-    return RedirectResponse(f"/admin/usuarios?ok=Usuario+'{username}'+creado", status_code=303)
+    return RedirectResponse(f"/admin/usuarios?ok=Usuario '{username}' creado", status_code=303)
 
 
-@router.get("/config", response_class=HTMLResponse)
-def admin_config(request: Request, ok: str = "", db: Session = Depends(get_db)):
+@router.post("/usuarios/{user_id}/toggle")
+def admin_toggle_usuario(user_id: int, request: Request, db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    return HTMLResponse(_render(request, "admin_config.html", "config", {
-        "export_limit":  get_setting(db, "export_limit", "5000"),
-        "smtp_host":     get_setting(db, "smtp_host", ""),
-        "smtp_port":     get_setting(db, "smtp_port", "587"),
-        "smtp_user":     get_setting(db, "smtp_user", ""),
-        "smtp_from":     get_setting(db, "smtp_from", ""),
-        "smtp_pass_hint": "(ya configurada)" if get_setting(db, "smtp_pass", "") else "(no configurada)",
-        "ok_block": f'<div class="alert alert-success mt-2">{ok}</div>' if ok else "",
+    user = db.query(User).filter_by(id=user_id).first()
+    if user and user.username != "admin":
+        user.is_active = not user.is_active
+        db.commit()
+    return RedirectResponse("/admin/usuarios", status_code=303)
+
+
+# ── Configuración: redirige a primera pestaña ─────────────────────────────────
+
+@router.get("/config", response_class=HTMLResponse)
+def admin_config_redirect(request: Request):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    return RedirectResponse("/admin/config/exportacion", status_code=303)
+
+
+# ── Config / Exportación ──────────────────────────────────────────────────────
+
+@router.get("/config/exportacion", response_class=HTMLResponse)
+def admin_config_exportacion(request: Request, ok: str = "", db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    return HTMLResponse(_render(request, "admin_config_exportacion.html", "config", {
+        "export_limit": get_setting(db, "export_limit", "5000"),
+        "ok_block": f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
     }))
 
 
-@router.post("/config/cambiar-password")
-async def admin_cambiar_password(
-    request: Request,
-    password_actual: str = Form(...),
-    password_nueva: str = Form(...),
-    password_confirm: str = Form(...),
-    db: Session = Depends(get_db),
+@router.post("/config/exportacion")
+def admin_config_exportacion_post(
+    request: Request, export_limit: int = Form(...), db: Session = Depends(get_db)
 ):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-
-    export_limit = get_setting(db, "export_limit", "5000")
-
-    def _err(msg: str):
-        return HTMLResponse(_render(request, "admin_config.html", "config", {
-            "export_limit": export_limit,
-            "error_block": f'<div class="alert alert-danger">{msg}</div>',
-        }))
-
-    if len(password_nueva) < 8:
-        return _err("La nueva contraseña debe tener al menos 8 caracteres.")
-    if password_nueva != password_confirm:
-        return _err("La nueva contraseña y la confirmación no coinciden.")
-
-    admin = db.query(User).filter_by(username="admin").first()
-    if not admin or not bcrypt.checkpw(password_actual.encode(), admin.hashed_password.encode()):
-        return _err("La contraseña actual no es correcta.")
-
-    admin.hashed_password = bcrypt.hashpw(password_nueva.encode(), bcrypt.gensalt()).decode()
-    db.commit()
-    return RedirectResponse("/admin/config?ok=Contraseña+actualizada+correctamente", status_code=303)
+    set_setting(db, "export_limit", str(max(100, min(50_000, export_limit))))
+    return RedirectResponse("/admin/config/exportacion?ok=Límite+guardado", status_code=303)
 
 
-@router.post("/config/smtp")
-async def admin_config_smtp(
+# ── Config / Correo SMTP ──────────────────────────────────────────────────────
+
+@router.get("/config/correo", response_class=HTMLResponse)
+def admin_config_correo(request: Request, ok: str = "", db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    return HTMLResponse(_render(request, "admin_config_correo.html", "config", {
+        "smtp_host":      get_setting(db, "smtp_host", ""),
+        "smtp_port":      get_setting(db, "smtp_port", "587"),
+        "smtp_user":      get_setting(db, "smtp_user", ""),
+        "smtp_from":      get_setting(db, "smtp_from", ""),
+        "smtp_pass_hint": "(ya configurada)" if get_setting(db, "smtp_pass", "") else "(no configurada)",
+        "ok_block": f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
+    }))
+
+
+@router.post("/config/correo")
+async def admin_config_correo_post(
     request: Request,
     smtp_host: str = Form(""),
     smtp_port: int = Form(587),
@@ -161,36 +174,51 @@ async def admin_config_smtp(
     if smtp_pass.strip():
         set_setting(db, "smtp_pass", smtp_pass.strip())
     set_setting(db, "smtp_from", smtp_from.strip())
-    return RedirectResponse("/admin/config?ok=Configuración+SMTP+guardada", status_code=303)
+    return RedirectResponse("/admin/config/correo?ok=Configuración+SMTP+guardada", status_code=303)
 
 
-@router.post("/config/guardar")
-def admin_config_guardar(
+# ── Config / Seguridad ────────────────────────────────────────────────────────
+
+@router.get("/config/seguridad", response_class=HTMLResponse)
+def admin_config_seguridad(request: Request, ok: str = "", db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    return HTMLResponse(_render(request, "admin_config_seguridad.html", "config", {
+        "ok_block": f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
+    }))
+
+
+@router.post("/config/seguridad")
+async def admin_config_seguridad_post(
     request: Request,
-    export_limit: int = Form(...),
+    password_actual: str = Form(...),
+    password_nueva: str = Form(...),
+    password_confirm: str = Form(...),
     db: Session = Depends(get_db),
 ):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    export_limit = max(100, min(50_000, export_limit))
-    set_setting(db, "export_limit", str(export_limit))
-    return RedirectResponse("/admin/config?ok=Configuración+guardada", status_code=303)
+
+    def _err(msg):
+        return HTMLResponse(_render(request, "admin_config_seguridad.html", "config", {
+            "error_block": f'<div class="alert alert-danger mb-3">{msg}</div>',
+        }))
+
+    if len(password_nueva) < 8:
+        return _err("La nueva contraseña debe tener al menos 8 caracteres.")
+    if password_nueva != password_confirm:
+        return _err("La nueva contraseña y la confirmación no coinciden.")
+
+    admin = db.query(User).filter_by(username="admin").first()
+    if not admin or not bcrypt.checkpw(password_actual.encode(), admin.hashed_password.encode()):
+        return _err("La contraseña actual no es correcta.")
+
+    admin.hashed_password = bcrypt.hashpw(password_nueva.encode(), bcrypt.gensalt()).decode()
+    db.commit()
+    return RedirectResponse("/admin/config/seguridad?ok=Contraseña+actualizada", status_code=303)
 
 
-@router.post("/usuarios/{user_id}/toggle")
-def admin_toggle_usuario(
-    user_id: int,
-    request: Request,
-    db: Session = Depends(get_db),
-):
-    if not _require_admin(request):
-        return RedirectResponse("/login", status_code=303)
-    user = db.query(User).filter_by(id=user_id).first()
-    if user and user.username != "admin":
-        user.is_active = not user.is_active
-        db.commit()
-    return RedirectResponse("/admin/usuarios", status_code=303)
-
+# ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _users_rows(db: Session) -> str:
     rows = ""
@@ -198,7 +226,7 @@ def _users_rows(db: Session) -> str:
         estado = "Activo" if u.is_active else "Inactivo"
         toggle_label = "Desactivar" if u.is_active else "Activar"
         email_cell = (
-            f'<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
+            '<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
             if u.username == "admin"
             else (u.email or '<span style="color:var(--co-red);font-size:0.8rem">sin correo</span>')
         )

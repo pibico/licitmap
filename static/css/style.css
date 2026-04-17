@@ -1967,6 +1967,41 @@ a:hover {
 .lm-admin-section-arrow { color: var(--tx-faint); transition: color 0.15s; }
 .lm-admin-section-card:hover .lm-admin-section-arrow { color: var(--ac-main); }
 
+/* Pestañas de sub-sección en config ─────────────────────────────────── */
+.lm-admin-config-tabs {
+  display: flex;
+  gap: 0;
+  border-bottom: 1px solid var(--bg-surface0);
+  margin-bottom: 1.5rem;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.lm-admin-config-tabs::-webkit-scrollbar { display: none; }
+
+.lm-admin-config-tab {
+  display: flex;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  font-size: 0.855rem;
+  color: var(--tx-muted);
+  text-decoration: none !important;
+  border-bottom: 2px solid transparent;
+  margin-bottom: -1px;
+  white-space: nowrap;
+  transition: color 0.13s, border-color 0.13s;
+  flex-shrink: 0;
+}
+.lm-admin-config-tab:hover {
+  color: var(--tx-primary);
+  text-decoration: none !important;
+}
+.lm-admin-config-tab.active {
+  color: var(--ac-main);
+  border-bottom-color: var(--ac-main);
+  font-weight: 600;
+}
+
 /* Label de sección dentro de cards admin */
 .lm-admin-section-label {
   font-size: 0.8rem;
