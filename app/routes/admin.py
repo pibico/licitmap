@@ -161,7 +161,6 @@ def admin_config_correo(request: Request, ok: str = "", db: Session = Depends(ge
 @router.post("/config/correo/test")
 async def admin_config_correo_test(
     request: Request,
-    test_email: str = Form(...),
     db: Session = Depends(get_db),
 ):
     if not _require_admin(request):
@@ -177,14 +176,22 @@ async def admin_config_correo_test(
             "test_block":     test_block,
         })
 
+    dest = get_setting(db, "smtp_user", "").strip()
+    if not dest:
+        block = (
+            f'<div class="alert alert-warning d-flex align-items-center gap-2 mb-3">'
+            f'No hay usuario SMTP configurado. Guarda la configuración primero.</div>'
+        )
+        return HTMLResponse(_correo_page(block))
+
     try:
-        send_test_email(test_email.strip(), db)
+        send_test_email(dest, db)
         block = (
             f'<div class="alert alert-success d-flex align-items-center gap-2 mb-3">'
             f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"'
             f' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
             f'<polyline points="20 6 9 17 4 12"/></svg>'
-            f'Correo de prueba enviado a <strong>{test_email.strip()}</strong></div>'
+            f'Correo de prueba enviado a <strong>{dest}</strong></div>'
         )
     except Exception as e:
         block = (
