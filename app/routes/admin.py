@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.utils import _nav_context, get_setting, set_setting
+from app.email_utils import send_test_email
 
 router = APIRouter(prefix="/admin")
 
@@ -152,8 +153,49 @@ def admin_config_correo(request: Request, ok: str = "", db: Session = Depends(ge
         "smtp_user":      get_setting(db, "smtp_user", ""),
         "smtp_from":      get_setting(db, "smtp_from", ""),
         "smtp_pass_hint": "(ya configurada)" if get_setting(db, "smtp_pass", "") else "(no configurada)",
-        "ok_block": f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
+        "ok_block":   f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
+        "test_block": "",
     }))
+
+
+@router.post("/config/correo/test")
+async def admin_config_correo_test(
+    request: Request,
+    test_email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+
+    def _correo_page(test_block: str) -> str:
+        return _render(request, "admin_config_correo.html", "config", {
+            "smtp_host":      get_setting(db, "smtp_host", ""),
+            "smtp_port":      get_setting(db, "smtp_port", "587"),
+            "smtp_user":      get_setting(db, "smtp_user", ""),
+            "smtp_from":      get_setting(db, "smtp_from", ""),
+            "smtp_pass_hint": "(ya configurada)" if get_setting(db, "smtp_pass", "") else "(no configurada)",
+            "test_block":     test_block,
+        })
+
+    try:
+        send_test_email(test_email.strip(), db)
+        block = (
+            f'<div class="alert alert-success d-flex align-items-center gap-2 mb-3">'
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"'
+            f' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            f'<polyline points="20 6 9 17 4 12"/></svg>'
+            f'Correo de prueba enviado a <strong>{test_email.strip()}</strong></div>'
+        )
+    except Exception as e:
+        block = (
+            f'<div class="alert alert-danger d-flex align-items-center gap-2 mb-3">'
+            f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"'
+            f' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
+            f'<circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/>'
+            f'<line x1="12" y1="16" x2="12.01" y2="16"/></svg>'
+            f'Error al enviar: {e}</div>'
+        )
+    return HTMLResponse(_correo_page(block))
 
 
 @router.post("/config/correo")

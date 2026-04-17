@@ -22,8 +22,10 @@
 
 {{ok_block}}
 {{error_block}}
+{{test_block}}
 
-<div class="card lm-card">
+<!-- Formulario SMTP -->
+<div class="card lm-card mb-3">
   <div class="card-body">
     <h6 class="mb-1 lm-admin-section-label">Servidor de correo (SMTP)</h6>
     <p class="mb-3" style="font-size:0.8rem;color:var(--tx-muted)">
@@ -67,6 +69,34 @@
       </div>
       <div class="col-12">
         <button type="submit" class="btn btn-primary btn-sm">Guardar configuración SMTP</button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<!-- Test de correo -->
+<div class="card lm-card">
+  <div class="card-body">
+    <h6 class="mb-1 lm-admin-section-label">Correo de prueba</h6>
+    <p class="mb-3" style="font-size:0.8rem;color:var(--tx-muted)">
+      Envía un correo de prueba para verificar que la configuración SMTP es correcta.
+    </p>
+    <form method="post" action="/admin/config/correo/test" class="row g-2 align-items-end">
+      <div class="col-sm-7">
+        <label class="form-label form-label-sm">Dirección de destino</label>
+        <input type="email" name="test_email" class="form-control form-control-sm"
+          placeholder="tu@correo.com" required autocomplete="email">
+      </div>
+      <div class="col-sm-5">
+        <button type="submit" class="btn btn-outline-secondary btn-sm w-100">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24"
+            stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+            style="margin-right:0.3rem;vertical-align:-1px">
+            <line x1="22" y1="2" x2="11" y2="13"/>
+            <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+          </svg>
+          Enviar correo de prueba
+        </button>
       </div>
     </form>
   </div>
