@@ -99,9 +99,13 @@ async def admin_crear_usuario(
 def admin_config(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    export_limit = get_setting(db, "export_limit", "5000")
     return HTMLResponse(_render(request, "admin_config.html", "config", {
-        "export_limit": export_limit,
+        "export_limit":  get_setting(db, "export_limit", "5000"),
+        "smtp_host":     get_setting(db, "smtp_host", ""),
+        "smtp_port":     get_setting(db, "smtp_port", "587"),
+        "smtp_user":     get_setting(db, "smtp_user", ""),
+        "smtp_from":     get_setting(db, "smtp_from", ""),
+        "smtp_pass_hint": "(ya configurada)" if get_setting(db, "smtp_pass", "") else "(no configurada)",
         "ok_block": f'<div class="alert alert-success mt-2">{ok}</div>' if ok else "",
     }))
 
@@ -137,6 +141,27 @@ async def admin_cambiar_password(
     admin.hashed_password = bcrypt.hashpw(password_nueva.encode(), bcrypt.gensalt()).decode()
     db.commit()
     return RedirectResponse("/admin/config?ok=Contraseña+actualizada+correctamente", status_code=303)
+
+
+@router.post("/config/smtp")
+async def admin_config_smtp(
+    request: Request,
+    smtp_host: str = Form(""),
+    smtp_port: int = Form(587),
+    smtp_user: str = Form(""),
+    smtp_pass: str = Form(""),
+    smtp_from: str = Form(""),
+    db: Session = Depends(get_db),
+):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    set_setting(db, "smtp_host", smtp_host.strip())
+    set_setting(db, "smtp_port", str(max(1, min(65535, smtp_port))))
+    set_setting(db, "smtp_user", smtp_user.strip())
+    if smtp_pass.strip():
+        set_setting(db, "smtp_pass", smtp_pass.strip())
+    set_setting(db, "smtp_from", smtp_from.strip())
+    return RedirectResponse("/admin/config?ok=Configuración+SMTP+guardada", status_code=303)
 
 
 @router.post("/config/guardar")

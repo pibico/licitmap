@@ -77,7 +77,7 @@ async def login_post(
     db.commit()
 
     try:
-        send_otp_email(user.email, user.username, otp)
+        send_otp_email(user.email, user.username, otp, db)
     except Exception as e:
         return _err("login.html", f"No se pudo enviar el correo: {e}")
 

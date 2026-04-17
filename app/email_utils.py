@@ -1,27 +1,24 @@
-"""Envío de emails de OTP via SMTP. Configuración por variables de entorno:
-  LM_SMTP_HOST  — servidor SMTP  (ej. smtp.gmail.com)
-  LM_SMTP_PORT  — puerto         (ej. 587)
-  LM_SMTP_USER  — usuario SMTP
-  LM_SMTP_PASS  — contraseña SMTP
-  LM_SMTP_FROM  — dirección remitente (por defecto = LM_SMTP_USER)
-"""
-import os
+"""Envío de emails de OTP. Configuración leída de la tabla settings (panel /admin/config)."""
 import smtplib
 import ssl
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from sqlalchemy.orm import Session
+
+from app.utils import get_setting
 
 
-def send_otp_email(to_email: str, username: str, code: str) -> None:
-    host = os.environ.get("LM_SMTP_HOST", "")
-    port = int(os.environ.get("LM_SMTP_PORT", "587"))
-    user = os.environ.get("LM_SMTP_USER", "")
-    password = os.environ.get("LM_SMTP_PASS", "")
-    from_addr = os.environ.get("LM_SMTP_FROM", user)
+def send_otp_email(to_email: str, username: str, code: str, db: Session) -> None:
+    host     = get_setting(db, "smtp_host", "")
+    port     = int(get_setting(db, "smtp_port", "587"))
+    user     = get_setting(db, "smtp_user", "")
+    password = get_setting(db, "smtp_pass", "")
+    from_addr = get_setting(db, "smtp_from", "") or user
 
     if not host or not user or not password:
         raise RuntimeError(
-            "SMTP no configurado. Define LM_SMTP_HOST, LM_SMTP_USER y LM_SMTP_PASS."
+            "El correo no está configurado. "
+            "Ve a Admin → Configuración y rellena los datos SMTP."
         )
 
     subject = "Tu código de acceso a LicitMap"
@@ -51,8 +48,8 @@ def send_otp_email(to_email: str, username: str, code: str) -> None:
 
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
-    msg["From"] = from_addr
-    msg["To"] = to_email
+    msg["From"]    = from_addr
+    msg["To"]      = to_email
     msg.attach(MIMEText(body_text, "plain"))
     msg.attach(MIMEText(body_html, "html"))
 

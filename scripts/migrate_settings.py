@@ -10,6 +10,11 @@ Base.metadata.create_all(bind=engine, tables=[Setting.__table__])
 
 DEFAULTS = {
     "export_limit": "5000",
+    "smtp_host":    "",
+    "smtp_port":    "587",
+    "smtp_user":    "",
+    "smtp_pass":    "",
+    "smtp_from":    "",
 }
 
 db = SessionLocal()
@@ -17,7 +22,7 @@ try:
     for key, value in DEFAULTS.items():
         if not db.query(Setting).filter_by(key=key).first():
             db.add(Setting(key=key, value=value))
-            print(f"Creado: {key} = {value}")
+            print(f"Creado: {key} = {value!r}")
         else:
             print(f"Ya existe: {key}")
     db.commit()
