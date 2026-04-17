@@ -11,57 +11,58 @@ from app.utils import _nav_context, get_setting, set_setting
 router = APIRouter(prefix="/admin")
 
 
-def _require_admin(request: Request):
+def _require_admin(request: Request) -> bool:
     return request.session.get("username") == "admin"
 
 
-def _render_admin(request: Request, db: Session, error: str = "", ok: str = "") -> str:
-    if not _require_admin(request):
-        return None
-    users = db.query(User).order_by(User.id).all()
-    rows = ""
-    for u in users:
-        estado = "Activo" if u.is_active else "Inactivo"
-        toggle_label = "Desactivar" if u.is_active else "Activar"
-        toggle_action = f"/admin/usuarios/{u.id}/toggle"
-        rows += f"""
-        <tr>
-          <td>{u.id}</td>
-          <td>{u.username}</td>
-          <td><span class="badge {'bg-success' if u.is_active else 'bg-secondary'}">{estado}</span></td>
-          <td>
-            <form method="post" action="{toggle_action}" style="display:inline">
-              <button class="btn btn-sm btn-outline-secondary" type="submit"
-                {'disabled' if u.username == 'admin' else ''}>{toggle_label}</button>
-            </form>
-          </td>
-        </tr>"""
-
-    error_block = f'<div class="alert alert-danger mt-2">{error}</div>' if error else ""
-    ok_block = f'<div class="alert alert-success mt-2">{ok}</div>' if ok else ""
-
-    base = Path("templates/base.html").read_text()
-    page = Path("templates/admin_usuarios.html").read_text()
-    html = base.replace("{{content}}", page)
+def _render(request: Request, page_tpl: str, active: str, extra: dict | None = None) -> str:
     auth_block, busqueda_display = _nav_context(request)
-    for key, value in {
+    base = Path("templates/base.html").read_text()
+    admin_base = Path("templates/admin_base.html").read_text()
+    page = Path(f"templates/{page_tpl}").read_text()
+
+    html = base.replace("{{content}}", admin_base.replace("{{admin_content}}", page))
+    vars = {
         "active_busqueda": "",
         "active_mapa": "",
         "nav_auth_block": auth_block,
         "nav_busqueda_display": busqueda_display,
-        "users_rows": rows,
-        "error_block": error_block,
-        "ok_block": ok_block,
-    }.items():
+        "admin_active_dashboard": "active" if active == "dashboard" else "",
+        "admin_active_usuarios": "active" if active == "usuarios" else "",
+        "admin_active_config": "active" if active == "config" else "",
+        "error_block": "",
+        "ok_block": "",
+    }
+    if extra:
+        vars.update(extra)
+    for key, value in vars.items():
         html = html.replace("{{" + key + "}}", value)
     return html
+
+
+@router.get("", response_class=HTMLResponse)
+@router.get("/", response_class=HTMLResponse)
+def admin_dashboard(request: Request, db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    total_users = db.query(User).count()
+    active_users = db.query(User).filter_by(is_active=True).count()
+    export_limit = get_setting(db, "export_limit", "5000")
+    return HTMLResponse(_render(request, "admin_dashboard.html", "dashboard", {
+        "total_users": str(total_users),
+        "active_users": str(active_users),
+        "export_limit": export_limit,
+    }))
 
 
 @router.get("/usuarios", response_class=HTMLResponse)
 def admin_usuarios(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    return _render_admin(request, db, ok=ok)
+    return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
+        "users_rows": _users_rows(db),
+        "ok_block": f'<div class="alert alert-success mt-2">{ok}</div>' if ok else "",
+    }))
 
 
 @router.post("/usuarios/nuevo")
@@ -75,9 +76,15 @@ async def admin_crear_usuario(
         return RedirectResponse("/login", status_code=303)
     username = username.strip()
     if not username or not password:
-        return HTMLResponse(_render_admin(request, db, error="Usuario y contraseña son obligatorios."))
+        return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
+            "users_rows": _users_rows(db),
+            "error_block": '<div class="alert alert-danger mt-2">Usuario y contraseña son obligatorios.</div>',
+        }))
     if db.query(User).filter_by(username=username).first():
-        return HTMLResponse(_render_admin(request, db, error=f"El usuario '{username}' ya existe."))
+        return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
+            "users_rows": _users_rows(db),
+            "error_block": f'<div class="alert alert-danger mt-2">El usuario \'{username}\' ya existe.</div>',
+        }))
     hashed = bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode()
     db.add(User(username=username, hashed_password=hashed, is_active=True))
     db.commit()
@@ -88,23 +95,11 @@ async def admin_crear_usuario(
 def admin_config(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    auth_block, busqueda_display = _nav_context(request)
     export_limit = get_setting(db, "export_limit", "5000")
-    ok_block = f'<div class="alert alert-success mt-2">{ok}</div>' if ok else ""
-    base = Path("templates/base.html").read_text()
-    page = Path("templates/admin_config.html").read_text()
-    html = base.replace("{{content}}", page)
-    for key, value in {
-        "active_busqueda": "",
-        "active_mapa": "",
-        "nav_auth_block": auth_block,
-        "nav_busqueda_display": busqueda_display,
+    return HTMLResponse(_render(request, "admin_config.html", "config", {
         "export_limit": export_limit,
-        "ok_block": ok_block,
-        "error_block": "",
-    }.items():
-        html = html.replace("{{" + key + "}}", value)
-    return html
+        "ok_block": f'<div class="alert alert-success mt-2">{ok}</div>' if ok else "",
+    }))
 
 
 @router.post("/config/guardar")
@@ -117,7 +112,7 @@ def admin_config_guardar(
         return RedirectResponse("/login", status_code=303)
     export_limit = max(100, min(50_000, export_limit))
     set_setting(db, "export_limit", str(export_limit))
-    return RedirectResponse(f"/admin/config?ok=Configuración+guardada", status_code=303)
+    return RedirectResponse("/admin/config?ok=Configuración+guardada", status_code=303)
 
 
 @router.post("/usuarios/{user_id}/toggle")
@@ -133,3 +128,23 @@ def admin_toggle_usuario(
         user.is_active = not user.is_active
         db.commit()
     return RedirectResponse("/admin/usuarios", status_code=303)
+
+
+def _users_rows(db: Session) -> str:
+    rows = ""
+    for u in db.query(User).order_by(User.id).all():
+        estado = "Activo" if u.is_active else "Inactivo"
+        toggle_label = "Desactivar" if u.is_active else "Activar"
+        rows += f"""
+        <tr>
+          <td style="padding-left:1rem;color:var(--tx-faint)">{u.id}</td>
+          <td style="font-weight:500">{u.username}</td>
+          <td><span class="badge {'bg-success' if u.is_active else 'bg-secondary'}">{estado}</span></td>
+          <td>
+            <form method="post" action="/admin/usuarios/{u.id}/toggle" style="display:inline">
+              <button class="btn btn-sm btn-outline-secondary" type="submit"
+                {'disabled' if u.username == 'admin' else ''}>{toggle_label}</button>
+            </form>
+          </td>
+        </tr>"""
+    return rows

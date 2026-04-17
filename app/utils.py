@@ -23,8 +23,7 @@ def _nav_context(request: Request) -> tuple[str, str]:
     username = request.session.get("username", "")
     if username:
         admin_link = (
-            '<a href="/admin/usuarios" class="lm-nav-logout">Usuarios</a>'
-            '<a href="/admin/config" class="lm-nav-logout">Config</a>'
+            '<a href="/admin" class="lm-nav-logout">Admin</a>'
             if username == "admin"
             else ""
         )

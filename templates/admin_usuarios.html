@@ -1,50 +1,53 @@
-<div class="row justify-content-center">
-  <div class="col-lg-8">
-    <h4 class="mb-4">Gestión de usuarios</h4>
+<div class="lm-admin-page-header">
+  <h4 class="lm-admin-page-title">Gestión de usuarios</h4>
+  <p class="lm-admin-page-subtitle">Crea y administra las cuentas de acceso</p>
+</div>
 
-    {{error_block}}
-    {{ok_block}}
+{{error_block}}
+{{ok_block}}
 
-    <!-- Tabla de usuarios -->
-    <div class="card lm-card mb-4">
-      <div class="card-body p-0">
-        <table class="table table-sm mb-0">
-          <thead>
-            <tr>
-              <th style="width:3rem">#</th>
-              <th>Usuario</th>
-              <th>Estado</th>
-              <th></th>
-            </tr>
-          </thead>
-          <tbody>
-            {{users_rows}}
-          </tbody>
-        </table>
+<!-- Tabla de usuarios -->
+<div class="card lm-card mb-4">
+  <div class="card-body p-0">
+    <table class="table table-sm mb-0 lm-admin-table">
+      <thead>
+        <tr>
+          <th style="width:3rem;padding-left:1rem">#</th>
+          <th>Usuario</th>
+          <th>Estado</th>
+          <th style="width:7rem"></th>
+        </tr>
+      </thead>
+      <tbody>
+        {{users_rows}}
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<!-- Formulario nuevo usuario -->
+<div class="card lm-card">
+  <div class="card-body">
+    <h6 class="mb-3" style="font-size:0.85rem;font-weight:600;color:var(--tx-muted);text-transform:uppercase;letter-spacing:0.05em">Nuevo usuario</h6>
+    <form method="post" action="/admin/usuarios/nuevo" class="row g-2 align-items-end">
+      <div class="col-sm-4">
+        <label class="form-label form-label-sm">Nombre de usuario</label>
+        <input type="text" name="username" class="form-control form-control-sm" required
+          autocomplete="off" autocapitalize="none" placeholder="p. ej. juan">
       </div>
-    </div>
-
-    <!-- Formulario nuevo usuario -->
-    <div class="card lm-card">
-      <div class="card-body">
-        <h6 class="mb-3">Nuevo usuario</h6>
-        <form method="post" action="/admin/usuarios/nuevo" class="row g-2 align-items-end">
-          <div class="col-sm-4">
-            <label class="form-label form-label-sm">Usuario</label>
-            <input type="text" name="username" class="form-control form-control-sm" required
-              autocomplete="off" autocapitalize="none">
-          </div>
-          <div class="col-sm-4">
-            <label class="form-label form-label-sm">Contraseña</label>
-            <input type="password" name="password" class="form-control form-control-sm" required
-              autocomplete="new-password">
-          </div>
-          <div class="col-sm-4">
-            <button type="submit" class="btn btn-primary btn-sm w-100">Crear usuario</button>
-          </div>
-        </form>
+      <div class="col-sm-4">
+        <label class="form-label form-label-sm">Contraseña</label>
+        <input type="password" name="password" class="form-control form-control-sm" required
+          autocomplete="new-password" placeholder="Mínimo 6 caracteres">
       </div>
-    </div>
-
+      <div class="col-sm-4">
+        <button type="submit" class="btn btn-primary btn-sm w-100">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.3rem;vertical-align:-1px">
+            <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+          </svg>
+          Crear usuario
+        </button>
+      </div>
+    </form>
   </div>
 </div>

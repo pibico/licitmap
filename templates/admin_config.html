@@ -1,32 +1,26 @@
-<div class="row justify-content-center">
-  <div class="col-lg-6">
+<div class="lm-admin-page-header">
+  <h4 class="lm-admin-page-title">Configuración del sistema</h4>
+  <p class="lm-admin-page-subtitle">Ajusta los parámetros globales de la aplicación</p>
+</div>
 
-    <div class="d-flex align-items-center gap-3 mb-4">
-      <h4 class="mb-0">Configuración</h4>
-      <a href="/admin/usuarios" class="btn btn-sm btn-outline-secondary">← Usuarios</a>
-    </div>
+{{ok_block}}
+{{error_block}}
 
-    {{ok_block}}
-    {{error_block}}
-
-    <div class="card lm-card">
-      <div class="card-body">
-        <h6 class="mb-3">Exportación Excel</h6>
-        <form method="post" action="/admin/config/guardar" class="row g-3 align-items-end">
-          <div class="col-sm-6">
-            <label class="form-label form-label-sm">Límite de filas por exportación</label>
-            <input type="number" name="export_limit" class="form-control form-control-sm"
-              value="{{export_limit}}" min="100" max="50000" required>
-            <div class="form-text" style="font-size:0.72rem;color:var(--tx-faint)">
-              Entre 100 y 50.000 filas. Recomendado: 5.000.
-            </div>
-          </div>
-          <div class="col-sm-4">
-            <button type="submit" class="btn btn-primary btn-sm w-100">Guardar</button>
-          </div>
-        </form>
+<div class="card lm-card">
+  <div class="card-body">
+    <h6 class="mb-3" style="font-size:0.85rem;font-weight:600;color:var(--tx-muted);text-transform:uppercase;letter-spacing:0.05em">Exportación Excel</h6>
+    <form method="post" action="/admin/config/guardar" class="row g-3 align-items-end">
+      <div class="col-sm-6">
+        <label class="form-label form-label-sm">Límite de filas por exportación</label>
+        <input type="number" name="export_limit" class="form-control form-control-sm"
+          value="{{export_limit}}" min="100" max="50000" required>
+        <div class="form-text" style="font-size:0.72rem;color:var(--tx-faint)">
+          Entre 100 y 50.000 filas. Valor recomendado: 5.000.
+        </div>
       </div>
-    </div>
-
+      <div class="col-sm-3">
+        <button type="submit" class="btn btn-primary btn-sm w-100">Guardar</button>
+      </div>
+    </form>
   </div>
 </div>
