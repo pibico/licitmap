@@ -2071,3 +2071,92 @@ a:hover {
   .lm-admin-back span { display: none; }
   .lm-admin-back svg { display: block; width: 18px; height: 18px; }
 }
+
+/* =============================================
+   ANÁLISIS
+============================================= */
+.lm-an-filter-label {
+  display: block;
+  font-size: 0.72rem;
+  font-weight: 500;
+  color: var(--tx-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.lm-an-select {
+  background-color: var(--bg-mantle);
+  border-color: var(--bg-surface0);
+  color: var(--tx-primary);
+  font-size: 0.8rem;
+}
+.lm-an-select:focus {
+  background-color: var(--bg-mantle);
+  border-color: var(--ac-main);
+  color: var(--tx-primary);
+  box-shadow: 0 0 0 2px var(--ac-soft);
+}
+.lm-an-select option {
+  background-color: var(--bg-mantle);
+  color: var(--tx-primary);
+}
+
+/* KPI cards */
+.lm-an-kpi {
+  padding: 0.85rem 1rem !important;
+  text-align: center;
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.lm-an-kpi:hover {
+  transform: translateY(-2px);
+}
+.lm-an-kpi-val {
+  font-size: 1.45rem;
+  font-weight: 700;
+  letter-spacing: -0.03em;
+  color: var(--tx-primary);
+  line-height: 1.2;
+}
+.lm-an-kpi-label {
+  font-size: 0.7rem;
+  color: var(--tx-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-top: 0.2rem;
+}
+.lm-an-kpi-sub {
+  font-size: 0.72rem;
+  color: var(--ac-main);
+  margin-top: 0.1rem;
+  font-weight: 500;
+}
+.lm-an-kpi-green .lm-an-kpi-val {
+  color: var(--ac-main);
+}
+
+/* Chart headings */
+.lm-an-chart-header {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.lm-an-chart-title {
+  font-size: 0.82rem;
+  font-weight: 600;
+  color: var(--tx-secondary);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  margin-bottom: 0.75rem;
+}
+.lm-an-chart-header .lm-an-chart-title {
+  margin-bottom: 0;
+}
+.lm-an-chart-badge {
+  font-size: 0.7rem;
+  color: var(--ac-main);
+  font-weight: 500;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
