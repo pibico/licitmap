@@ -2095,6 +2095,26 @@ a:hover {
 .lm-an-kpis .lm-stat-value {
   font-size: 1.2rem;  /* ligeramente menor para que quepan valores largos */
 }
+.lm-an-reset-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  background: none;
+  border: 1px solid var(--co-red);
+  border-radius: 5px;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.71rem;
+  font-weight: 600;
+  color: var(--co-red);
+  cursor: pointer;
+  line-height: 1;
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+.lm-an-reset-btn:hover {
+  background: var(--co-red);
+  color: #fff;
+}
+
 .lm-stat-sub {
   font-size: 0.68rem;
   color: var(--ac-main);
