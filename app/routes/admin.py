@@ -102,6 +102,39 @@ def admin_config(request: Request, ok: str = "", db: Session = Depends(get_db)):
     }))
 
 
+@router.post("/config/cambiar-password")
+async def admin_cambiar_password(
+    request: Request,
+    password_actual: str = Form(...),
+    password_nueva: str = Form(...),
+    password_confirm: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+
+    export_limit = get_setting(db, "export_limit", "5000")
+
+    def _err(msg: str):
+        return HTMLResponse(_render(request, "admin_config.html", "config", {
+            "export_limit": export_limit,
+            "error_block": f'<div class="alert alert-danger">{msg}</div>',
+        }))
+
+    if len(password_nueva) < 8:
+        return _err("La nueva contraseña debe tener al menos 8 caracteres.")
+    if password_nueva != password_confirm:
+        return _err("La nueva contraseña y la confirmación no coinciden.")
+
+    admin = db.query(User).filter_by(username="admin").first()
+    if not admin or not bcrypt.checkpw(password_actual.encode(), admin.hashed_password.encode()):
+        return _err("La contraseña actual no es correcta.")
+
+    admin.hashed_password = bcrypt.hashpw(password_nueva.encode(), bcrypt.gensalt()).decode()
+    db.commit()
+    return RedirectResponse("/admin/config?ok=Contraseña+actualizada+correctamente", status_code=303)
+
+
 @router.post("/config/guardar")
 def admin_config_guardar(
     request: Request,

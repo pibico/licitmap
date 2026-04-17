@@ -1948,6 +1948,15 @@ a:hover {
 .lm-admin-section-arrow { color: var(--tx-faint); transition: color 0.15s; }
 .lm-admin-section-card:hover .lm-admin-section-arrow { color: var(--ac-main); }
 
+/* Label de sección dentro de cards admin */
+.lm-admin-section-label {
+  font-size: 0.8rem;
+  font-weight: 700;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--tx-muted);
+}
+
 /* Cabeceras de tabla admin */
 .lm-admin-table th {
   font-size: 0.75rem;
