@@ -251,6 +251,46 @@
       if (detailBackdrop && detailBackdrop.contains(e.target)) closeDetailPanel();
     });
 
+    // ─── Botón Seguir en panel de detalle ─────────────────────────────────
+    var followBtn   = document.getElementById('lm-detail-follow');
+    var followLabel = document.getElementById('lm-follow-label');
+    var followIcon  = document.getElementById('lm-follow-icon');
+    var lmFollowed  = new Set();
+
+    if (followBtn && document.getElementById('filtros-form')) {
+      fetch('/api/alertas/seguidos')
+        .then(function(r) { return r.json(); })
+        .then(function(ids) { ids.forEach(function(id) { lmFollowed.add(String(id)); }); })
+        .catch(function() {});
+
+      var origOpen = openDetailPanel;
+      openDetailPanel = function(licId) {
+        origOpen(licId);
+        followBtn.dataset.licId = licId;
+        var siguiendo = lmFollowed.has(String(licId));
+        followLabel.textContent = siguiendo ? 'Siguiendo' : 'Seguir';
+        followBtn.classList.toggle('following', siguiendo);
+        followIcon.setAttribute('fill', siguiendo ? 'currentColor' : 'none');
+      };
+
+      followBtn.addEventListener('click', function(e) {
+        e.stopPropagation();
+        var licId = followBtn.dataset.licId;
+        if (!licId) return;
+        fetch('/api/alertas/seguir/' + licId, { method: 'POST' })
+          .then(function(r) { return r.json(); })
+          .then(function(r) {
+            if (r.error) return;
+            if (r.seguida) { lmFollowed.add(String(licId)); }
+            else            { lmFollowed.delete(String(licId)); }
+            followLabel.textContent = r.seguida ? 'Siguiendo' : 'Seguir';
+            followBtn.classList.toggle('following', r.seguida);
+            followIcon.setAttribute('fill', r.seguida ? 'currentColor' : 'none');
+          })
+          .catch(function() {});
+      });
+    }
+
     var detailCloseBtn = document.getElementById('lm-detail-close');
     if (detailCloseBtn) detailCloseBtn.addEventListener('click', closeDetailPanel);
 
