@@ -439,6 +439,7 @@
       if (hasta) hasta.value = '';
       var org = document.getElementById('an-organismo-input');
       if (org) org.value = '';
+      saveSharedFilters();
       load();
     });
   }

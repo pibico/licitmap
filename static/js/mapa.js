@@ -475,6 +475,11 @@ document.querySelectorAll('#nivel-selector button').forEach(btn => {
     });
 });
 
+// ─── LMFilters: limpiar al pulsar "Limpiar filtros" ──────────────────────
+document.querySelector('a[href="/mapa"].btn')?.addEventListener('click', function () {
+    if (typeof LMFilters !== 'undefined') LMFilters.clear();
+});
+
 // ─── LMFilters: guardar estado compartido ────────────────────────────────
 function saveLMFilters() {
     if (typeof LMFilters === 'undefined') return;
