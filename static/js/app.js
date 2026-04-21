@@ -33,7 +33,6 @@ var LMFilters = (function () {
   }
 
   function setupSidebarToggles() {
-    // Solo abre secciones forzadas por URL param ?open= (ej. desde mapa)
     var openParam = new URLSearchParams(window.location.search).get('open');
     var forceOpen = openParam ? openParam.split(',') : [];
 
@@ -42,7 +41,15 @@ var LMFilters = (function () {
       var body = document.getElementById('sc-' + section);
       if (!body) return;
 
-      if (forceOpen.indexOf(section) >= 0) {
+      // Abre si: forzado por URL, tiene filtro activo no-vacío, o tiene input con valor
+      var hasActiveFilter = body.querySelector(
+        '.lm-active[data-value]:not([data-value=""]),' +
+        '.lm-active[data-gf-val]:not([data-gf-val=""])'
+      );
+      var hasInput = Array.from(body.querySelectorAll('input[type="date"], input[type="text"]'))
+        .some(function(i) { return i.value; });
+
+      if (forceOpen.indexOf(section) >= 0 || hasActiveFilter || hasInput) {
         btn.classList.add('open');
         body.classList.add('open');
       }

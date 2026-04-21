@@ -494,34 +494,34 @@ function saveLMFilters() {
     });
 }
 
-// ─── LMFilters: cargar al inicio si URL limpia ────────────────────────────
-(function () {
-    if (typeof LMFilters === 'undefined') return;
-    const url = new URLSearchParams(window.location.search);
-    const hasUrl = ['q','cpv_q','tipo','estado','prange','ccaa','fecha_desde','fecha_hasta','provincia','municipio'].some(k => url.get(k));
-    if (hasUrl) return;
-    const f = LMFilters.get();
-    if (f.q)    { filtros.q = f.q;          const el = document.getElementById('mapa-q');       if (el) el.value = f.q; }
-    if (f.cpv_q){ filtros.cpv_q = f.cpv_q;  const el = document.getElementById('mapa-cpv-q');   if (el) el.value = f.cpv_q; }
-    ['tipo','estado','prange','ccaa'].forEach(key => {
-        if (!f[key]) return;
-        f[key].split('|').filter(Boolean).forEach(v => {
-            filtros[key].add(v);
-            const item = document.querySelector(`.lm-check-item[data-group="${key}"][data-value="${v}"]`);
-            if (item) item.classList.add('lm-active');
-        });
-    });
-    if (f.fecha_desde) { filtros.fecha_desde = f.fecha_desde; const el = document.getElementById('mapa-fecha-desde'); if(el) el.value = f.fecha_desde; }
-    if (f.fecha_hasta) { filtros.fecha_hasta = f.fecha_hasta; const el = document.getElementById('mapa-fecha-hasta'); if(el) el.value = f.fecha_hasta; }
-    if (f.provincia) filtros.provincia = f.provincia;
-    if (f.municipio) filtros.municipio = f.municipio;
-})();
-
 // ─── Prefetch silencioso de los 3 GeoJSONs ───────────────────────────────
 fetchGeoJSON('ccaa');
 setTimeout(() => fetchGeoJSON('provincias'), 300);
 setTimeout(() => fetchGeoJSON('municipios'), 1000);
 
-// ─── Arrancar ─────────────────────────────────────────────────────────────
-map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
-renderMapa();
+// ─── Arrancar tras DOMContentLoaded (app.js ya definió LMFilters) ─────────
+document.addEventListener('DOMContentLoaded', function () {
+    // Cargar filtros compartidos si URL está limpia
+    const url = new URLSearchParams(window.location.search);
+    const hasUrl = ['q','cpv_q','tipo','estado','prange','ccaa','fecha_desde','fecha_hasta','provincia','municipio'].some(k => url.get(k));
+    if (!hasUrl && typeof LMFilters !== 'undefined') {
+        const f = LMFilters.get();
+        if (f.q)    { filtros.q = f.q;         const el = document.getElementById('mapa-q');       if (el) el.value = f.q; }
+        if (f.cpv_q){ filtros.cpv_q = f.cpv_q; const el = document.getElementById('mapa-cpv-q');   if (el) el.value = f.cpv_q; }
+        ['tipo','estado','prange','ccaa'].forEach(key => {
+            if (!f[key]) return;
+            f[key].split('|').filter(Boolean).forEach(v => {
+                filtros[key].add(v);
+                const item = document.querySelector(`.lm-check-item[data-group="${key}"][data-value="${v}"]`);
+                if (item) item.classList.add('lm-active');
+            });
+        });
+        if (f.fecha_desde) { filtros.fecha_desde = f.fecha_desde; const el = document.getElementById('mapa-fecha-desde'); if(el) el.value = f.fecha_desde; }
+        if (f.fecha_hasta) { filtros.fecha_hasta = f.fecha_hasta; const el = document.getElementById('mapa-fecha-hasta'); if(el) el.value = f.fecha_hasta; }
+        if (f.provincia) filtros.provincia = f.provincia;
+        if (f.municipio) filtros.municipio = f.municipio;
+    }
+
+    map.fitBounds([[27, -18], [44, 5]], { padding: [10, 10] });
+    renderMapa();
+});
