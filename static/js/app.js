@@ -32,15 +32,8 @@ var LMFilters = (function () {
     localStorage.setItem(THEME_KEY, theme);
   }
 
-  var SIDEBAR_STATE_KEY = 'lm-sidebar-open';
-
-  function getSidebarState() {
-    try { return JSON.parse(localStorage.getItem(SIDEBAR_STATE_KEY)) || {}; } catch(e) { return {}; }
-  }
-
   function setupSidebarToggles() {
-    var state = getSidebarState();
-    // Secciones a forzar abiertas: las que vienen del param ?open= (desde mapa)
+    // Solo abre secciones forzadas por URL param ?open= (ej. desde mapa)
     var openParam = new URLSearchParams(window.location.search).get('open');
     var forceOpen = openParam ? openParam.split(',') : [];
 
@@ -49,29 +42,14 @@ var LMFilters = (function () {
       var body = document.getElementById('sc-' + section);
       if (!body) return;
 
-      // Abre si: estaba abierto en localStorage, viene forzado desde mapa,
-      // o tiene ítems activos, o tiene inputs de fecha con valor
-      var hasActive = body.querySelector('.lm-active');
-      var hasDate = Array.from(body.querySelectorAll('input[type="date"], input[type="text"]')).some(function(i) { return i.value; });
-      if (state[section] || forceOpen.indexOf(section) >= 0 || hasActive || hasDate) {
+      if (forceOpen.indexOf(section) >= 0) {
         btn.classList.add('open');
         body.classList.add('open');
-      }
-
-      // Auto-scroll al ítem activo si la sección es scrollable
-      if (hasActive && body.classList.contains('lm-scrollable')) {
-        setTimeout(function() {
-          var activeEl = body.querySelector('.lm-active');
-          if (activeEl) activeEl.scrollIntoView({ block: 'nearest' });
-        }, 300);
       }
 
       btn.addEventListener('click', function() {
         var open = btn.classList.toggle('open');
         body.classList.toggle('open', open);
-        var s = getSidebarState();
-        if (open) s[section] = 1; else delete s[section];
-        localStorage.setItem(SIDEBAR_STATE_KEY, JSON.stringify(s));
       });
     });
   }
