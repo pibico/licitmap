@@ -370,8 +370,70 @@
     });
   }
 
+  // ── Sidebar de filtros compartidos ───────────────────────────────────────
+  function initGlobalSidebar() {
+    var sidebar = document.getElementById('lm-gf-sidebar');
+    if (!sidebar || typeof LMFilters === 'undefined') return;
+
+    function syncUI() {
+      var f = LMFilters.get();
+      sidebar.querySelectorAll('.lm-gf-item').forEach(function (el) {
+        var key = el.dataset.gfKey, val = el.dataset.gfVal;
+        var vals = f[key] ? f[key].split('|').filter(Boolean) : [];
+        el.classList.toggle('lm-active', vals.indexOf(val) >= 0);
+      });
+      var fd = document.getElementById('gf-fecha-desde');
+      var fh = document.getElementById('gf-fecha-hasta');
+      if (fd) fd.value = f.fecha_desde || '';
+      if (fh) fh.value = f.fecha_hasta || '';
+    }
+
+    syncUI();
+
+    sidebar.addEventListener('click', function (e) {
+      var item = e.target.closest('.lm-gf-item');
+      if (!item) return;
+      var key = item.dataset.gfKey, val = item.dataset.gfVal;
+      var f = LMFilters.get();
+      var vals = f[key] ? f[key].split('|').filter(Boolean) : [];
+      var idx = vals.indexOf(val);
+      if (idx >= 0) vals.splice(idx, 1); else vals.push(val);
+      LMFilters.save({ [key]: vals.join('|') });
+      syncUI();
+    });
+
+    var fd = document.getElementById('gf-fecha-desde');
+    var fh = document.getElementById('gf-fecha-hasta');
+    if (fd) fd.addEventListener('change', function () { LMFilters.save({ fecha_desde: fd.value }); });
+    if (fh) fh.addEventListener('change', function () { LMFilters.save({ fecha_hasta: fh.value }); });
+
+    var resetBtn = document.getElementById('gf-reset');
+    if (resetBtn) resetBtn.addEventListener('click', function () { LMFilters.clear(); syncUI(); });
+
+    var crearBtn = document.getElementById('gf-crear-alerta');
+    if (crearBtn) {
+      crearBtn.addEventListener('click', function () {
+        var f = LMFilters.get();
+        var tipos = f.tipo ? f.tipo.split('|').filter(Boolean) : [];
+        var ccaas = f.ccaa ? f.ccaa.split('|').filter(Boolean) : [];
+        var estados = f.estado ? f.estado.split('|').filter(Boolean) : [];
+        var alTipo = document.getElementById('al-tipo');
+        var alCcaa = document.getElementById('al-ccaa');
+        var alEstado = document.getElementById('al-estado');
+        if (alTipo) Array.from(alTipo.options).forEach(function(o) { o.selected = tipos.indexOf(o.value) >= 0; });
+        if (alCcaa) Array.from(alCcaa.options).forEach(function(o) { o.selected = ccaas.indexOf(o.value) >= 0; });
+        if (alEstado) Array.from(alEstado.options).forEach(function(o) { o.selected = estados.indexOf(o.value) >= 0; });
+        var btnNueva = document.getElementById('btn-nueva-alerta');
+        var wrap = document.getElementById('form-alerta-wrap');
+        if (wrap && wrap.style.display === 'none') { if (btnNueva) btnNueva.click(); }
+        if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      });
+    }
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
+    initGlobalSidebar();
     initNl();
     initAlertaForm();
     initSubForm();

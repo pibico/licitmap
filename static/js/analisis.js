@@ -342,17 +342,33 @@
     };
   }
 
-  // ── Sidebar: toggles (abrir/cerrar secciones) ─────────────────────────────
-  function initToggles() {
-    document.querySelectorAll('#an-sidebar .lm-sidebar-toggle').forEach(function (btn) {
-      btn.addEventListener('click', function () {
-        var targetId = this.dataset.target;
-        var body = document.getElementById(targetId);
-        if (!body) return;
-        var open = body.classList.toggle('open');
-        this.classList.toggle('open', open);
+  // ── LMFilters: cargar/guardar estado compartido ───────────────────────────
+  function loadSharedFilters() {
+    if (typeof LMFilters === 'undefined') return;
+    var f = LMFilters.get();
+    var MAP = { tipo: 'tipo', ccaa: 'ccaa', estado: 'estado', prange: 'prange' };
+    Object.keys(MAP).forEach(function (lmKey) {
+      if (!f[lmKey]) return;
+      var val = f[lmKey].split('|')[0];
+      if (!val) return;
+      state[MAP[lmKey]] = val;
+      document.querySelectorAll('#an-sidebar .lm-an-fi[data-section="' + MAP[lmKey] + '"]').forEach(function (el) {
+        el.classList.toggle('lm-active', el.dataset.value === val);
       });
     });
+    if (f.fecha_desde) {
+      state.fecha_desde = f.fecha_desde;
+      var d = document.getElementById('an-fecha-desde'); if (d) d.value = f.fecha_desde;
+    }
+    if (f.fecha_hasta) {
+      state.fecha_hasta = f.fecha_hasta;
+      var h = document.getElementById('an-fecha-hasta'); if (h) h.value = f.fecha_hasta;
+    }
+  }
+
+  function saveSharedFilters() {
+    if (typeof LMFilters === 'undefined') return;
+    LMFilters.save({ tipo: state.tipo, ccaa: state.ccaa, estado: state.estado, prange: state.prange, fecha_desde: state.fecha_desde, fecha_hasta: state.fecha_hasta });
   }
 
   // ── Sidebar: items de filtro (radio por sección) ──────────────────────────
@@ -362,11 +378,11 @@
         var section = this.dataset.section;
         var value = this.dataset.value;
         state[section] = value;
-        // Actualizar clases activas en la sección
         document.querySelectorAll('#an-sidebar .lm-an-fi[data-section="' + section + '"]')
           .forEach(function (el) {
             el.classList.toggle('lm-active', el.dataset.value === value);
           });
+        saveSharedFilters();
         load();
       });
     });
@@ -389,8 +405,8 @@
   function initFechas() {
     var desde = document.getElementById('an-fecha-desde');
     var hasta = document.getElementById('an-fecha-hasta');
-    if (desde) desde.addEventListener('change', function () { state.fecha_desde = this.value; load(); });
-    if (hasta) hasta.addEventListener('change', function () { state.fecha_hasta = this.value; load(); });
+    if (desde) desde.addEventListener('change', function () { state.fecha_desde = this.value; saveSharedFilters(); load(); });
+    if (hasta) hasta.addEventListener('change', function () { state.fecha_hasta = this.value; saveSharedFilters(); load(); });
   }
 
   // ── Sidebar: organismo (debounced) ────────────────────────────────────────
@@ -444,7 +460,7 @@
     var tab = document.querySelector('.lm-nav-tabs a[href="/analisis"]');
     if (tab) tab.classList.add('lm-nav-tab-active');
 
-    initToggles();
+    loadSharedFilters();
     initFilterItems();
     initSoloPlazo();
     initFechas();

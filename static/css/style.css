@@ -2151,11 +2151,80 @@ a:hover {
 }
 
 /* =============================================
-   ALERTAS (v61)
+   ALERTAS (v62)
 ============================================= */
-.lm-alertas-page {
-  max-width: 860px;
-  margin: 0 auto;
+
+/* Hero rediseñado */
+.lm-al-hero {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem 1.25rem;
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 12px;
+}
+.lm-al-hero-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 10px;
+  background: var(--ac-soft);
+  color: var(--ac-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lm-al-hero-sub {
+  font-size: 0.82rem;
+  color: var(--tx-muted);
+  margin-top: 0.15rem;
+}
+
+/* Nuevas cards */
+.lm-al-card {
+  background: var(--bg-mantle);
+  border: 1px solid var(--bg-surface0);
+  border-radius: 12px;
+  overflow: hidden;
+}
+.lm-al-card-hdr {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.1rem;
+  border-bottom: 1px solid var(--bg-surface0);
+  gap: 0.75rem;
+}
+.lm-al-card-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+.lm-al-section-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--bg-surface0);
+  color: var(--ac-main);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+.lm-al-card-name {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--tx-primary);
+  line-height: 1.2;
+}
+.lm-al-card-desc {
+  font-size: 0.77rem;
+  color: var(--tx-muted);
+  margin-top: 0.1rem;
+}
+.lm-al-card-body {
+  padding: 0.75rem 1.1rem 1rem;
 }
 
 .lm-alertas-hero {

@@ -1,5 +1,25 @@
 // LicitMap JS
 
+// ── Filtros compartidos entre pestañas (localStorage) ─────────────────────
+var LMFilters = (function () {
+  var KEY = 'lm-filters';
+  var KEYS = ['q', 'cpv_q', 'tipo', 'ccaa', 'estado', 'prange', 'provincia', 'municipio', 'fecha_desde', 'fecha_hasta'];
+  var DEFS = {};
+  KEYS.forEach(function (k) { DEFS[k] = ''; });
+
+  function get() {
+    try { return Object.assign({}, DEFS, JSON.parse(localStorage.getItem(KEY) || '{}')); }
+    catch (e) { return Object.assign({}, DEFS); }
+  }
+  function save(obj) {
+    var f = get();
+    if (obj) KEYS.forEach(function (k) { if (k in obj) f[k] = obj[k] != null ? String(obj[k]) : ''; });
+    localStorage.setItem(KEY, JSON.stringify(f));
+  }
+  function clear() { localStorage.setItem(KEY, JSON.stringify(Object.assign({}, DEFS))); }
+  return { get: get, save: save, clear: clear };
+})();
+
 (function () {
   var THEME_KEY = 'licitmap-theme';
 
@@ -509,6 +529,33 @@
     var form = document.getElementById('filtros-form');
     if (!form) return;
 
+    // ─── LMFilters: redirigir a filtros guardados si URL está limpia ──────────
+    (function () {
+      var FKEYS = ['q', 'cpv_q', 'tipo', 'ccaa', 'estado', 'prange', 'provincia', 'municipio', 'fecha_desde', 'fecha_hasta'];
+      var url = new URLSearchParams(window.location.search);
+      var hasFilters = FKEYS.some(function (k) { return url.get(k); });
+      if (!hasFilters) {
+        if (sessionStorage.getItem('lm-just-cleared')) {
+          sessionStorage.removeItem('lm-just-cleared');
+          LMFilters.clear();
+        } else {
+          var stored = LMFilters.get();
+          var p = new URLSearchParams();
+          FKEYS.forEach(function (k) { if (stored[k]) p.set(k, stored[k]); });
+          if (p.toString()) { window.location.replace('/?' + p.toString()); return; }
+        }
+      }
+    })();
+
+    // Interceptar "Limpiar filtros"
+    var clearBtn = form.querySelector('a.btn[href="/"]');
+    if (clearBtn) {
+      clearBtn.addEventListener('click', function () {
+        LMFilters.clear();
+        sessionStorage.setItem('lm-just-cleared', '1');
+      });
+    }
+
     function fetchResultados() {
       var formData = new FormData(form);
       var params = new URLSearchParams(formData);
@@ -518,6 +565,11 @@
       var urlParams = new URLSearchParams();
       formData.forEach(function(v, k) { if (v) urlParams.set(k, v); });
       history.replaceState(null, '', urlParams.toString() ? '/?' + urlParams.toString() : '/');
+
+      // Guardar filtros en estado compartido
+      var toSave = {};
+      ['q','cpv_q','tipo','ccaa','estado','prange','provincia','municipio','fecha_desde','fecha_hasta'].forEach(function(k) { toSave[k] = formData.get(k) || ''; });
+      LMFilters.save(toSave);
 
       fetch('/?' + params.toString())
         .then(function (r) { return r.json(); })
