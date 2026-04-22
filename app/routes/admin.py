@@ -110,6 +110,21 @@ def admin_toggle_usuario(user_id: int, request: Request, db: Session = Depends(g
     return RedirectResponse("/admin/usuarios", status_code=303)
 
 
+@router.post("/usuarios/{user_id}/eliminar")
+def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends(get_db)):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    from app.models import Alerta, LicitacionSeguida
+    user = db.query(User).filter_by(id=user_id).first()
+    if user and user.username != "admin":
+        db.query(Alerta).filter_by(user_id=user_id).delete()
+        db.query(LicitacionSeguida).filter_by(user_id=user_id).delete()
+        db.delete(user)
+        db.commit()
+        return RedirectResponse(f"/admin/usuarios?ok=Usuario+eliminado", status_code=303)
+    return RedirectResponse("/admin/usuarios", status_code=303)
+
+
 # ── Configuración: redirige a primera pestaña ─────────────────────────────────
 
 @router.get("/config", response_class=HTMLResponse)
@@ -274,21 +289,27 @@ def _users_rows(db: Session) -> str:
     for u in db.query(User).order_by(User.id).all():
         estado = "Activo" if u.is_active else "Inactivo"
         toggle_label = "Desactivar" if u.is_active else "Activar"
+        is_admin = u.username == "admin"
         email_cell = (
             '<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
-            if u.username == "admin"
+            if is_admin
             else (u.email or '<span style="color:var(--co-red);font-size:0.8rem">sin correo</span>')
         )
+        disabled = "disabled" if is_admin else ""
+        confirm_js = f"return confirm('¿Eliminar al usuario {u.username}? Esta acción no se puede deshacer.')"
         rows += f"""
         <tr>
           <td style="padding-left:1rem;color:var(--tx-faint)">{u.id}</td>
           <td style="font-weight:500">{u.username}</td>
           <td style="font-size:0.85rem">{email_cell}</td>
           <td><span class="badge {'bg-success' if u.is_active else 'bg-secondary'}">{estado}</span></td>
-          <td>
+          <td style="white-space:nowrap">
             <form method="post" action="/admin/usuarios/{u.id}/toggle" style="display:inline">
-              <button class="btn btn-sm btn-outline-secondary" type="submit"
-                {'disabled' if u.username == 'admin' else ''}>{toggle_label}</button>
+              <button class="btn btn-sm btn-outline-secondary" type="submit" {disabled}>{toggle_label}</button>
+            </form>
+            <form method="post" action="/admin/usuarios/{u.id}/eliminar" style="display:inline"
+                  onsubmit="{confirm_js}">
+              <button class="btn btn-sm btn-outline-danger" type="submit" {disabled}>Eliminar</button>
             </form>
           </td>
         </tr>"""
