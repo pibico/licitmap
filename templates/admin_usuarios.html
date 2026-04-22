@@ -26,6 +26,17 @@
   </div>
 </div>
 
+<script>
+function lmEditEmail(id) {
+  var form = document.getElementById('email-form-' + id);
+  var disp = document.getElementById('email-disp-' + id);
+  var open = form && form.style.display !== 'none';
+  if (form) form.style.display = open ? 'none' : '';
+  if (disp) disp.style.display = open ? '' : 'none';
+  if (!open && form) form.querySelector('input[type=email]').focus();
+}
+</script>
+
 <!-- Formulario nuevo usuario -->
 <div class="card lm-card">
   <div class="card-body">

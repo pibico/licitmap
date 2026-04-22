@@ -110,6 +110,35 @@ def admin_toggle_usuario(user_id: int, request: Request, db: Session = Depends(g
     return RedirectResponse("/admin/usuarios", status_code=303)
 
 
+@router.post("/usuarios/{user_id}/email")
+async def admin_cambiar_email(
+    user_id: int,
+    request: Request,
+    email: str = Form(...),
+    db: Session = Depends(get_db),
+):
+    if not _require_admin(request):
+        return RedirectResponse("/login", status_code=303)
+    user = db.query(User).filter_by(id=user_id).first()
+    if not user or user.username == "admin":
+        return RedirectResponse("/admin/usuarios", status_code=303)
+    email = email.strip().lower()
+    if not email:
+        return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
+            "users_rows": _users_rows(db),
+            "error_block": '<div class="alert alert-danger mt-2">El correo no puede estar vacío.</div>',
+        }))
+    existing = db.query(User).filter(User.email == email, User.id != user_id).first()
+    if existing:
+        return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
+            "users_rows": _users_rows(db),
+            "error_block": f'<div class="alert alert-danger mt-2">El correo <strong>{email}</strong> ya está en uso por otro usuario.</div>',
+        }))
+    user.email = email
+    db.commit()
+    return RedirectResponse("/admin/usuarios?ok=Correo+actualizado", status_code=303)
+
+
 @router.post("/usuarios/{user_id}/eliminar")
 def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends(get_db)):
     if not _require_admin(request):
@@ -290,11 +319,29 @@ def _users_rows(db: Session) -> str:
         estado = "Activo" if u.is_active else "Inactivo"
         toggle_label = "Desactivar" if u.is_active else "Activar"
         is_admin = u.username == "admin"
-        email_cell = (
-            '<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
-            if is_admin
-            else (u.email or '<span style="color:var(--co-red);font-size:0.8rem">sin correo</span>')
-        )
+        if is_admin:
+            email_cell = '<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
+        else:
+            display = u.email or '<span style="color:var(--co-red);font-size:0.8rem">sin correo</span>'
+            email_cell = f"""<span id="email-disp-{u.id}" style="font-size:0.85rem">{display}</span>
+              <button type="button" onclick="lmEditEmail({u.id})" title="Cambiar correo"
+                style="background:none;border:none;padding:0 0.3rem;cursor:pointer;color:var(--tx-faint);vertical-align:middle">
+                <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24"
+                  stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/>
+                  <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
+                </svg>
+              </button>
+              <form id="email-form-{u.id}" method="post" action="/admin/usuarios/{u.id}/email"
+                    style="display:none;margin-top:0.35rem">
+                <div class="input-group input-group-sm">
+                  <input type="email" name="email" value="{u.email or ''}"
+                         class="form-control form-control-sm" required placeholder="nuevo@correo.com">
+                  <button type="submit" class="btn btn-sm btn-primary">Guardar</button>
+                  <button type="button" class="btn btn-sm btn-outline-secondary"
+                          onclick="lmEditEmail({u.id})">✕</button>
+                </div>
+              </form>"""
         disabled = "disabled" if is_admin else ""
         confirm_js = f"return confirm('¿Eliminar al usuario {u.username}? Esta acción no se puede deshacer.')"
         rows += f"""
