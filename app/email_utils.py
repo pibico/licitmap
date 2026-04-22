@@ -30,11 +30,16 @@ def _send(host, port, user, password, from_addr, to_email, subject, text, html):
     msg.attach(MIMEText(text, "plain"))
     msg.attach(MIMEText(html, "html"))
     ctx = ssl.create_default_context()
-    with smtplib.SMTP(host, port) as smtp:
-        smtp.ehlo()
-        smtp.starttls(context=ctx)
-        smtp.login(user, password)
-        smtp.sendmail(from_addr, to_email, msg.as_string())
+    if port == 465:
+        with smtplib.SMTP_SSL(host, port, context=ctx) as smtp:
+            smtp.login(user, password)
+            smtp.sendmail(from_addr, to_email, msg.as_string())
+    else:
+        with smtplib.SMTP(host, port) as smtp:
+            smtp.ehlo()
+            smtp.starttls(context=ctx)
+            smtp.login(user, password)
+            smtp.sendmail(from_addr, to_email, msg.as_string())
 
 
 def send_otp_email(to_email: str, username: str, code: str, db: Session) -> None:
