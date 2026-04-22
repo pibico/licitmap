@@ -84,6 +84,13 @@ def _ccaa_options(sel_pipe="") -> str:
         for c in CCAA_LIST
     )
 
+def _ccaa_chips(sel_pipe="") -> str:
+    sel = set(sel_pipe.split("|")) if sel_pipe else set()
+    return "".join(
+        f'<button type="button" class="lm-chip{" lm-chip-active" if c in sel else ""}" data-val="{_esc(c)}">{_esc(c)}</button>'
+        for c in CCAA_LIST
+    )
+
 
 def _tipo_options(sel_pipe="") -> str:
     sel = set(sel_pipe.split("|")) if sel_pipe else set()
@@ -204,11 +211,10 @@ def _build_nl_section(nl: Alerta | None) -> str:
     </div>
   </div>
   <div class="mb-3">
-    <label class="form-label small mb-1">Comunidades autónomas <span class="text-muted">(vacío = todas)</span></label>
-    <select class="form-select form-select-sm" id="nl-ccaa" multiple size="5">
-      {_ccaa_options(comunidades)}
-    </select>
-    <div class="form-text">Mantén Ctrl/Cmd para seleccionar varias.</div>
+    <label class="lm-form-label">Comunidades autónomas <span class="lm-form-hint" style="display:inline;margin:0">(vacío = todas)</span></label>
+    <div class="lm-chip-picker lm-chip-picker-scroll" id="nl-ccaa">
+      {_ccaa_chips(comunidades)}
+    </div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <button type="button" class="btn btn-sm btn-primary" id="nl-guardar">Guardar cambios</button>

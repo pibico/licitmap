@@ -178,6 +178,12 @@ a:hover {
   border-radius: 6px;
   transition: border-color 0.2s ease, box-shadow 0.2s ease;
 }
+.form-label {
+  color: var(--tx-secondary) !important;
+}
+.form-text {
+  color: var(--tx-faint) !important;
+}
 .form-control::placeholder {
   color: var(--tx-faint) !important;
 }
@@ -2569,8 +2575,71 @@ a:hover {
 .lm-toast-success { border-color: var(--ac-main); color: var(--ac-main); }
 .lm-toast-error   { border-color: var(--co-red);  color: var(--co-red);  }
 
+/* ── Chip picker (multi-select visual) ────────────────────────────────── */
+.lm-chip-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.3rem;
+}
+.lm-chip-picker-scroll {
+  max-height: 92px;
+  overflow-y: auto;
+  scrollbar-width: thin;
+  scrollbar-color: var(--bg-surface1) transparent;
+}
+.lm-chip-picker-scroll::-webkit-scrollbar { width: 4px; }
+.lm-chip-picker-scroll::-webkit-scrollbar-track { background: transparent; }
+.lm-chip-picker-scroll::-webkit-scrollbar-thumb { background: var(--bg-surface1); border-radius: 2px; }
+.lm-chip {
+  display: inline-flex;
+  align-items: center;
+  padding: 0.22rem 0.65rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: var(--bg-surface0);
+  color: var(--tx-secondary);
+  border: 1px solid transparent;
+  border-radius: 20px;
+  cursor: pointer;
+  transition: background 0.13s, color 0.13s, border-color 0.13s;
+  user-select: none;
+  white-space: nowrap;
+  line-height: 1.5;
+}
+.lm-chip:hover {
+  background: var(--bg-surface1);
+  color: var(--tx-primary);
+}
+.lm-chip.lm-chip-active {
+  background: var(--ac-soft);
+  color: var(--ac-main);
+  border-color: var(--ac-main);
+  font-weight: 600;
+}
+
+/* ── Form helpers ─────────────────────────────────────────────────────── */
+.lm-form-label {
+  font-size: 0.78rem;
+  font-weight: 600;
+  color: var(--tx-secondary);
+  margin-bottom: 0.3rem;
+  display: block;
+}
+.lm-form-hint {
+  font-size: 0.71rem;
+  color: var(--tx-faint);
+  margin-top: 0.2rem;
+}
+
+/* ── Alertas form wrap (accent top border) ────────────────────────────── */
+.lm-alertas-form-wrap {
+  border-top: 2px solid var(--ac-main) !important;
+  padding: 1.25rem 1.25rem 1.1rem !important;
+}
+
 @media (max-width: 575px) {
   .lm-alertas-card-hdr { flex-direction: column; align-items: flex-start; }
   .lm-ai-nombre, .lm-ai-meta { white-space: normal; }
   .lm-watch-notifs { flex-direction: column; align-items: flex-start; gap: 0.5rem; }
+  .lm-chip-picker-scroll { max-height: 120px; }
 }

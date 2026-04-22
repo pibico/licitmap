@@ -14,7 +14,6 @@
         </button>
       </div>
 
-      <!-- Tipo de contrato -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="gf-tipo">
           Tipo de contrato
@@ -34,7 +33,6 @@
         </div>
       </div>
 
-      <!-- Presupuesto -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="gf-prange">
           Presupuesto
@@ -51,7 +49,6 @@
         </div>
       </div>
 
-      <!-- CCAA -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="gf-ccaa">
           Comunidad autónoma
@@ -80,7 +77,6 @@
         </div>
       </div>
 
-      <!-- Estado -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="gf-estado">
           Estado
@@ -98,7 +94,6 @@
         </div>
       </div>
 
-      <!-- Fecha límite -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="gf-fecha">
           Fecha límite
@@ -120,8 +115,7 @@
         </div>
       </div>
 
-      <!-- CTA -->
-      <div style="padding: 0.75rem 1rem 1rem">
+      <div style="padding:0.75rem 1rem 1rem">
         <button type="button" class="btn btn-primary btn-sm w-100" id="gf-crear-alerta">
           <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
@@ -153,7 +147,6 @@
     </div>
     {{user_email_notice}}
 
-    <!-- Toast -->
     <div id="lm-toast" class="lm-toast" role="alert" aria-live="assertive" aria-atomic="true"></div>
 
     <!-- ── NEWSLETTER ─────────────────────────────────────────────────────── -->
@@ -205,116 +198,131 @@
         </button>
       </div>
 
+      <!-- Formulario nueva/editar alerta -->
       <div id="form-alerta-wrap" class="lm-alertas-form-wrap" style="display:none">
-        <form id="form-alerta" class="lm-alertas-form" autocomplete="off">
+        <form id="form-alerta" autocomplete="off">
           <input type="hidden" id="alerta-edit-id">
-          <div class="row g-2 mb-2">
-            <div class="col-12">
-              <label class="form-label small mb-1">Nombre <span class="text-danger">*</span></label>
-              <input type="text" class="form-control form-control-sm" id="al-nombre" placeholder="Ej: Obras TIC Madrid" required>
-            </div>
+
+          <!-- Nombre -->
+          <div class="mb-3">
+            <label class="lm-form-label" for="al-nombre">Nombre <span style="color:var(--co-red)">*</span></label>
+            <input type="text" class="form-control form-control-sm" id="al-nombre"
+                   placeholder="Ej: Obras TIC Madrid" required>
           </div>
-          <div class="row g-2 mb-2">
+
+          <!-- Keywords + CPV -->
+          <div class="row g-2 mb-3">
             <div class="col-12 col-sm-6">
-              <label class="form-label small mb-1">Palabras clave en el título</label>
-              <input type="text" class="form-control form-control-sm" id="al-keywords" placeholder="Ej: obras públicas seguridad">
-              <div class="form-text">Todas deben aparecer en el título.</div>
+              <label class="lm-form-label" for="al-keywords">Palabras clave en el título</label>
+              <input type="text" class="form-control form-control-sm" id="al-keywords"
+                     placeholder="Ej: obras públicas consultoría">
+              <div class="lm-form-hint">Todas deben aparecer en el título</div>
             </div>
             <div class="col-12 col-sm-6">
-              <label class="form-label small mb-1">Códigos CPV</label>
-              <input type="text" class="form-control form-control-sm" id="al-cpv" placeholder="Ej: 72212000, 4500">
-              <div class="form-text">Separados por coma. Admite prefijos.</div>
+              <label class="lm-form-label" for="al-cpv">Códigos CPV</label>
+              <input type="text" class="form-control form-control-sm" id="al-cpv"
+                     placeholder="Ej: 72212000, 4500">
+              <div class="lm-form-hint">Separados por coma — admite prefijos</div>
             </div>
           </div>
-          <div class="row g-2 mb-2">
-            <div class="col-12 col-sm-4">
-              <label class="form-label small mb-1">Comunidades autónomas</label>
-              <select class="form-select form-select-sm" id="al-ccaa" multiple size="4">
-                <option value="Andalucía">Andalucía</option>
-                <option value="Aragón">Aragón</option>
-                <option value="Asturias">Asturias</option>
-                <option value="Baleares">Baleares</option>
-                <option value="Canarias">Canarias</option>
-                <option value="Cantabria">Cantabria</option>
-                <option value="Castilla-La Mancha">Castilla-La Mancha</option>
-                <option value="Castilla y León">Castilla y León</option>
-                <option value="Cataluña">Cataluña</option>
-                <option value="Ceuta">Ceuta</option>
-                <option value="Comunidad de Madrid">Madrid</option>
-                <option value="Comunidad Foral de Navarra">Navarra</option>
-                <option value="Comunidad Valenciana">C. Valenciana</option>
-                <option value="Extremadura">Extremadura</option>
-                <option value="Galicia">Galicia</option>
-                <option value="La Rioja">La Rioja</option>
-                <option value="Melilla">Melilla</option>
-                <option value="País Vasco">País Vasco</option>
-                <option value="Región de Murcia">Murcia</option>
-              </select>
-              <div class="form-text">Ctrl/Cmd para múltiple.</div>
-            </div>
-            <div class="col-12 col-sm-4">
-              <label class="form-label small mb-1">Tipo de contrato</label>
-              <select class="form-select form-select-sm" id="al-tipo" multiple size="4">
-                <option value="1">Obras</option>
-                <option value="2">Servicios</option>
-                <option value="3">Suministros</option>
-                <option value="7">Gestión servicios públicos</option>
-                <option value="8">Colaboración público-privada</option>
-                <option value="22">Concesión de servicios</option>
-                <option value="31">Privado</option>
-                <option value="32">Patrimonial</option>
-                <option value="40">Administrativo especial</option>
-                <option value="50">Otros</option>
-              </select>
-            </div>
-            <div class="col-12 col-sm-4">
-              <label class="form-label small mb-1">Estado</label>
-              <select class="form-select form-select-sm" id="al-estado" multiple size="4">
-                <option value="PUB">Publicada</option>
-                <option value="ADJ">Adjudicada</option>
-                <option value="PRE">Preevaluación</option>
-                <option value="RES">Resuelta</option>
-                <option value="EV">En evaluación</option>
-                <option value="ANUL">Anulada</option>
-              </select>
+
+          <!-- CCAA chip picker -->
+          <div class="mb-3">
+            <label class="lm-form-label">Comunidades autónomas <span class="lm-form-hint" style="display:inline;margin:0">(vacío = todas)</span></label>
+            <div class="lm-chip-picker lm-chip-picker-scroll" id="al-ccaa">
+              <button type="button" class="lm-chip" data-val="Andalucía">Andalucía</button>
+              <button type="button" class="lm-chip" data-val="Aragón">Aragón</button>
+              <button type="button" class="lm-chip" data-val="Asturias">Asturias</button>
+              <button type="button" class="lm-chip" data-val="Baleares">Baleares</button>
+              <button type="button" class="lm-chip" data-val="Canarias">Canarias</button>
+              <button type="button" class="lm-chip" data-val="Cantabria">Cantabria</button>
+              <button type="button" class="lm-chip" data-val="Castilla-La Mancha">Castilla-La Mancha</button>
+              <button type="button" class="lm-chip" data-val="Castilla y León">Castilla y León</button>
+              <button type="button" class="lm-chip" data-val="Cataluña">Cataluña</button>
+              <button type="button" class="lm-chip" data-val="Ceuta">Ceuta</button>
+              <button type="button" class="lm-chip" data-val="Comunidad de Madrid">Madrid</button>
+              <button type="button" class="lm-chip" data-val="Comunidad Foral de Navarra">Navarra</button>
+              <button type="button" class="lm-chip" data-val="Comunidad Valenciana">C. Valenciana</button>
+              <button type="button" class="lm-chip" data-val="Extremadura">Extremadura</button>
+              <button type="button" class="lm-chip" data-val="Galicia">Galicia</button>
+              <button type="button" class="lm-chip" data-val="La Rioja">La Rioja</button>
+              <button type="button" class="lm-chip" data-val="Melilla">Melilla</button>
+              <button type="button" class="lm-chip" data-val="País Vasco">País Vasco</button>
+              <button type="button" class="lm-chip" data-val="Región de Murcia">Murcia</button>
             </div>
           </div>
-          <div class="row g-2 mb-2">
-            <div class="col-6 col-sm-3">
-              <label class="form-label small mb-1">Presup. mín. (€)</label>
-              <input type="number" class="form-control form-control-sm" id="al-presmin" placeholder="0" min="0">
-            </div>
-            <div class="col-6 col-sm-3">
-              <label class="form-label small mb-1">Presup. máx. (€)</label>
-              <input type="number" class="form-control form-control-sm" id="al-presmax" placeholder="Sin límite" min="0">
-            </div>
-            <div class="col-6 col-sm-2">
-              <label class="form-label small mb-1">Solo activas</label>
-              <div class="pt-1">
-                <label class="lm-toggle-switch">
-                  <input type="checkbox" id="al-solo-activas">
-                  <span class="lm-toggle-slider"></span>
-                </label>
+
+          <!-- Tipo + Estado chip pickers -->
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-sm-6">
+              <label class="lm-form-label">Tipo de contrato</label>
+              <div class="lm-chip-picker" id="al-tipo">
+                <button type="button" class="lm-chip" data-val="1">Obras</button>
+                <button type="button" class="lm-chip" data-val="2">Servicios</button>
+                <button type="button" class="lm-chip" data-val="3">Suministros</button>
+                <button type="button" class="lm-chip" data-val="22">Concesión serv.</button>
+                <button type="button" class="lm-chip" data-val="7">Gest. serv. públ.</button>
+                <button type="button" class="lm-chip" data-val="8">Colaboración públ.</button>
+                <button type="button" class="lm-chip" data-val="31">Privado</button>
+                <button type="button" class="lm-chip" data-val="32">Patrimonial</button>
+                <button type="button" class="lm-chip" data-val="40">Adm. especial</button>
+                <button type="button" class="lm-chip" data-val="50">Otros</button>
               </div>
             </div>
-            <div class="col-6 col-sm-2">
-              <label class="form-label small mb-1">Frecuencia</label>
+            <div class="col-12 col-sm-6">
+              <label class="lm-form-label">Estado</label>
+              <div class="lm-chip-picker" id="al-estado">
+                <button type="button" class="lm-chip" data-val="PUB">Publicada</button>
+                <button type="button" class="lm-chip" data-val="ADJ">Adjudicada</button>
+                <button type="button" class="lm-chip" data-val="PRE">Preevaluación</button>
+                <button type="button" class="lm-chip" data-val="RES">Resuelta</button>
+                <button type="button" class="lm-chip" data-val="EV">En evaluación</button>
+                <button type="button" class="lm-chip" data-val="ANUL">Anulada</button>
+              </div>
+            </div>
+          </div>
+
+          <!-- Presupuesto + Solo activas -->
+          <div class="row g-2 mb-3 align-items-end">
+            <div class="col-6 col-sm-3">
+              <label class="lm-form-label" for="al-presmin">Presup. mín. (€)</label>
+              <input type="number" class="form-control form-control-sm" id="al-presmin"
+                     placeholder="0" min="0" step="1000">
+            </div>
+            <div class="col-6 col-sm-3">
+              <label class="lm-form-label" for="al-presmax">Presup. máx. (€)</label>
+              <input type="number" class="form-control form-control-sm" id="al-presmax"
+                     placeholder="Sin límite" min="0" step="1000">
+            </div>
+            <div class="col-12 col-sm-3 d-flex align-items-center gap-2" style="padding-bottom:0.2rem">
+              <label class="lm-toggle-switch">
+                <input type="checkbox" id="al-solo-activas">
+                <span class="lm-toggle-slider"></span>
+              </label>
+              <span class="lm-form-label" style="margin:0">Solo activas</span>
+            </div>
+          </div>
+
+          <!-- Programación -->
+          <div class="row g-2 mb-3 align-items-end">
+            <div class="col-6 col-sm-3">
+              <label class="lm-form-label" for="al-frecuencia">Frecuencia</label>
               <select class="form-select form-select-sm" id="al-frecuencia">
                 <option value="diaria">Diaria</option>
                 <option value="semanal">Semanal</option>
               </select>
             </div>
-            <div class="col-6 col-sm-1" id="al-dia-col" style="display:none">
-              <label class="form-label small mb-1">Día</label>
+            <div class="col-6 col-sm-3" id="al-dia-col" style="display:none">
+              <label class="lm-form-label" for="al-dia">Día</label>
               <select class="form-select form-select-sm" id="al-dia">
-                <option value="0">Lun</option><option value="1">Mar</option>
-                <option value="2">Mié</option><option value="3">Jue</option>
-                <option value="4">Vie</option><option value="5">Sáb</option>
-                <option value="6">Dom</option>
+                <option value="0">Lunes</option><option value="1">Martes</option>
+                <option value="2">Miércoles</option><option value="3">Jueves</option>
+                <option value="4">Viernes</option><option value="5">Sábado</option>
+                <option value="6">Domingo</option>
               </select>
             </div>
-            <div class="col-6 col-sm-1">
-              <label class="form-label small mb-1">Hora</label>
+            <div class="col-6 col-sm-3">
+              <label class="lm-form-label" for="al-hora">Hora de envío</label>
               <select class="form-select form-select-sm" id="al-hora">
                 <option value="0">00:00</option><option value="1">01:00</option>
                 <option value="2">02:00</option><option value="3">03:00</option>
@@ -331,7 +339,8 @@
               </select>
             </div>
           </div>
-          <div class="d-flex gap-2 flex-wrap mt-1">
+
+          <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-primary" id="al-guardar">Guardar alerta</button>
             <button type="button" class="btn btn-sm btn-outline-secondary" id="al-cancelar">Cancelar</button>
           </div>
@@ -369,11 +378,11 @@
       </div>
 
       <div id="form-sub-wrap" class="lm-alertas-form-wrap" style="display:none">
-        <form id="form-sub" class="lm-alertas-form" autocomplete="off">
+        <form id="form-sub" autocomplete="off">
           <input type="hidden" id="sub-edit-id">
-          <div class="row g-2 mb-2 align-items-end">
+          <div class="row g-2 mb-3 align-items-end">
             <div class="col-12 col-sm-3">
-              <label class="form-label small mb-1">Tipo de entidad</label>
+              <label class="lm-form-label" for="sub-tipo">Tipo de entidad</label>
               <select class="form-select form-select-sm" id="sub-tipo">
                 <option value="ccaa">Comunidad autónoma</option>
                 <option value="provincia">Provincia</option>
@@ -382,7 +391,7 @@
               </select>
             </div>
             <div class="col-12 col-sm-4" id="sub-valor-select-col">
-              <label class="form-label small mb-1">Comunidad autónoma</label>
+              <label class="lm-form-label" for="sub-valor-ccaa">Comunidad autónoma</label>
               <select class="form-select form-select-sm" id="sub-valor-ccaa">
                 <option value="Andalucía">Andalucía</option>
                 <option value="Aragón">Aragón</option>
@@ -406,24 +415,24 @@
               </select>
             </div>
             <div class="col-12 col-sm-4" id="sub-valor-text-col" style="display:none">
-              <label class="form-label small mb-1" id="sub-valor-label">Valor</label>
+              <label class="lm-form-label" id="sub-valor-label">Valor</label>
               <input type="text" class="form-control form-control-sm" id="sub-valor-text" placeholder="Escribe el valor">
             </div>
             <div class="col-12 col-sm-3">
-              <label class="form-label small mb-1">Nombre (opcional)</label>
+              <label class="lm-form-label" for="sub-nombre">Nombre <span class="lm-form-hint" style="display:inline;margin:0">(opcional)</span></label>
               <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="Se genera automáticamente">
             </div>
           </div>
-          <div class="row g-2 mb-2 align-items-end">
+          <div class="row g-2 mb-3 align-items-end">
             <div class="col-6 col-sm-3">
-              <label class="form-label small mb-1">Frecuencia</label>
+              <label class="lm-form-label" for="sub-frecuencia">Frecuencia</label>
               <select class="form-select form-select-sm" id="sub-frecuencia">
                 <option value="diaria">Diaria</option>
                 <option value="semanal">Semanal</option>
               </select>
             </div>
-            <div class="col-6 col-sm-2" id="sub-dia-col" style="display:none">
-              <label class="form-label small mb-1">Día</label>
+            <div class="col-6 col-sm-3" id="sub-dia-col" style="display:none">
+              <label class="lm-form-label" for="sub-dia">Día</label>
               <select class="form-select form-select-sm" id="sub-dia">
                 <option value="0">Lunes</option><option value="1">Martes</option>
                 <option value="2">Miércoles</option><option value="3">Jueves</option>
@@ -431,8 +440,8 @@
                 <option value="6">Domingo</option>
               </select>
             </div>
-            <div class="col-6 col-sm-2">
-              <label class="form-label small mb-1">Hora</label>
+            <div class="col-6 col-sm-3">
+              <label class="lm-form-label" for="sub-hora">Hora de envío</label>
               <select class="form-select form-select-sm" id="sub-hora">
                 <option value="0">00:00</option><option value="6">06:00</option>
                 <option value="7">07:00</option><option value="8" selected>08:00</option>
@@ -442,7 +451,7 @@
               </select>
             </div>
           </div>
-          <div class="d-flex gap-2 flex-wrap">
+          <div class="d-flex gap-2">
             <button type="button" class="btn btn-sm btn-primary" id="sub-guardar">Guardar suscripción</button>
             <button type="button" class="btn btn-sm btn-outline-secondary" id="sub-cancelar">Cancelar</button>
           </div>
@@ -478,4 +487,4 @@
   </div><!-- /.col-lg-9 -->
 </div><!-- /.row -->
 
-<script src="/static/js/alertas.js?v=2"></script>
+<script src="/static/js/alertas.js?v=3"></script>
