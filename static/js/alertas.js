@@ -199,7 +199,7 @@
       var d = btn.dataset;
       document.getElementById('alerta-edit-id').value = d.id;
       document.getElementById('al-nombre').value      = d.nombre || '';
-      document.getElementById('al-keywords').value    = d.keywords || '';
+      document.getElementById('al-keywords').value    = (d.keywords || '').replace(/\|/g, ', ');
       document.getElementById('al-cpv').value         = d.cpv || '';
       document.getElementById('al-presmin').value     = d.presmin || '';
       document.getElementById('al-presmax').value     = d.presmax || '';

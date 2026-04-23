@@ -26,7 +26,7 @@ def _should_run(a: Alerta) -> bool:
 
 def _apply_alerta_filters(q, a: Alerta):
     if a.keywords:
-        for kw in a.keywords.split():
+        for kw in a.keywords.split("|"):
             q = q.filter(Licitacion.titulo.ilike(f"%{kw}%"))
     if a.comunidades:
         cc = [c for c in a.comunidades.split("|") if c]

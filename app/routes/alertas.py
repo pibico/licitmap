@@ -17,6 +17,13 @@ from app.email_utils import (
 
 router = APIRouter()
 
+
+def _parse_keywords(raw: str | None) -> str | None:
+    if not raw:
+        return None
+    parts = [k.strip() for k in raw.replace("|", ",").split(",") if k.strip()]
+    return "|".join(parts) if parts else None
+
 CCAA_LIST = [
     "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria",
     "Castilla-La Mancha", "Castilla y León", "Cataluña", "Ceuta",
@@ -146,7 +153,7 @@ def _build_nl_section(nl: Alerta | None) -> str:
     freq      = nl.frecuencia if nl else "diaria"
     dia       = nl.dia_semana if nl else 0
     hora      = nl.hora_envio if nl else 8
-    keywords  = _esc(nl.keywords or "" if nl else "")
+    keywords  = _esc((nl.keywords or "").replace("|", ", ") if nl else "")
     comunidades = nl.comunidades or "" if nl else ""
     presmin   = nl.presupuesto_min or "" if nl else ""
     solo      = " checked" if nl and nl.solo_activas else ""
@@ -193,7 +200,8 @@ def _build_nl_section(nl: Alerta | None) -> str:
     <div class="col-12 col-sm-6">
       <label class="form-label small mb-1">Palabras clave <span class="text-muted">(opcional, vacío = todas)</span></label>
       <input type="text" class="form-control form-control-sm" id="nl-keywords"
-             value="{keywords}" placeholder="Ej: obras públicas, consultoría">
+             value="{keywords}" placeholder="Ej: obras, consultoría, TIC">
+      <div class="form-text">Separa varias palabras clave con comas (se aplican todas).</div>
     </div>
     <div class="col-6 col-sm-3">
       <label class="form-label small mb-1">Presupuesto mín. (€)</label>
@@ -461,7 +469,7 @@ async def save_newsletter(request: Request, db: Session = Depends(get_db)):
     nl.frecuencia    = data.get("frecuencia", "diaria")
     nl.dia_semana    = int(data.get("dia_semana", 0))
     nl.hora_envio    = int(data.get("hora_envio", 8))
-    nl.keywords      = data.get("keywords") or None
+    nl.keywords      = _parse_keywords(data.get("keywords"))
     nl.comunidades   = comunidades_str or None
     nl.presupuesto_min = float(data["presmin"]) if data.get("presmin") else None
     nl.solo_activas  = bool(data.get("solo_activas", False))
@@ -482,7 +490,7 @@ async def test_newsletter(request: Request, db: Session = Depends(get_db)):
     q = db.query(Licitacion).filter(Licitacion.fecha_publicacion >= desde)
     if nl:
         if nl.keywords:
-            for kw in nl.keywords.split():
+            for kw in nl.keywords.split("|"):
                 q = q.filter(Licitacion.titulo.ilike(f"%{kw}%"))
         if nl.comunidades:
             cc = [c for c in nl.comunidades.split("|") if c]
@@ -516,7 +524,7 @@ async def create_alerta(request: Request, db: Session = Depends(get_db)):
         db.add(a)
 
     a.nombre        = data.get("nombre") or "Sin nombre"
-    a.keywords      = data.get("keywords") or None
+    a.keywords      = _parse_keywords(data.get("keywords"))
     a.cpv_codes     = data.get("cpv") or None
     a.comunidades   = "|".join(c for c in data.get("ccaa", []) if c) or None
     a.tipo_contrato = "|".join(t for t in data.get("tipo", []) if t) or None
@@ -584,7 +592,7 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
             q = q.filter(Licitacion.cpv.ilike(f"%{a.entidad_valor}%"))
     else:
         if a.keywords:
-            for kw in a.keywords.split():
+            for kw in a.keywords.split("|"):
                 q = q.filter(Licitacion.titulo.ilike(f"%{kw}%"))
         if a.comunidades:
             cc = [c for c in a.comunidades.split("|") if c]
