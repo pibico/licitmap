@@ -3,7 +3,7 @@ from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from sqlalchemy.orm import Session
 from sqlalchemy import or_, and_
 from pathlib import Path
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, date
 import re, json
 
 from app.database import get_db
@@ -125,7 +125,7 @@ def _freq_label(a: Alerta) -> str:
 def _alerta_meta(a: Alerta) -> str:
     parts = []
     if a.keywords:
-        parts.append(f'"{_esc(a.keywords)}"')
+        parts.append(f'"{_esc(a.keywords.replace("|", ", "))}"')
     if a.comunidades:
         cc = [c.split()[-1] for c in a.comunidades.split("|") if c]
         parts.append(", ".join(cc[:3]) + (" +más" if len(cc) > 3 else ""))
@@ -610,6 +610,12 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
             q = q.filter(Licitacion.presupuesto >= a.presupuesto_min)
         if a.presupuesto_max is not None:
             q = q.filter(Licitacion.presupuesto <= a.presupuesto_max)
+        if a.estado:
+            estados = [e for e in a.estado.split("|") if e]
+            if estados:
+                q = q.filter(Licitacion.estado.in_(estados))
+        if a.solo_activas:
+            q = q.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today())
 
     lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(20).all()
     try:

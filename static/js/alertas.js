@@ -1,4 +1,4 @@
-// LicitMap — Alertas JS v3
+// LicitMap — Alertas JS v5
 
 (function () {
 
@@ -141,6 +141,7 @@
       clearChips('al-tipo');
       clearChips('al-estado');
       if (freqSel) freqSel.value = 'diaria';
+      document.getElementById('al-dia').value  = '0';
       document.getElementById('al-hora').value = '8';
       if (diaCol) diaCol.style.display = 'none';
     }

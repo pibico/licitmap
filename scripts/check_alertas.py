@@ -44,6 +44,10 @@ def _apply_alerta_filters(q, a: Alerta):
         q = q.filter(Licitacion.presupuesto >= a.presupuesto_min)
     if a.presupuesto_max is not None:
         q = q.filter(Licitacion.presupuesto <= a.presupuesto_max)
+    if a.estado:
+        estados = [e for e in a.estado.split("|") if e]
+        if estados:
+            q = q.filter(Licitacion.estado.in_(estados))
     if a.solo_activas:
         q = q.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today())
     return q
