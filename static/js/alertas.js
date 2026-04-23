@@ -1,4 +1,4 @@
-// LicitMap — Alertas JS v5
+// LicitMap — Alertas JS v6
 
 (function () {
 
@@ -439,19 +439,44 @@
     var crearBtn = document.getElementById('gf-crear-alerta');
     if (crearBtn) {
       crearBtn.addEventListener('click', function () {
-        var f      = LMFilters.get();
-        var tipos  = f.tipo   ? f.tipo.split('|').filter(Boolean)   : [];
-        var ccaas  = f.ccaa   ? f.ccaa.split('|').filter(Boolean)   : [];
-        var estados= f.estado ? f.estado.split('|').filter(Boolean) : [];
-        setChipVals('al-tipo',   tipos);
-        setChipVals('al-ccaa',   ccaas);
-        setChipVals('al-estado', estados);
+        var f    = LMFilters.get();
         var wrap = document.getElementById('form-alerta-wrap');
-        if (wrap && wrap.style.display === 'none') {
-          var btnNueva = document.getElementById('btn-nueva-alerta');
-          if (btnNueva) btnNueva.click();
-        }
-        if (wrap) wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        if (!wrap) return;
+
+        // Abrir formulario y resetear
+        wrap.style.display = '';
+        document.getElementById('alerta-edit-id').value    = '';
+        document.getElementById('al-nombre').value         = '';
+        document.getElementById('al-keywords').value       = '';
+        document.getElementById('al-cpv').value            = '';
+        document.getElementById('al-solo-activas').checked = false;
+        var freqSel2 = document.getElementById('al-frecuencia');
+        if (freqSel2) freqSel2.value = 'diaria';
+        document.getElementById('al-dia').value  = '0';
+        document.getElementById('al-hora').value = '8';
+        var diaCol2 = document.getElementById('al-dia-col');
+        if (diaCol2) diaCol2.style.display = 'none';
+
+        // Aplicar chips de filtros activos
+        clearChips('al-ccaa'); clearChips('al-tipo'); clearChips('al-estado');
+        setChipVals('al-tipo',   f.tipo   ? f.tipo.split('|').filter(Boolean)   : []);
+        setChipVals('al-ccaa',   f.ccaa   ? f.ccaa.split('|').filter(Boolean)   : []);
+        setChipVals('al-estado', f.estado ? f.estado.split('|').filter(Boolean) : []);
+
+        // Traducir prange → presmin/presmax
+        var PRANGE = { '5k': [null, 5000], '15k': [5000, 15000],
+                       '100k': [15000, 100000], '1m': [100000, 1000000], '1m+': [1000000, null] };
+        var pranges = f.prange ? f.prange.split('|').filter(Boolean) : [];
+        var pmin = null, pmax = null;
+        pranges.forEach(function (p) {
+          var r = PRANGE[p]; if (!r) return;
+          if (r[0] !== null && (pmin === null || r[0] < pmin)) pmin = r[0];
+          if (r[1] !== null && (pmax === null || r[1] > pmax)) pmax = r[1];
+        });
+        document.getElementById('al-presmin').value = pmin !== null ? pmin : '';
+        document.getElementById('al-presmax').value = pmax !== null ? pmax : '';
+
+        wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
       });
     }
   }
