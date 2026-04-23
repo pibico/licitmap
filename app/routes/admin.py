@@ -104,12 +104,15 @@ async def admin_sync_now(request: Request):
     if _sync_running():
         return JSONResponse({"error": "Sync ya en curso"}, status_code=409)
     try:
+        env = os.environ.copy()
+        env["PYTHONPATH"] = "/root/licitmap"
         proc = subprocess.Popen(
             [str(VENV_PYTHON), str(SYNC_SCRIPT_PY), "--max-pages", "5"],
             stdout=open("/var/log/licitmap_sync.log", "a"),
             stderr=subprocess.STDOUT,
             cwd="/root/licitmap",
             start_new_session=True,
+            env=env,
         )
         SYNC_PID_FILE.parent.mkdir(exist_ok=True)
         SYNC_PID_FILE.write_text(str(proc.pid))
