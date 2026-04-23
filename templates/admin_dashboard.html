@@ -65,57 +65,129 @@
 <!-- Sincronización -->
 <div class="card lm-card mb-4">
   <div class="card-body">
-    <div class="d-flex justify-content-between align-items-center mb-3">
+    <div class="d-flex justify-content-between align-items-center mb-3 gap-2 flex-wrap">
       <h6 class="fw-semibold mb-0">Sincronización con PLACE</h6>
-      <button id="btn-sync-now" class="btn btn-sm btn-outline-primary">
-        <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24"
-             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
-             style="margin-right:0.25rem;vertical-align:-1px">
-          <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/>
-        </svg>
-        Sincronizar ahora
-      </button>
+      <div class="d-flex gap-2">
+        <button id="btn-sync-now" class="btn btn-sm btn-outline-primary">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+               style="margin-right:0.25rem;vertical-align:-1px">
+            <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/>
+          </svg>
+          Sincronizar ahora
+        </button>
+        <button id="btn-sync-cancel" class="btn btn-sm btn-outline-secondary" style="display:none">
+          <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24"
+               stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
+               style="margin-right:0.25rem;vertical-align:-1px">
+            <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
+          </svg>
+          Cancelar
+        </button>
+      </div>
     </div>
-    <div class="row g-2 small text-muted">
-      <div class="col-6 col-sm-3"><span class="d-block fw-medium text-body">Último sync</span>{{sync_last}}</div>
-      <div class="col-6 col-sm-3"><span class="d-block fw-medium text-body">Páginas leídas</span>{{sync_feeds}}</div>
-      <div class="col-6 col-sm-3"><span class="d-block fw-medium text-body">Nuevas</span>{{sync_nuevas}}</div>
-      <div class="col-6 col-sm-3"><span class="d-block fw-medium text-body">Actualizadas</span>{{sync_act}}</div>
+    <div id="sync-progress-wrap" style="display:none" class="mb-3">
+      <div class="progress" style="height:6px;border-radius:3px">
+        <div class="progress-bar progress-bar-striped progress-bar-animated"
+             style="width:100%;background:var(--ac-main)"></div>
+      </div>
+      <div id="sync-progress-msg" class="mt-1 small" style="color:var(--tx-muted)">Sincronizando…</div>
+    </div>
+    <div class="row g-2 small" style="color:var(--tx-muted)">
+      <div class="col-6 col-sm-3"><span class="d-block" style="font-weight:600;color:var(--tx-primary)">Último sync</span><span id="s-last">{{sync_last}}</span></div>
+      <div class="col-6 col-sm-3"><span class="d-block" style="font-weight:600;color:var(--tx-primary)">Páginas leídas</span><span id="s-feeds">{{sync_feeds}}</span></div>
+      <div class="col-6 col-sm-3"><span class="d-block" style="font-weight:600;color:var(--tx-primary)">Nuevas</span><span id="s-nuevas">{{sync_nuevas}}</span></div>
+      <div class="col-6 col-sm-3"><span class="d-block" style="font-weight:600;color:var(--tx-primary)">Actualizadas</span><span id="s-act">{{sync_act}}</span></div>
     </div>
     <div id="sync-msg" class="mt-2 small" style="display:none"></div>
   </div>
 </div>
 <script>
 (function () {
-  var btn = document.getElementById('btn-sync-now');
-  if (!btn) return;
-  btn.addEventListener('click', function () {
-    btn.disabled = true;
-    btn.innerHTML = '<span class="spinner-border spinner-border-sm me-1"></span>Sincronizando…';
-    fetch('/admin/sync', { method: 'POST' })
-      .then(function (r) { return r.json(); })
-      .then(function (r) {
-        var msg = document.getElementById('sync-msg');
-        msg.style.display = '';
-        if (r.ok) {
-          msg.className = 'mt-2 small text-success';
-          msg.textContent = 'Sync iniciado en segundo plano. Recarga en unos segundos para ver los resultados.';
-        } else {
-          msg.className = 'mt-2 small text-danger';
-          msg.textContent = 'Error: ' + (r.error || 'desconocido');
-        }
-      })
-      .catch(function () {
-        var msg = document.getElementById('sync-msg');
-        msg.style.display = '';
-        msg.className = 'mt-2 small text-danger';
-        msg.textContent = 'Error de red.';
-      })
-      .finally(function () {
-        btn.disabled = false;
-        btn.innerHTML = '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.25rem;vertical-align:-1px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/></svg>Sincronizar ahora';
-      });
-  });
+  var btnSync   = document.getElementById('btn-sync-now');
+  var btnCancel = document.getElementById('btn-sync-cancel');
+  var progWrap  = document.getElementById('sync-progress-wrap');
+  var progMsg   = document.getElementById('sync-progress-msg');
+  var msgEl     = document.getElementById('sync-msg');
+  var pollTimer = null;
+
+  function setRunning(running) {
+    btnSync.disabled = running;
+    btnSync.innerHTML = running
+      ? '<span class="spinner-border spinner-border-sm me-1"></span>Sincronizando…'
+      : '<svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.25rem;vertical-align:-1px"><polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/></svg>Sincronizar ahora';
+    btnCancel.style.display = running ? '' : 'none';
+    progWrap.style.display  = running ? '' : 'none';
+  }
+
+  function updateStats(r) {
+    if (r.last_sync)      document.getElementById('s-last').textContent   = r.last_sync;
+    if (r.feeds != null)  document.getElementById('s-feeds').textContent  = r.feeds;
+    if (r.nuevas != null) document.getElementById('s-nuevas').textContent = r.nuevas;
+    if (r.actualizadas != null) document.getElementById('s-act').textContent = r.actualizadas;
+  }
+
+  function startPolling() {
+    pollTimer = setInterval(function () {
+      fetch('/admin/sync/status')
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (r.running) {
+            progMsg.textContent = 'Sincronizando' + (r.feeds ? ' · ' + r.feeds + ' pág.' : '') + '…';
+          } else {
+            clearInterval(pollTimer);
+            setRunning(false);
+            updateStats(r);
+            msgEl.style.display = '';
+            msgEl.className = 'mt-2 small';
+            msgEl.style.color = 'var(--ac-main)';
+            msgEl.textContent = 'Sync completado.';
+          }
+        })
+        .catch(function () { clearInterval(pollTimer); setRunning(false); });
+    }, 2000);
+  }
+
+  if (btnSync) {
+    btnSync.addEventListener('click', function () {
+      msgEl.style.display = 'none';
+      setRunning(true);
+      fetch('/admin/sync', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          if (r.ok) { startPolling(); }
+          else {
+            setRunning(false);
+            msgEl.style.display = '';
+            msgEl.className = 'mt-2 small';
+            msgEl.style.color = 'var(--co-red)';
+            msgEl.textContent = 'Error: ' + (r.error || 'desconocido');
+          }
+        })
+        .catch(function () { setRunning(false); });
+    });
+  }
+
+  if (btnCancel) {
+    btnCancel.addEventListener('click', function () {
+      clearInterval(pollTimer);
+      fetch('/admin/sync/cancel', { method: 'POST' })
+        .then(function (r) { return r.json(); })
+        .then(function (r) {
+          setRunning(false);
+          msgEl.style.display = '';
+          msgEl.className = 'mt-2 small';
+          msgEl.style.color = r.ok ? 'var(--tx-muted)' : 'var(--co-red)';
+          msgEl.textContent = r.ok ? 'Sync cancelado.' : 'Error: ' + (r.error || 'desconocido');
+        })
+        .catch(function () { setRunning(false); });
+    });
+  }
+
+  // Comprobar si hay un sync en curso al cargar la página
+  fetch('/admin/sync/status')
+    .then(function (r) { return r.json(); })
+    .then(function (r) { if (r.running) { setRunning(true); startPolling(); } });
 })();
 </script>
 

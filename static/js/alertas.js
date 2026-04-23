@@ -1,4 +1,4 @@
-// LicitMap — Alertas JS v6
+// LicitMap — Alertas JS v7
 
 (function () {
 
@@ -481,6 +481,19 @@
     }
   }
 
+  // ── Filtro watchlist ──────────────────────────────────────────────────────
+  function initWatchlistFilter() {
+    var input = document.getElementById('watchlist-filter');
+    if (!input) return;
+    input.addEventListener('input', function () {
+      var q = input.value.trim().toLowerCase();
+      document.querySelectorAll('#watchlist .lm-watch-item').forEach(function (item) {
+        var titulo = (item.querySelector('.lm-watch-titulo') || {}).textContent || '';
+        item.style.display = (!q || titulo.toLowerCase().indexOf(q) >= 0) ? '' : 'none';
+      });
+    });
+  }
+
   // ── Init ──────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     initChipPickers();
@@ -489,6 +502,7 @@
     initAlertaForm();
     initSubForm();
     initActions();
+    initWatchlistFilter();
   });
 
 })();

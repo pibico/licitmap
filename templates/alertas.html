@@ -479,12 +479,18 @@
           </div>
         </div>
       </div>
-      <div class="lm-al-card-body" id="watchlist">
+      <div class="lm-al-card-body">
+        <div class="mb-3">
+          <input type="search" id="watchlist-filter" class="form-control form-control-sm"
+                 placeholder="Filtrar por título…" autocomplete="off">
+        </div>
+        <div id="watchlist">
         {{watchlist_list}}
+        </div>
       </div>
     </div>
 
   </div><!-- /.col-lg-9 -->
 </div><!-- /.row -->
 
-<script src="/static/js/alertas.js?v=6"></script>
+<script src="/static/js/alertas.js?v=7"></script>

@@ -1,5 +1,7 @@
 import bcrypt
 import json
+import os
+import signal
 import subprocess
 from fastapi import APIRouter, Request, Form, Depends
 from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
@@ -11,8 +13,22 @@ from app.models import User, Licitacion
 from app.utils import _nav_context, get_setting, set_setting
 from app.email_utils import send_test_email
 
-SYNC_STATE_FILE = Path("/root/licitmap/data/sync_state.json")
-SYNC_SCRIPT     = Path("/root/licitmap/scripts/run_sync.sh")
+SYNC_STATE_FILE  = Path("/root/licitmap/data/sync_state.json")
+SYNC_PID_FILE    = Path("/root/licitmap/data/sync_pid.txt")
+VENV_PYTHON      = Path("/root/licitmap/.venv/bin/python")
+SYNC_SCRIPT_PY   = Path("/root/licitmap/scripts/sync.py")
+
+
+def _sync_running() -> bool:
+    if not SYNC_PID_FILE.exists():
+        return False
+    try:
+        pid = int(SYNC_PID_FILE.read_text().strip())
+        os.kill(pid, 0)
+        return True
+    except (ValueError, ProcessLookupError, PermissionError):
+        SYNC_PID_FILE.unlink(missing_ok=True)
+        return False
 
 router = APIRouter(prefix="/admin")
 
@@ -85,13 +101,47 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
 async def admin_sync_now(request: Request):
     if not _require_admin(request):
         return JSONResponse({"error": "no autorizado"}, status_code=403)
+    if _sync_running():
+        return JSONResponse({"error": "Sync ya en curso"}, status_code=409)
     try:
-        subprocess.Popen(
-            [str(SYNC_SCRIPT), "--max-pages", "5"],
+        proc = subprocess.Popen(
+            [str(VENV_PYTHON), str(SYNC_SCRIPT_PY), "--max-pages", "5"],
             stdout=open("/var/log/licitmap_sync.log", "a"),
             stderr=subprocess.STDOUT,
+            cwd="/root/licitmap",
             start_new_session=True,
         )
+        SYNC_PID_FILE.parent.mkdir(exist_ok=True)
+        SYNC_PID_FILE.write_text(str(proc.pid))
+        return JSONResponse({"ok": True})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
+
+
+@router.get("/sync/status")
+async def admin_sync_status(request: Request):
+    if not _require_admin(request):
+        return JSONResponse({"error": "no autorizado"}, status_code=403)
+    running = _sync_running()
+    state = {}
+    if SYNC_STATE_FILE.exists():
+        try:
+            state = json.loads(SYNC_STATE_FILE.read_text())
+        except Exception:
+            pass
+    return JSONResponse({"running": running, **state})
+
+
+@router.post("/sync/cancel")
+async def admin_sync_cancel(request: Request):
+    if not _require_admin(request):
+        return JSONResponse({"error": "no autorizado"}, status_code=403)
+    if not SYNC_PID_FILE.exists():
+        return JSONResponse({"ok": False, "error": "Sin proceso activo"})
+    try:
+        pid = int(SYNC_PID_FILE.read_text().strip())
+        os.kill(pid, signal.SIGTERM)
+        SYNC_PID_FILE.unlink(missing_ok=True)
         return JSONResponse({"ok": True})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
