@@ -58,14 +58,20 @@ async def login_post(
     if request.session.get("username"):
         return RedirectResponse("/", status_code=303)
 
-    username = username.strip().lower()
-    user = db.query(User).filter_by(username=username, is_active=True).first()
-    if not user:
-        return _err("login.html", "Usuario no encontrado o inactivo.")
+    identifier = username.strip().lower()
 
-    if username == "admin":
-        # Admin usa contraseña — redirige al paso de contraseña
-        return RedirectResponse(f"/login/password?u={username}", status_code=303)
+    # Buscar por nombre de usuario primero, luego por email
+    user = db.query(User).filter_by(username=identifier, is_active=True).first()
+    if not user:
+        user = db.query(User).filter(
+            User.email == identifier, User.is_active == True
+        ).first()
+
+    if not user:
+        return _err("login.html", "Usuario o correo no encontrado, o cuenta inactiva.")
+
+    if user.username == "admin":
+        return RedirectResponse("/login/password?u=admin", status_code=303)
 
     # Usuario normal — genera OTP y envía email
     if not user.email:
@@ -81,7 +87,7 @@ async def login_post(
     except Exception as e:
         return _err("login.html", f"No se pudo enviar el correo: {e}")
 
-    return RedirectResponse(f"/login/codigo?u={username}", status_code=303)
+    return RedirectResponse(f"/login/codigo?u={user.username}", status_code=303)
 
 
 # ── Paso 2a: contraseña (solo admin) ─────────────────────────────────────────
