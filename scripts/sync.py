@@ -165,11 +165,23 @@ def main():
             print("ERROR: --max-pages requiere un número entero.")
             sys.exit(1)
 
+    # --since-date YYYY-MM-DD
+    since_dt = None
+    if "--since-date" in sys.argv:
+        idx = sys.argv.index("--since-date")
+        try:
+            since_dt = datetime.fromisoformat(sys.argv[idx + 1])
+        except (IndexError, ValueError):
+            print("ERROR: --since-date requiere formato YYYY-MM-DD.")
+            sys.exit(1)
+
     last_sync_dt = None if force else parse_dt(state.get("last_sync"))
 
     if last_sync_dt:
         suffix = f" (máx {max_pages} páginas)" if max_pages else ""
         print(f"Último sync: {state['last_sync']} — buscando novedades{suffix}...")
+    elif since_dt:
+        print(f"Sync histórico desde {since_dt.date()} (puede tardar).")
     else:
         print("Sync inicial o forzado — descargando todo (puede tardar).")
 
@@ -196,8 +208,9 @@ def main():
             root = ET.fromstring(resp.content)
             next_url, feed_updated_dt = get_feed_meta(root)
 
-            # Parar cuando este feed sea más antiguo que el último sync
-            if last_sync_dt and feed_updated_dt and feed_updated_dt <= last_sync_dt:
+            # Parar cuando este feed sea más antiguo que el último sync o la fecha límite
+            stop_dt = last_sync_dt or since_dt
+            if stop_dt and feed_updated_dt and feed_updated_dt <= stop_dt:
                 print(f"sin novedades (feed del {feed_updated_dt.strftime('%Y-%m-%d %H:%M')})")
                 break
 
