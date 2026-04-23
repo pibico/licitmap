@@ -1,13 +1,18 @@
 import bcrypt
+import json
+import subprocess
 from fastapi import APIRouter, Request, Form, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, JSONResponse, RedirectResponse
 from pathlib import Path
 from sqlalchemy.orm import Session
 
 from app.database import get_db
-from app.models import User
+from app.models import User, Licitacion
 from app.utils import _nav_context, get_setting, set_setting
 from app.email_utils import send_test_email
+
+SYNC_STATE_FILE = Path("/root/licitmap/data/sync_state.json")
+SYNC_SCRIPT     = Path("/root/licitmap/scripts/run_sync.sh")
 
 router = APIRouter(prefix="/admin")
 
@@ -50,11 +55,46 @@ def admin_dashboard(request: Request, db: Session = Depends(get_db)):
         return RedirectResponse("/login", status_code=303)
     total_users = db.query(User).count()
     active_users = db.query(User).filter_by(is_active=True).count()
+    total_lics = db.query(Licitacion).count()
+
+    sync_state = {}
+    if SYNC_STATE_FILE.exists():
+        try:
+            sync_state = json.loads(SYNC_STATE_FILE.read_text())
+        except Exception:
+            pass
+
+    last_sync   = sync_state.get("last_sync", "—")
+    sync_nuevas = sync_state.get("nuevas", "—")
+    sync_act    = sync_state.get("actualizadas", "—")
+    sync_feeds  = sync_state.get("feeds", "—")
+
     return HTMLResponse(_render(request, "admin_dashboard.html", "dashboard", {
-        "total_users": str(total_users),
-        "active_users": str(active_users),
-        "export_limit": get_setting(db, "export_limit", "5000"),
+        "total_users":    str(total_users),
+        "active_users":   str(active_users),
+        "export_limit":   get_setting(db, "export_limit", "5000"),
+        "total_lics":     f"{total_lics:,}".replace(",", "."),
+        "sync_last":      last_sync,
+        "sync_nuevas":    str(sync_nuevas),
+        "sync_act":       str(sync_act),
+        "sync_feeds":     str(sync_feeds),
     }))
+
+
+@router.post("/sync")
+async def admin_sync_now(request: Request):
+    if not _require_admin(request):
+        return JSONResponse({"error": "no autorizado"}, status_code=403)
+    try:
+        subprocess.Popen(
+            [str(SYNC_SCRIPT), "--max-pages", "5"],
+            stdout=open("/var/log/licitmap_sync.log", "a"),
+            stderr=subprocess.STDOUT,
+            start_new_session=True,
+        )
+        return JSONResponse({"ok": True})
+    except Exception as e:
+        return JSONResponse({"error": str(e)}, status_code=500)
 
 
 # ── Usuarios ──────────────────────────────────────────────────────────────────

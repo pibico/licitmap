@@ -4,9 +4,10 @@ Sincronización incremental con PLACSP.
 Descarga feeds ATOM de contrataciondelestado.es y actualiza la BD.
 
 Uso:
-    PYTHONPATH=/root/licitmap python scripts/sync.py           # Solo novedades
-    PYTHONPATH=/root/licitmap python scripts/sync.py --force   # Forzar desde el inicio
-    PYTHONPATH=/root/licitmap python scripts/sync.py --status  # Ver estado del último sync
+    PYTHONPATH=/root/licitmap python scripts/sync.py                    # Solo novedades
+    PYTHONPATH=/root/licitmap python scripts/sync.py --force            # Forzar desde el inicio
+    PYTHONPATH=/root/licitmap python scripts/sync.py --status           # Ver estado del último sync
+    PYTHONPATH=/root/licitmap python scripts/sync.py --max-pages 3      # Limitar páginas (sync rápido)
 """
 import sys
 import json
@@ -143,10 +144,21 @@ def main():
     force = "--force" in sys.argv
     state = load_state()
 
+    # --max-pages N
+    max_pages = None
+    if "--max-pages" in sys.argv:
+        idx = sys.argv.index("--max-pages")
+        try:
+            max_pages = int(sys.argv[idx + 1])
+        except (IndexError, ValueError):
+            print("ERROR: --max-pages requiere un número entero.")
+            sys.exit(1)
+
     last_sync_dt = None if force else parse_dt(state.get("last_sync"))
 
     if last_sync_dt:
-        print(f"Último sync: {state['last_sync']} — buscando novedades...")
+        suffix = f" (máx {max_pages} páginas)" if max_pages else ""
+        print(f"Último sync: {state['last_sync']} — buscando novedades{suffix}...")
     else:
         print("Sync inicial o forzado — descargando todo (puede tardar).")
 
@@ -156,6 +168,10 @@ def main():
 
     try:
         while url:
+            if max_pages is not None and total_feeds >= max_pages:
+                print(f"  Límite de {max_pages} páginas alcanzado.")
+                break
+
             filename = url.split("/")[-1]
             print(f"  [{filename}] ...", end=" ", flush=True)
 
