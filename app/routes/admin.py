@@ -25,8 +25,13 @@ def _sync_running() -> bool:
     try:
         pid = int(SYNC_PID_FILE.read_text().strip())
         os.kill(pid, 0)
+        # os.kill(pid, 0) succeeds for zombie processes too; check /proc stat
+        stat = Path(f"/proc/{pid}/stat").read_text()
+        if " Z " in stat or stat.split()[2] == "Z":
+            SYNC_PID_FILE.unlink(missing_ok=True)
+            return False
         return True
-    except (ValueError, ProcessLookupError, PermissionError):
+    except (ValueError, ProcessLookupError, PermissionError, FileNotFoundError):
         SYNC_PID_FILE.unlink(missing_ok=True)
         return False
 
