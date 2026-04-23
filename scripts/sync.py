@@ -129,6 +129,17 @@ def upsert(db, entries):
     return nuevas, actualizadas
 
 
+def purge_old(db) -> int:
+    cutoff = date.today().replace(year=date.today().year - 5)
+    deleted = (
+        db.query(Licitacion)
+        .filter(Licitacion.fecha_limite != None, Licitacion.fecha_limite < cutoff)
+        .delete(synchronize_session=False)
+    )
+    db.commit()
+    return deleted
+
+
 def main():
     if "--status" in sys.argv:
         state = load_state()
@@ -205,6 +216,15 @@ def main():
         db.close()
 
     print(f"\nTotal — Feeds: {total_feeds} | Nuevas: {total_nuevas} | Actualizadas: {total_actualizadas}")
+
+    if max_pages is None:
+        db2 = SessionLocal()
+        try:
+            borradas = purge_old(db2)
+            if borradas:
+                print(f"Purga: {borradas} licitaciones eliminadas (fecha_limite < 5 años)")
+        finally:
+            db2.close()
 
     if total_feeds > 0 or not last_sync_dt:
         now_str = datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%S")
