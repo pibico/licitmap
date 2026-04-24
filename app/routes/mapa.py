@@ -238,6 +238,33 @@ def api_provincias_by_ccaa(ccaa: str = Query(default="")):
     return {"provincias": provincias_por_ccaa(ccaa_list)}
 
 
+@router.get("/api/geo/municipios", response_class=JSONResponse)
+def api_municipios_by_provincia(db: Session = Depends(get_db)):
+    """Devuelve un mapa {provincia: [municipios]} derivado de la BD
+    agrupando por el prefijo CP de cada licitación. Usado por el
+    autocomplete del form de alertas para acotar los municipios a
+    la CCAA / provincia seleccionada. Una única carga por sesión."""
+    rows = (
+        db.query(
+            Licitacion.municipio,
+            func.substr(Licitacion.codigo_postal, 1, 2).label("cp2"),
+        )
+        .filter(
+            Licitacion.municipio.isnot(None),
+            Licitacion.codigo_postal.isnot(None),
+            Licitacion.pais == "España",
+        )
+        .distinct()
+        .all()
+    )
+    by_prov: dict[str, set[str]] = {}
+    for mun, cp2 in rows:
+        prov = CP_TO_PROVINCIA.get((cp2 or "").zfill(2))
+        if prov and mun:
+            by_prov.setdefault(prov, set()).add(mun)
+    return {"by_provincia": {k: sorted(v) for k, v in by_prov.items()}}
+
+
 @router.get("/api/map/provincias", response_class=JSONResponse)
 def api_provincias(
     q: str = Query(default=""),

@@ -144,14 +144,51 @@
     window.addEventListener('resize', updatePos);
   }
 
-  // Cargamos las listas de provincias y municipios una sola vez al boot para
-  // alimentar todos los autocompletes de la página.
-  var GEO_DATA = { provincias: [], municipios: [] };
+  // Cargamos las listas geográficas una sola vez al boot:
+  // - provincias: las 52 canónicas (desde geojson, vía /api/map/nombres).
+  // - municipios: lista plana (para el sidebar y búsqueda libre).
+  // - municipios_by_provincia: {nombre_prov: [muns]} para acotar el
+  //   autocomplete de municipio cuando hay CCAA/provincia seleccionada.
+  var GEO_DATA = { provincias: [], municipios: [], municipiosByProv: {} };
   function loadGeoNames() {
-    return fetch('/api/map/nombres')
-      .then(function (r) { return r.json(); })
-      .then(function (d) { GEO_DATA = { provincias: d.provincias || [], municipios: d.municipios || [] }; })
-      .catch(function () {});
+    return Promise.all([
+      fetch('/api/map/nombres').then(function (r) { return r.json(); }),
+      fetch('/api/geo/municipios').then(function (r) { return r.json(); }),
+    ]).then(function (results) {
+      var nombres = results[0] || {};
+      var munData = results[1] || {};
+      GEO_DATA = {
+        provincias:       nombres.provincias || [],
+        municipios:       nombres.municipios || [],
+        municipiosByProv: munData.by_provincia || {},
+      };
+    }).catch(function () {});
+  }
+
+  // Provincias efectivas de un form: las explícitamente seleccionadas si
+  // las hay; si el form está en modo uniprovincial, la implícita; si no,
+  // todas las derivadas de las CCAA seleccionadas.
+  function getEffectiveProvincias(prefix) {
+    var picker = document.getElementById(prefix + '-provincia');
+    if (!picker) return [];
+    var sel = getChipVals(prefix + '-provincia');
+    if (sel.length) return sel;
+    if (picker.dataset.implicit) return [picker.dataset.implicit];
+    if (picker.dataset.derived) return picker.dataset.derived.split('|').filter(Boolean);
+    return [];
+  }
+
+  // Lista de municipios ofrecida por el autocomplete de un form dado.
+  // Si hay provincias efectivas, unión de sus municipios. Si no, todo.
+  function getMunicipiosForForm(prefix) {
+    var provs = getEffectiveProvincias(prefix);
+    if (!provs.length) return GEO_DATA.municipios;
+    var set = {};
+    for (var i = 0; i < provs.length; i++) {
+      var list = GEO_DATA.municipiosByProv[provs[i]] || [];
+      for (var j = 0; j < list.length; j++) set[list[j]] = true;
+    }
+    return Object.keys(set).sort();
   }
 
   // ── Progressive disclosure: CCAA → provincia → municipio ──────────────────
@@ -175,10 +212,10 @@
       if (provCol) provCol.style.display = 'none';
       if (munCol)  munCol.style.display  = 'none';
       picker.innerHTML = '';
+      picker.dataset.implicit = '';
+      picker.dataset.derived  = '';
       return;
     }
-    // Selección a restaurar: prioridad a chips ya activos; si no, usa
-    // data-selected (cargada desde el backend o puesta por "Crear desde filtros").
     var selected = getChipVals(prefix + '-provincia');
     if (selected.length === 0 && picker.dataset.selected) {
       selected = picker.dataset.selected.split('|').filter(Boolean);
@@ -187,16 +224,24 @@
       .then(function (r) { return r.json(); })
       .then(function (d) {
         var provs = d.provincias || [];
-        // CCAA uniprovincial (Madrid, Asturias, Navarra…): auto-seleccionar
-        // la única provincia para que el bloque municipio aparezca sin
-        // requerir un clic extra.
-        if (provs.length === 1 && selected.length === 0) {
-          selected = [provs[0]];
+        picker.dataset.derived = provs.join('|');
+        if (provs.length === 1) {
+          // CCAA uniprovincial (Madrid, Asturias, Navarra, Baleares…): no
+          // tiene sentido pedirle al usuario que elija la única provincia.
+          // Ocultamos el bloque y guardamos la provincia como implícita
+          // para que el filtro de municipio la siga usando.
+          if (provCol) provCol.style.display = 'none';
+          picker.innerHTML = '';
+          picker.dataset.implicit = provs[0];
+        } else {
+          picker.dataset.implicit = '';
+          renderProvChips(picker, provs, selected);
+          if (provCol) provCol.style.display = '';
         }
-        renderProvChips(picker, provs, selected);
         picker.dataset.selected = '';
-        if (provCol) provCol.style.display = '';
-        updateMunVisibility(prefix);
+        // Con al menos una CCAA seleccionada siempre se muestra municipio:
+        // el autocomplete queda acotado a las provincias derivadas.
+        if (munCol) munCol.style.display = '';
       })
       .catch(function () {});
   }
@@ -204,8 +249,9 @@
   function updateMunVisibility(prefix) {
     var munCol = document.getElementById(prefix + '-mun-col');
     if (!munCol) return;
-    var provs = getChipVals(prefix + '-provincia');
-    munCol.style.display = provs.length > 0 ? '' : 'none';
+    // Visible si hay CCAA seleccionada (el filtro cambia al elegir provs).
+    var hasCcaa = getChipVals(prefix + '-ccaa').length > 0;
+    munCol.style.display = hasCcaa ? '' : 'none';
   }
 
   // Engancha listeners al picker de CCAA y al de provincia para encadenar
@@ -741,10 +787,12 @@
     initGeoDisclosure('nl');
     initGeoDisclosure('al');
     // Cargar listas de provincias/municipios y conectar todos los
-    // autocompletes de la página (sidebar + forms).
+    // autocompletes de la página (sidebar + forms). Los autocompletes de
+    // municipio en newsletter y custom alert devuelven la lista acotada a
+    // las provincias efectivas del form (CCAA/provincia seleccionada).
     loadGeoNames().then(function () {
-      setupMultiAutocomplete('nl-municipio',  'nl-municipio-list',  function () { return GEO_DATA.municipios; });
-      setupMultiAutocomplete('al-municipio',  'al-municipio-list',  function () { return GEO_DATA.municipios; });
+      setupMultiAutocomplete('nl-municipio',  'nl-municipio-list',  function () { return getMunicipiosForForm('nl'); });
+      setupMultiAutocomplete('al-municipio',  'al-municipio-list',  function () { return getMunicipiosForForm('al'); });
       setupMultiAutocomplete('sub-provincia', 'sub-provincia-list', function () { return GEO_DATA.provincias; });
       setupMultiAutocomplete('sub-municipio', 'sub-municipio-list', function () { return GEO_DATA.municipios; });
     });
