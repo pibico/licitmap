@@ -10,33 +10,15 @@ from app.database import get_db
 from app.models import Licitacion
 from app.utils import _nav_context
 from app.i18n import get_lang_from_request, t
+from app.geo import PROVINCIAS_CANONICAL, CP_TO_PROVINCIA, provincias_por_ccaa
 
 router = APIRouter()
 
 
-def _load_provincias_from_geojson() -> tuple[list[str], dict[str, str]]:
-    """Devuelve (lista canónica de 52 provincias, dict {codigo2dig: nombre}).
-    Usada para:
-    - Autocompletado del sidebar (lista).
-    - Derivar provincia desde codigo_postal (dict) en `/api/map/provincias`,
-      porque Licitacion.provincia está vacío en BD (el sync ATOM no lo
-      popula, pero sí rellena codigo_postal, cuyos 2 primeros dígitos son
-      el código de provincia en España)."""
-    path = Path(__file__).parents[2] / "static" / "data" / "provincias.geojson"
-    try:
-        features = _json.loads(path.read_text()).get("features", [])
-    except Exception:
-        return [], {}
-    cp_to_name: dict[str, str] = {}
-    for f in features:
-        p = f.get("properties", {})
-        cod, nom = p.get("Codigo"), p.get("Texto")
-        if cod and nom:
-            cp_to_name[cod.zfill(2)] = nom
-    return sorted(cp_to_name.values()), cp_to_name
-
-
-_PROVINCIAS_CANONICAL, _CP_TO_PROVINCIA = _load_provincias_from_geojson()
+# Datos geográficos (provincias, CP→prov, CCAA→provs) viven en app.geo
+# para que los compartan alertas.py, mapa.py y scripts/check_alertas.py.
+_PROVINCIAS_CANONICAL = PROVINCIAS_CANONICAL
+_CP_TO_PROVINCIA      = CP_TO_PROVINCIA
 
 ESTADOS = {k: f"{{{{t.estado.{k}}}}}" for k in ("PUB", "ADJ", "PRE", "RES", "EV", "ANUL")}
 
@@ -244,6 +226,16 @@ def api_nombres(db: Session = Depends(get_db)):
         ).distinct().order_by(Licitacion.municipio).all()
     ]
     return {"provincias": _PROVINCIAS_CANONICAL, "municipios": municipios}
+
+
+@router.get("/api/geo/provincias-by-ccaa", response_class=JSONResponse)
+def api_provincias_by_ccaa(ccaa: str = Query(default="")):
+    """Devuelve las provincias pertenecientes a las CCAA seleccionadas
+    (pipe-separated). Si no se pasa ninguna, devuelve las 52 provincias.
+    Usado por el progressive disclosure del form de alertas: seleccionar
+    CCAA revela sólo las provincias relevantes."""
+    ccaa_list = [c for c in (ccaa or "").split("|") if c]
+    return {"provincias": provincias_por_ccaa(ccaa_list)}
 
 
 @router.get("/api/map/provincias", response_class=JSONResponse)

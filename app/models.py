@@ -56,7 +56,8 @@ class Alerta(Base):
     cpv_codes = Column(String, nullable=True)    # pipe-separated
     tipo_contrato = Column(String, nullable=True)
     comunidades = Column(String, nullable=True)  # pipe-separated
-    provincias = Column(String, nullable=True)
+    provincias = Column(String, nullable=True)   # pipe-separated
+    municipios = Column(String, nullable=True)   # pipe-separated
     presupuesto_min = Column(Float, nullable=True)
     presupuesto_max = Column(Float, nullable=True)
     solo_activas = Column(Boolean, default=False)

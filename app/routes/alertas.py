@@ -6,10 +6,13 @@ from pathlib import Path
 from datetime import datetime, timedelta, date
 import re, json
 
+from sqlalchemy import func
+
 from app.database import get_db
 from app.models import User, Alerta, LicitacionSeguida, Licitacion
 from app.utils import _nav_context
 from app.i18n import get_lang_from_request, t
+from app.geo import PROVINCIA_TO_CP
 from app.email_utils import (
     send_alerta_email, send_newsletter_email,
     send_seguimiento_email, send_vencimiento_email,
@@ -24,6 +27,28 @@ def _parse_keywords(raw: str | None) -> str | None:
         return None
     parts = [k.strip() for k in raw.replace("|", ",").split(",") if k.strip()]
     return "|".join(parts) if parts else None
+
+
+def _pipe(values) -> str | None:
+    """Convierte lista de strings en pipe-separated, None si queda vacío."""
+    return "|".join(v for v in (values or []) if v) or None
+
+
+def _apply_geo_filters(q, provincias: str | None, municipios: str | None):
+    """Aplica filtros de provincia y municipio al query. `Licitacion.provincia`
+    está siempre NULL (el sync ATOM no lo rellena), así que traducimos cada
+    nombre de provincia al prefijo CP (2 dígitos) y filtramos por
+    substr(codigo_postal, 1, 2)."""
+    if provincias:
+        names = [p for p in provincias.split("|") if p]
+        prefixes = [PROVINCIA_TO_CP[n] for n in names if n in PROVINCIA_TO_CP]
+        if prefixes:
+            q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2).in_(prefixes))
+    if municipios:
+        muns = [m for m in municipios.split("|") if m]
+        if muns:
+            q = q.filter(Licitacion.municipio.in_(muns))
+    return q
 
 CCAA_LIST = [
     "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria",
@@ -504,6 +529,8 @@ async def save_newsletter(request: Request, db: Session = Depends(get_db)):
     nl.hora_envio    = int(data.get("hora_envio", 8))
     nl.keywords      = _parse_keywords(data.get("keywords"))
     nl.comunidades   = comunidades_str or None
+    nl.provincias    = _pipe(data.get("provincias"))
+    nl.municipios    = _pipe(data.get("municipios"))
     nl.presupuesto_min = float(data["presmin"]) if data.get("presmin") else None
     nl.solo_activas  = bool(data.get("solo_activas", False))
     db.commit()
@@ -529,6 +556,7 @@ async def test_newsletter(request: Request, db: Session = Depends(get_db)):
             cc = [c for c in nl.comunidades.split("|") if c]
             if cc:
                 q = q.filter(Licitacion.comunidad_autonoma.in_(cc))
+        q = _apply_geo_filters(q, nl.provincias, nl.municipios)
     lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(20).all()
     try:
         send_newsletter_email(user.email, user.username, lics, desde, db, lang=user.language)
@@ -559,9 +587,11 @@ async def create_alerta(request: Request, db: Session = Depends(get_db)):
     a.nombre        = data.get("nombre") or "Sin nombre"
     a.keywords      = _parse_keywords(data.get("keywords"))
     a.cpv_codes     = data.get("cpv") or None
-    a.comunidades   = "|".join(c for c in data.get("ccaa", []) if c) or None
-    a.tipo_contrato = "|".join(t for t in data.get("tipo", []) if t) or None
-    a.estado        = "|".join(e for e in data.get("estado", []) if e) or None
+    a.comunidades   = _pipe(data.get("ccaa"))
+    a.provincias    = _pipe(data.get("provincias"))
+    a.municipios    = _pipe(data.get("municipios"))
+    a.tipo_contrato = _pipe(data.get("tipo"))
+    a.estado        = _pipe(data.get("estado"))
     a.presupuesto_min = float(data["presmin"]) if data.get("presmin") else None
     a.presupuesto_max = float(data["presmax"]) if data.get("presmax") else None
     a.solo_activas  = bool(data.get("solo_activas", False))
@@ -618,7 +648,12 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
         if a.entidad_tipo == "ccaa":
             q = q.filter(Licitacion.comunidad_autonoma == a.entidad_valor)
         elif a.entidad_tipo == "provincia":
-            q = q.filter(Licitacion.provincia == a.entidad_valor)
+            # Licitacion.provincia está siempre NULL; derivamos vía CP prefix.
+            cp = PROVINCIA_TO_CP.get(a.entidad_valor or "")
+            if cp:
+                q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2) == cp)
+            else:
+                q = q.filter(False)  # provincia desconocida → 0 resultados
         elif a.entidad_tipo == "organismo":
             q = q.filter(Licitacion.organo_contratacion.ilike(f"%{a.entidad_valor}%"))
         elif a.entidad_tipo == "cpv":
@@ -649,6 +684,7 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
                 q = q.filter(Licitacion.estado.in_(estados))
         if a.solo_activas:
             q = q.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today())
+    q = _apply_geo_filters(q, a.provincias, a.municipios)
 
     lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(20).all()
     try:
@@ -684,6 +720,8 @@ async def create_suscripcion(request: Request, db: Session = Depends(get_db)):
     s.nombre        = data.get("nombre") or f"{tipo_label}: {entidad_valor}"
     s.entidad_tipo  = entidad_tipo
     s.entidad_valor = entidad_valor
+    s.provincias    = _pipe(data.get("provincias"))
+    s.municipios    = _pipe(data.get("municipios"))
     s.frecuencia    = data.get("frecuencia", "diaria")
     s.dia_semana    = int(data.get("dia_semana", 0))
     s.hora_envio    = int(data.get("hora_envio", 8))

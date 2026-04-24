@@ -8,14 +8,30 @@ from pathlib import Path
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from datetime import datetime, timedelta, date
-from sqlalchemy import or_
+from sqlalchemy import or_, func
 
 from app.database import SessionLocal
 from app.models import Alerta, LicitacionSeguida, Licitacion, User
+from app.geo import PROVINCIA_TO_CP
 from app.email_utils import (
     send_alerta_email, send_newsletter_email,
     send_seguimiento_email, send_vencimiento_email,
 )
+
+
+def _apply_geo_filters(q, provincias: str | None, municipios: str | None):
+    """Mismo filtro que app.routes.alertas._apply_geo_filters, replicado aquí
+    para el cron: filtra por provincia vía prefijo CP (Licitacion.provincia
+    siempre NULL) y por municipio exact match."""
+    if provincias:
+        prefixes = [PROVINCIA_TO_CP[n] for n in provincias.split("|") if n in PROVINCIA_TO_CP]
+        if prefixes:
+            q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2).in_(prefixes))
+    if municipios:
+        muns = [m for m in municipios.split("|") if m]
+        if muns:
+            q = q.filter(Licitacion.municipio.in_(muns))
+    return q
 
 
 def _should_run(a: Alerta) -> bool:
@@ -51,6 +67,7 @@ def _apply_alerta_filters(q, a: Alerta):
             q = q.filter(Licitacion.estado.in_(estados))
     if a.solo_activas:
         q = q.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today())
+    q = _apply_geo_filters(q, a.provincias, a.municipios)
     return q
 
 
@@ -109,11 +126,21 @@ def check_suscripciones(db):
         if s.entidad_tipo == "ccaa":
             q = q.filter(Licitacion.comunidad_autonoma == s.entidad_valor)
         elif s.entidad_tipo == "provincia":
-            q = q.filter(Licitacion.provincia == s.entidad_valor)
+            # Licitacion.provincia siempre NULL → derivar vía CP prefix.
+            cp = PROVINCIA_TO_CP.get(s.entidad_valor or "")
+            if cp:
+                q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2) == cp)
+            else:
+                q = q.filter(False)
         elif s.entidad_tipo == "organismo":
             q = q.filter(Licitacion.organo_contratacion.ilike(f"%{s.entidad_valor}%"))
         elif s.entidad_tipo == "cpv":
             q = q.filter(Licitacion.cpv.ilike(f"%{s.entidad_valor}%"))
+
+        # Filtros opcionales adicionales (provincia/municipio dentro de la
+        # entidad principal — p. ej. suscripción a organismo X pero sólo en
+        # Madrid).
+        q = _apply_geo_filters(q, s.provincias, s.municipios)
 
         lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(50).all()
         if lics:
