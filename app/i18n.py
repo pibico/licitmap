@@ -375,6 +375,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "al.form_save_sub": "Guardar suscripción",
         "al.sec_watch_alt_desc": "Notificaciones de cambios de estado y próximos vencimientos",
         "al.watchlist_filter_ph": "Filtrar por título…",
+        "al.mun_ph": "Ej: Madrid, Barcelona",
         # Mapa / Análisis (cabeceras principales; el resto es dato)
         "mapa.title": "Mapa de licitaciones",
         "mapa.legend": "Densidad de licitaciones",
@@ -823,6 +824,7 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "al.form_save_sub": "Save subscription",
         "al.sec_watch_alt_desc": "Notifications on status changes and upcoming deadlines",
         "al.watchlist_filter_ph": "Filter by title…",
+        "al.mun_ph": "E.g.: Madrid, Barcelona",
         "mapa.title": "Tender map",
         "mapa.legend": "Tender density",
         "mapa.loading": "Loading map…",

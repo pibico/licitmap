@@ -252,6 +252,19 @@
             </div>
           </div>
 
+          <!-- Provincia chip picker (visible sólo si hay CCAA seleccionada) -->
+          <div class="mb-3 lm-geo-prov-col" id="al-prov-col" style="display:none">
+            <label class="lm-form-label">{{t.al.field_province}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+            <div class="lm-chip-picker lm-chip-picker-scroll lm-geo-prov-picker" id="al-provincia" data-selected=""></div>
+          </div>
+
+          <!-- Municipio text input (visible sólo si hay provincia seleccionada) -->
+          <div class="mb-3 lm-geo-mun-col" id="al-mun-col" style="display:none">
+            <label class="lm-form-label" for="al-municipio">{{t.al.field_municipality}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+            <input type="text" class="form-control form-control-sm lm-geo-mun-input" id="al-municipio"
+                   placeholder="{{t.al.mun_ph}}">
+          </div>
+
           <!-- Tipo + Estado chip pickers -->
           <div class="row g-2 mb-3">
             <div class="col-12 col-sm-6">
@@ -423,6 +436,18 @@
               <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="{{t.al.sub_nombre_ph}}">
             </div>
           </div>
+          <!-- Filtros opcionales adicionales: provincia + municipio -->
+          <div class="row g-2 mb-3 align-items-end">
+            <div class="col-12 col-sm-6">
+              <label class="lm-form-label" for="sub-provincia">{{t.al.field_province}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+              <input type="text" class="form-control form-control-sm" id="sub-provincia" placeholder="{{t.al.mun_ph}}">
+            </div>
+            <div class="col-12 col-sm-6">
+              <label class="lm-form-label" for="sub-municipio">{{t.al.field_municipality}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+              <input type="text" class="form-control form-control-sm" id="sub-municipio" placeholder="{{t.al.mun_ph}}">
+            </div>
+          </div>
+
           <div class="row g-2 mb-3 align-items-end">
             <div class="col-6 col-sm-3">
               <label class="lm-form-label" for="sub-frecuencia">{{t.al.nl_freq}}</label>
@@ -493,4 +518,4 @@
   </div><!-- /.col-lg-9 -->
 </div><!-- /.row -->
 
-<script src="/static/js/alertas.js?v=8"></script>
+<script src="/static/js/alertas.js?v=9"></script>

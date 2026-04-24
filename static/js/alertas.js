@@ -69,6 +69,84 @@
     });
   }
 
+  // ── CSV helpers (para los text inputs de municipios) ──────────────────────
+  function parseCsv(s) {
+    return (s || '').split(',').map(function (x) { return x.trim(); }).filter(Boolean);
+  }
+  function formatPipe(pipeStr) {
+    return (pipeStr || '').split('|').filter(Boolean).join(', ');
+  }
+
+  // ── Progressive disclosure: CCAA → provincia → municipio ──────────────────
+  // Rellena el chip picker de provincia con las provincias pertenecientes a
+  // las CCAA seleccionadas. Mantiene selección previa si coincide.
+  function renderProvChips(pickerEl, provs, selected) {
+    var sel = new Set(selected || []);
+    pickerEl.innerHTML = (provs || []).map(function (p) {
+      var act = sel.has(p) ? ' lm-chip-active' : '';
+      return '<button type="button" class="lm-chip' + act + '" data-val="' + p + '">' + p + '</button>';
+    }).join('');
+  }
+
+  function updateProvChipsFromCcaa(prefix) {
+    var picker  = document.getElementById(prefix + '-provincia');
+    var provCol = document.getElementById(prefix + '-prov-col');
+    var munCol  = document.getElementById(prefix + '-mun-col');
+    if (!picker) return;
+    var ccaaVals = getChipVals(prefix + '-ccaa');
+    if (ccaaVals.length === 0) {
+      if (provCol) provCol.style.display = 'none';
+      if (munCol)  munCol.style.display  = 'none';
+      picker.innerHTML = '';
+      return;
+    }
+    // Selección a restaurar: prioridad a chips ya activos; si no, usa
+    // data-selected (cargada desde el backend o puesta por "Crear desde filtros").
+    var selected = getChipVals(prefix + '-provincia');
+    if (selected.length === 0 && picker.dataset.selected) {
+      selected = picker.dataset.selected.split('|').filter(Boolean);
+    }
+    fetch('/api/geo/provincias-by-ccaa?ccaa=' + encodeURIComponent(ccaaVals.join('|')))
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        renderProvChips(picker, d.provincias || [], selected);
+        picker.dataset.selected = '';
+        if (provCol) provCol.style.display = '';
+        updateMunVisibility(prefix);
+      })
+      .catch(function () {});
+  }
+
+  function updateMunVisibility(prefix) {
+    var munCol = document.getElementById(prefix + '-mun-col');
+    if (!munCol) return;
+    var provs = getChipVals(prefix + '-provincia');
+    munCol.style.display = provs.length > 0 ? '' : 'none';
+  }
+
+  // Engancha listeners al picker de CCAA y al de provincia para encadenar
+  // la revelación. Se llama una vez por prefix (`nl`, `al`) al boot.
+  function initGeoDisclosure(prefix) {
+    var ccaaPicker = document.getElementById(prefix + '-ccaa');
+    var provPicker = document.getElementById(prefix + '-provincia');
+    if (ccaaPicker) {
+      ccaaPicker.addEventListener('click', function (e) {
+        if (!e.target.closest('.lm-chip')) return;
+        // initChipPickers también está enganchado a este mismo evento y
+        // togglea la clase. Diferimos para leer el estado nuevo.
+        setTimeout(function () { updateProvChipsFromCcaa(prefix); }, 0);
+      });
+    }
+    if (provPicker) {
+      provPicker.addEventListener('click', function (e) {
+        if (!e.target.closest('.lm-chip')) return;
+        setTimeout(function () { updateMunVisibility(prefix); }, 0);
+      });
+    }
+    // Render inicial si había CCAA guardada (form de newsletter / editar alerta).
+    updateProvChipsFromCcaa(prefix);
+  }
+
   // ── Newsletter ─────────────────────────────────────────────────────────────
   function initNl() {
     var form    = document.getElementById('nl-form');
@@ -87,7 +165,9 @@
 
     if (guardar) {
       guardar.addEventListener('click', function () {
-        var ccaa = getChipVals('nl-ccaa');
+        var ccaa   = getChipVals('nl-ccaa');
+        var provs  = getChipVals('nl-provincia');
+        var munEl  = document.getElementById('nl-municipio');
         var payload = {
           nombre:       document.getElementById('nl-nombre').value,
           activa:       document.getElementById('nl-activa').checked,
@@ -98,6 +178,8 @@
           presmin:      document.getElementById('nl-presmin').value,
           solo_activas: document.getElementById('nl-solo-activas').checked,
           ccaa:         ccaa,
+          provincias:   provs,
+          municipios:   munEl ? parseCsv(munEl.value) : [],
         };
         guardar.disabled = true;
         api('/api/alerts/newsletter', payload).then(function (r) {
@@ -153,6 +235,15 @@
       clearChips('al-ccaa');
       clearChips('al-tipo');
       clearChips('al-estado');
+      // Reset geo progressive disclosure
+      var munEl = document.getElementById('al-municipio');
+      if (munEl) munEl.value = '';
+      var provEl = document.getElementById('al-provincia');
+      if (provEl) { provEl.innerHTML = ''; provEl.dataset.selected = ''; }
+      var provCol = document.getElementById('al-prov-col');
+      var munCol  = document.getElementById('al-mun-col');
+      if (provCol) provCol.style.display = 'none';
+      if (munCol)  munCol.style.display  = 'none';
       if (freqSel) freqSel.value = 'diaria';
       document.getElementById('al-dia').value  = '0';
       document.getElementById('al-hora').value = '8';
@@ -177,12 +268,15 @@
       btnGuard.addEventListener('click', function () {
         var nombre = document.getElementById('al-nombre').value.trim();
         if (!nombre) { showToast(T.nameRequired, 'error'); return; }
+        var munEl = document.getElementById('al-municipio');
         var payload = {
           edit_id:      document.getElementById('alerta-edit-id').value || null,
           nombre:       nombre,
           keywords:     document.getElementById('al-keywords').value.trim(),
           cpv:          document.getElementById('al-cpv').value.trim(),
           ccaa:         getChipVals('al-ccaa'),
+          provincias:   getChipVals('al-provincia'),
+          municipios:   munEl ? parseCsv(munEl.value) : [],
           tipo:         getChipVals('al-tipo'),
           estado:       getChipVals('al-estado'),
           presmin:      document.getElementById('al-presmin').value,
@@ -225,6 +319,13 @@
       setChipVals('al-ccaa',   (d.ccaa   || '').split('|').filter(Boolean));
       setChipVals('al-tipo',   (d.tipo   || '').split('|').filter(Boolean));
       setChipVals('al-estado', (d.estado || '').split('|').filter(Boolean));
+      // Provincia/municipio: stashear en data-selected para que
+      // updateProvChipsFromCcaa las aplique tras el fetch.
+      var provEl = document.getElementById('al-provincia');
+      if (provEl) provEl.dataset.selected = d.provincias || '';
+      var munEl = document.getElementById('al-municipio');
+      if (munEl) munEl.value = formatPipe(d.municipios || '');
+      updateProvChipsFromCcaa('al');
       openForm();
     });
   }
@@ -271,6 +372,10 @@
       document.getElementById('sub-edit-id').value    = '';
       document.getElementById('sub-nombre').value     = '';
       document.getElementById('sub-valor-text').value = '';
+      var sp = document.getElementById('sub-provincia');
+      var sm = document.getElementById('sub-municipio');
+      if (sp) sp.value = '';
+      if (sm) sm.value = '';
       if (tipoSel) { tipoSel.value = 'ccaa'; updateTipoUI(); }
       if (freqSel) { freqSel.value = 'diaria'; if (diaCol) diaCol.style.display = 'none'; }
       document.getElementById('sub-hora').value = '8';
@@ -289,11 +394,15 @@
           ? document.getElementById('sub-valor-ccaa').value
           : document.getElementById('sub-valor-text').value.trim();
         if (!valor) { showToast(T.valueRequired, 'error'); return; }
+        var sp = document.getElementById('sub-provincia');
+        var sm = document.getElementById('sub-municipio');
         var payload = {
           edit_id:       document.getElementById('sub-edit-id').value || null,
           nombre:        document.getElementById('sub-nombre').value.trim(),
           entidad_tipo:  tipo,
           entidad_valor: valor,
+          provincias:    sp ? parseCsv(sp.value) : [],
+          municipios:    sm ? parseCsv(sm.value) : [],
           frecuencia:    freqSel ? freqSel.value : 'diaria',
           dia_semana:    parseInt(document.getElementById('sub-dia').value, 10) || 0,
           hora_envio:    parseInt(document.getElementById('sub-hora').value, 10) || 8,
@@ -332,6 +441,10 @@
       }
       document.getElementById('sub-dia').value  = d.dia  || '0';
       document.getElementById('sub-hora').value = d.hora || '8';
+      var sp = document.getElementById('sub-provincia');
+      var sm = document.getElementById('sub-municipio');
+      if (sp) sp.value = formatPipe(d.provincias || '');
+      if (sm) sm.value = formatPipe(d.municipios || '');
       openForm();
     });
   }
@@ -473,6 +586,15 @@
         setChipVals('al-ccaa',   f.ccaa   ? f.ccaa.split('|').filter(Boolean)   : []);
         setChipVals('al-estado', f.estado ? f.estado.split('|').filter(Boolean) : []);
 
+        // Provincia + municipio del sidebar (valores únicos en la búsqueda).
+        // Stasheamos en data-selected y en el input de municipio; el fetch
+        // de provincias-by-ccaa rehidrata los chips tras el render.
+        var provEl = document.getElementById('al-provincia');
+        if (provEl) provEl.dataset.selected = f.provincia || '';
+        var munEl = document.getElementById('al-municipio');
+        if (munEl) munEl.value = f.municipio || '';
+        updateProvChipsFromCcaa('al');
+
         // Traducir prange → presmin/presmax
         var PRANGE = { '5k': [null, 5000], '15k': [5000, 15000],
                        '100k': [15000, 100000], '1m': [100000, 1000000], '1m+': [1000000, null] };
@@ -513,6 +635,11 @@
     initSubForm();
     initActions();
     initWatchlistFilter();
+    // Progressive disclosure CCAA → provincia → municipio en newsletter y
+    // custom alert. Se engancha después de initChipPickers para evitar que
+    // el listener de toggle corra antes que el nuestro.
+    initGeoDisclosure('nl');
+    initGeoDisclosure('al');
   });
 
 })();

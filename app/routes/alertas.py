@@ -176,6 +176,8 @@ def _build_nl_section(nl: Alerta | None) -> str:
     hora      = nl.hora_envio if nl else 8
     keywords  = _esc((nl.keywords or "").replace("|", ", ") if nl else "")
     comunidades = nl.comunidades or "" if nl else ""
+    provincias  = nl.provincias or "" if nl else ""
+    municipios  = _esc((nl.municipios or "").replace("|", ", ") if nl else "")
     presmin   = nl.presupuesto_min or "" if nl else ""
     solo      = " checked" if nl and nl.solo_activas else ""
     nl_id     = nl.id if nl else ""
@@ -183,6 +185,10 @@ def _build_nl_section(nl: Alerta | None) -> str:
     dia_col_style = "" if freq == "semanal" else "display:none"
     d_sel     = " selected" if freq == "diaria" else ""
     s_sel     = " selected" if freq == "semanal" else ""
+    # Progressive disclosure: provincia sólo si hay CCAA guardada;
+    # municipio sólo si hay provincia guardada.
+    prov_display = "" if comunidades else "display:none"
+    mun_display  = "" if provincias else "display:none"
 
     L = {
         "active":   "{{t.al.nl_active}}",
@@ -200,6 +206,10 @@ def _build_nl_section(nl: Alerta | None) -> str:
         "solo":     "{{t.al.nl_solo}}",
         "ccaa":     "{{t.al.nl_ccaa_title}}",
         "ccaa_h":   "{{t.al.nl_ccaa_hint}}",
+        "prov":     "{{t.al.field_province}}",
+        "mun":      "{{t.al.field_municipality}}",
+        "opt":      "{{t.al.sub_nombre_opt}}",
+        "mun_ph":   "{{t.al.mun_ph}}",
         "save":     "{{t.al.save_changes}}",
         "test":     "{{t.al.test}}",
     }
@@ -265,6 +275,15 @@ def _build_nl_section(nl: Alerta | None) -> str:
       {_ccaa_chips(comunidades)}
     </div>
   </div>
+  <div class="mb-3 lm-geo-prov-col" id="nl-prov-col" style="{prov_display}">
+    <label class="lm-form-label">{L['prov']} <span class="lm-form-hint" style="display:inline;margin:0">{L['opt']}</span></label>
+    <div class="lm-chip-picker lm-chip-picker-scroll lm-geo-prov-picker" id="nl-provincia" data-selected="{_esc(provincias)}"></div>
+  </div>
+  <div class="mb-3 lm-geo-mun-col" id="nl-mun-col" style="{mun_display}">
+    <label class="lm-form-label">{L['mun']} <span class="lm-form-hint" style="display:inline;margin:0">{L['opt']}</span></label>
+    <input type="text" class="form-control form-control-sm lm-geo-mun-input" id="nl-municipio"
+           value="{municipios}" placeholder="{L['mun_ph']}">
+  </div>
   <div class="d-flex gap-2 flex-wrap">
     <button type="button" class="btn btn-sm btn-primary" id="nl-guardar">{L['save']}</button>
     <button type="button" class="btn btn-sm btn-outline-secondary" id="nl-probar">{L['test']}</button>
@@ -308,6 +327,8 @@ def _build_alertas_list(alertas: list) -> str:
       data-keywords="{_esc(a.keywords or '')}"
       data-cpv="{_esc(a.cpv_codes or '')}"
       data-ccaa="{_esc(a.comunidades or '')}"
+      data-provincias="{_esc(a.provincias or '')}"
+      data-municipios="{_esc(a.municipios or '')}"
       data-tipo="{_esc(a.tipo_contrato or '')}"
       data-estado="{_esc(a.estado or '')}"
       data-presmin="{a.presupuesto_min or ''}"
@@ -359,6 +380,8 @@ def _build_subs_list(subs: list) -> str:
       data-nombre="{_esc(s.nombre)}"
       data-tipo="{_esc(s.entidad_tipo or '')}"
       data-valor="{_esc(s.entidad_valor or '')}"
+      data-provincias="{_esc(s.provincias or '')}"
+      data-municipios="{_esc(s.municipios or '')}"
       data-frecuencia="{s.frecuencia}"
       data-dia="{s.dia_semana or 0}"
       data-hora="{s.hora_envio or 8}"
