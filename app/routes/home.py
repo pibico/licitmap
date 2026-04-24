@@ -757,20 +757,25 @@ def api_exportar(
 
 
 @router.get("/api/licitacion/{lic_id}")
-def get_licitacion(lic_id: int, db: Session = Depends(get_db)):
+def get_licitacion(lic_id: int, request: Request, db: Session = Depends(get_db)):
     lic = db.query(Licitacion).filter(Licitacion.id == lic_id).first()
     if not lic:
         return JSONResponse({"error": "not found"}, status_code=404)
+    # Los diccionarios ESTADOS/TIPOS_CONTRATO contienen placeholders {{t.x.y}}
+    # que el middleware NO resuelve en respuestas JSON. Los traducimos aquí.
+    lang = get_lang_from_request(request)
+    estado_label = translate_html(ESTADOS.get(lic.estado or "", lic.estado or "—"), lang)
+    tipo_label   = translate_html(TIPOS_CONTRATO.get(lic.tipo_contrato or "", "—"), lang)
     return JSONResponse({
         "id": lic.id,
         "titulo": lic.titulo or "—",
         "expediente": lic.expediente or "—",
         "estado": lic.estado or "",
-        "estado_label": ESTADOS.get(lic.estado or "", lic.estado or "—"),
+        "estado_label": estado_label,
         "presupuesto": (f"{lic.presupuesto:,.0f}".replace(",", ".") + " €") if lic.presupuesto is not None else "Sin especificar",
         "fecha_publicacion": lic.fecha_publicacion.strftime("%d/%m/%Y") if lic.fecha_publicacion else None,
         "fecha_limite": lic.fecha_limite.strftime("%d/%m/%Y") if lic.fecha_limite else None,
-        "tipo_contrato": TIPOS_CONTRATO.get(lic.tipo_contrato or "", "—"),
+        "tipo_contrato": tipo_label,
         "organo_contratacion": lic.organo_contratacion or "—",
         "comunidad_autonoma": lic.comunidad_autonoma or None,
         "pais": lic.pais or None,

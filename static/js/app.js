@@ -176,11 +176,13 @@ var LMFilters = (function () {
           var urlBtn = document.getElementById('lm-detail-url');
           if (urlBtn) urlBtn.href = d.url || '#';
 
+          var D = (window.I18N && window.I18N.detail) || {};
+
           // ── Stats: presupuesto + fechas ──
           var statsItems = [
-            d.presupuesto ? ['Presupuesto', '<span class="lm-stat-price">' + escHtml(d.presupuesto) + '</span>'] : null,
-            d.fecha_publicacion ? ['Publicación', escHtml(d.fecha_publicacion)] : null,
-            d.fecha_limite ? ['Fecha límite', escHtml(d.fecha_limite)] : null,
+            d.presupuesto ? [D.budget || '', '<span class="lm-stat-price">' + escHtml(d.presupuesto) + '</span>'] : null,
+            d.fecha_publicacion ? [D.publication || '', escHtml(d.fecha_publicacion)] : null,
+            d.fecha_limite ? [D.deadline || '', escHtml(d.fecha_limite)] : null,
           ].filter(Boolean);
           var statsHtml = statsItems.length
             ? '<div class="lm-detail-stats">' + statsItems.map(function(s) {
@@ -193,13 +195,13 @@ var LMFilters = (function () {
 
           // ── Info grid (expediente incluido) ──
           var fieldDefs = [
-            d.expediente ? ['Expediente', d.expediente] : null,
-            d.tipo_contrato ? ['Tipo', d.tipo_contrato] : null,
-            d.comunidad_autonoma ? ['CCAA', d.comunidad_autonoma] : null,
-            d.provincia ? ['Provincia', d.provincia] : null,
-            d.municipio ? ['Municipio', d.municipio] : null,
-            d.codigo_postal ? ['C.P.', d.codigo_postal] : null,
-            (d.pais && d.pais !== 'España') ? ['País', d.pais] : null,
+            d.expediente ? [D.file || '', d.expediente] : null,
+            d.tipo_contrato ? [D.type || '', d.tipo_contrato] : null,
+            d.comunidad_autonoma ? [D.ccaa || '', d.comunidad_autonoma] : null,
+            d.provincia ? [D.province || '', d.provincia] : null,
+            d.municipio ? [D.municipality || '', d.municipio] : null,
+            d.codigo_postal ? [D.postal || '', d.codigo_postal] : null,
+            (d.pais && d.pais !== 'España') ? [D.country || '', d.pais] : null,
           ].filter(Boolean);
           var fieldsHtml = fieldDefs.length
             ? '<div class="lm-detail-fields">' + fieldDefs.map(function(r) {
@@ -216,18 +218,20 @@ var LMFilters = (function () {
             var codes = d.cpv.trim().split(/\s+/);
             var shown = codes.slice(0, 6);
             var extra = codes.length - shown.length;
+            var moreLabel = (D.cpvMore || '+%(n)s').replace('%(n)s', extra);
             cpvHtml = '<div class="lm-detail-cpv-section">' +
-              '<span class="lm-detail-label">Códigos CPV</span>' +
+              '<span class="lm-detail-label">' + escHtml(D.cpvCodes || '') + '</span>' +
               '<div class="lm-detail-cpv-tags">' +
               shown.map(function(c) { return '<span class="lm-cpv-tag">' + escHtml(c) + '</span>'; }).join('') +
-              (extra > 0 ? '<span class="lm-cpv-tag lm-cpv-more">+' + extra + ' más</span>' : '') +
+              (extra > 0 ? '<span class="lm-cpv-tag lm-cpv-more">' + escHtml(moreLabel) + '</span>' : '') +
               '</div></div>';
           }
 
           document.getElementById('lm-detail-body').innerHTML = statsHtml + fieldsHtml + cpvHtml;
         })
         .catch(function() {
-          document.getElementById('lm-detail-body').innerHTML = '<div class="lm-detail-skeleton">Error al cargar los datos.</div>';
+          var loadErr = (window.I18N && window.I18N.detail && window.I18N.detail.loadError) || '';
+          document.getElementById('lm-detail-body').innerHTML = '<div class="lm-detail-skeleton">' + escHtml(loadErr) + '</div>';
         });
     }
 
@@ -268,12 +272,15 @@ var LMFilters = (function () {
         .then(function(ids) { ids.forEach(function(id) { lmFollowed.add(String(id)); }); })
         .catch(function() {});
 
+      var followTxt   = (window.I18N && window.I18N.follow)   || '';
+      var followingTxt = (window.I18N && window.I18N.unfollow) || '';
+
       var origOpen = openDetailPanel;
       openDetailPanel = function(licId) {
         origOpen(licId);
         followBtn.dataset.licId = licId;
         var siguiendo = lmFollowed.has(String(licId));
-        followLabel.textContent = siguiendo ? 'Siguiendo' : 'Seguir';
+        followLabel.textContent = siguiendo ? followingTxt : followTxt;
         followBtn.classList.toggle('following', siguiendo);
         followIcon.setAttribute('fill', siguiendo ? 'currentColor' : 'none');
       };
@@ -288,7 +295,7 @@ var LMFilters = (function () {
             if (r.error) return;
             if (r.seguida) { lmFollowed.add(String(licId)); }
             else            { lmFollowed.delete(String(licId)); }
-            followLabel.textContent = r.seguida ? 'Siguiendo' : 'Seguir';
+            followLabel.textContent = r.seguida ? followingTxt : followTxt;
             followBtn.classList.toggle('following', r.seguida);
             followIcon.setAttribute('fill', r.seguida ? 'currentColor' : 'none');
           })
