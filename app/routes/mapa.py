@@ -12,6 +12,25 @@ from app.utils import _nav_context
 
 router = APIRouter()
 
+
+def _load_provincias_canonical() -> list[str]:
+    """Lista canónica de provincias desde el geojson (52 entradas).
+    Usada para el autocompletado: funciona aunque la BD no tenga
+    Licitacion.provincia populado (el sync ATOM no siempre lo rellena)."""
+    path = Path(__file__).parents[2] / "static" / "data" / "provincias.geojson"
+    try:
+        data = _json.loads(path.read_text())
+        return sorted({
+            f["properties"].get("Texto")
+            for f in data.get("features", [])
+            if f.get("properties", {}).get("Texto")
+        })
+    except Exception:
+        return []
+
+
+_PROVINCIAS_CANONICAL = _load_provincias_canonical()
+
 ESTADOS = {
     "PUB": "Publicada",
     "ADJ": "Adjudicada",
@@ -217,19 +236,20 @@ def mapa_page(
 
 @router.get("/api/map/nombres", response_class=JSONResponse)
 def api_nombres(db: Session = Depends(get_db)):
-    """Devuelve listas de provincias y municipios para autocomplete."""
-    provincias = [
-        r[0] for r in db.query(Licitacion.provincia).filter(
-            Licitacion.provincia.isnot(None)
-        ).distinct().order_by(Licitacion.provincia).all()
-    ]
+    """Devuelve listas de provincias y municipios para autocomplete.
+
+    Provincias: lista canónica del geojson (52). Los feeds ATOM no
+    siempre populan Licitacion.provincia, así que derivarla de la BD
+    daba una lista vacía o incompleta. Municipios: desde BD, donde
+    sí es un dato consistente para licitaciones de España.
+    """
     municipios = [
         r[0] for r in db.query(Licitacion.municipio).filter(
             Licitacion.municipio.isnot(None),
             Licitacion.pais == "España",
         ).distinct().order_by(Licitacion.municipio).all()
     ]
-    return {"provincias": provincias, "municipios": municipios}
+    return {"provincias": _PROVINCIAS_CANONICAL, "municipios": municipios}
 
 
 @router.get("/api/map/provincias", response_class=JSONResponse)
