@@ -239,10 +239,10 @@ case "$DB_MODE" in
     nativo)
         log "Configurando PostgreSQL nativo…"
         systemctl enable --now postgresql >/dev/null
-        sudo -u postgres psql -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 \
-            || sudo -u postgres psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" >/dev/null
-        sudo -u postgres psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1 \
-            || sudo -u postgres psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" >/dev/null
+        runuser -u postgres -- psql -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 \
+            || runuser -u postgres -- psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" >/dev/null
+        runuser -u postgres -- psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1 \
+            || runuser -u postgres -- psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" >/dev/null
         ok "PostgreSQL nativo listo."
         ;;
     externo)
@@ -383,7 +383,7 @@ ok "Cron instalado en /etc/cron.d/licitmap."
 if [ $LOAD_NOW -eq 1 ]; then
     log "Lanzando carga inicial ($HISTORY_YEARS años)…"
     SINCE_DATE="$(date -d "$HISTORY_YEARS years ago" +%Y-%m-%d)"
-    sudo -u "$SYS_USER" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' .venv/bin/python scripts/sync.py --force --since-date $SINCE_DATE" \
+    runuser -u "$SYS_USER" -- bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' .venv/bin/python scripts/sync.py --force --since-date $SINCE_DATE" \
         || warn "La carga inicial falló. Revisa /var/log/licitmap_sync.log y lánzala manualmente."
 fi
 
@@ -412,7 +412,7 @@ if [ $DEFAULT_PASS -eq 1 ]; then
     echo -e "${C_YELLOW}⚠${C_RESET}  Usuario: ${C_BOLD}$ADMIN_USER${C_RESET}  ·  Contraseña: ${C_BOLD}$ADMIN_USER${C_RESET} (por defecto)"
     echo -e "   ${C_YELLOW}Cámbiala cuanto antes:${C_RESET}"
     echo -e "     · Desde la web:      Inicia sesión y ve a ${C_BOLD}Admin → Configuración → Seguridad${C_RESET}"
-    echo -e "     · Desde la terminal: ${C_BOLD}sudo licitmap admin reset-password${C_RESET}"
+    echo -e "     · Desde la terminal: ${C_BOLD}licitmap admin reset-password${C_RESET}"
 else
     echo -e "  Accede con usuario ${C_BOLD}$ADMIN_USER${C_RESET} y la contraseña que configuraste."
 fi

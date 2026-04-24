@@ -22,12 +22,21 @@ warn() { echo -e "${C_YELLOW}⚠${C_RESET} $*"; }
 info() { echo -e "${C_DIM}$*${C_RESET}"; }
 
 require_root() {
-    [ "$EUID" -eq 0 ] || { bad "Este comando requiere root (sudo)."; exit 1; }
+    [ "$EUID" -eq 0 ] || { bad "Este comando requiere root."; exit 1; }
 }
+
+# Detecta la herramienta disponible para cambiar de usuario
+if command -v runuser >/dev/null 2>&1; then
+    AS_APP=(runuser -u "$SYS_USER" --)
+elif command -v sudo >/dev/null 2>&1; then
+    AS_APP=(sudo -u "$SYS_USER")
+else
+    AS_APP=(su "$SYS_USER" -c)   # fallback (requiere adaptar las llamadas)
+fi
 
 run_as_app() {
     # Ejecuta comando como el usuario del servicio, con PYTHONPATH y cwd correctos
-    sudo -u "$SYS_USER" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' $1"
+    "${AS_APP[@]}" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' $1"
 }
 
 cmd_help() {
@@ -60,7 +69,7 @@ ${C_BOLD}Ejemplos:${C_RESET}
   licitmap status                      # Ver si todo funciona
   licitmap logs sync                   # Seguir el proceso de sincronización
   licitmap sync --since 2024-01-01     # Cargar histórico desde enero 2024
-  sudo licitmap admin reset-password   # Resetear contraseña del admin
+  licitmap admin reset-password        # Resetear contraseña del admin
 
 ${C_BOLD}Ficheros clave:${C_RESET}
   /etc/default/licitmap                # Config del CLI (INSTALL_DIR, SYS_USER)
@@ -71,7 +80,7 @@ EOF
 
 cmd_version() {
     echo -n "LicitMap "
-    sudo -u "$SYS_USER" git -C "$INSTALL_DIR" log -1 --format="%h (%ci) — %s" 2>/dev/null || echo "sin histórico git"
+    "${AS_APP[@]}" git -C "$INSTALL_DIR" log -1 --format="%h (%ci) — %s" 2>/dev/null || echo "sin histórico git"
 }
 
 cmd_status() {
@@ -152,7 +161,7 @@ cmd_sync() {
         shift || true
     done
     info "Lanzando sync: ${args[*]:-(completo)}"
-    sudo -u "$SYS_USER" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' scripts/sync.py ${args[*]}"
+    "${AS_APP[@]}" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' scripts/sync.py ${args[*]}"
 }
 
 cmd_stats() {
@@ -199,9 +208,9 @@ print(\"OK\")
 cmd_update() {
     require_root
     info "Actualizando código desde git…"
-    sudo -u "$SYS_USER" git -C "$INSTALL_DIR" pull --ff-only
+    "${AS_APP[@]}" git -C "$INSTALL_DIR" pull --ff-only
     info "Actualizando dependencias Python…"
-    sudo -u "$SYS_USER" "$INSTALL_DIR/.venv/bin/pip" install -q -r "$INSTALL_DIR/requirements.txt"
+    "${AS_APP[@]}" "$INSTALL_DIR/.venv/bin/pip" install -q -r "$INSTALL_DIR/requirements.txt"
     info "Reiniciando servicio…"
     systemctl restart licitmap
     ok "LicitMap actualizado."
