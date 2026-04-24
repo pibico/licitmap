@@ -13,34 +13,34 @@
 
     <div class="lm-search-bar mb-3">
         <div class="lm-q-wrap">
-            <input type="text" name="q" class="form-control" placeholder="Buscar por título, órgano o expediente..." value="{{q}}">
-            <button type="button" class="lm-org-btn" id="org-search-btn" title="Buscar por organismo" aria-label="Buscar por organismo">
+            <input type="text" name="q" class="form-control" placeholder="{{t.home.search_placeholder}}" value="{{q}}">
+            <button type="button" class="lm-org-btn" id="org-search-btn" title="{{t.home.search_by_org}}" aria-label="{{t.home.search_by_org}}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4"/><path d="M5 21V10.85M19 21V10.85"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/></svg>
             </button>
         </div>
         <div class="lm-cpv-wrap">
-          <input type="text" name="cpv_q" id="cpv-q-input" class="form-control lm-search-cpv" placeholder="Código CPV..." value="{{cpv_q}}" autocomplete="off">
-          <button type="button" class="lm-cpv-help-btn" id="cpv-help-btn" title="Buscar CPV por descripción" aria-label="Buscar CPV por descripción">
+          <input type="text" name="cpv_q" id="cpv-q-input" class="form-control lm-search-cpv" placeholder="{{t.home.cpv_placeholder}}" value="{{cpv_q}}" autocomplete="off">
+          <button type="button" class="lm-cpv-help-btn" id="cpv-help-btn" title="{{t.home.f_cpv_browse}}" aria-label="{{t.home.f_cpv_browse}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
           </button>
-          <div class="lm-cpv-popup" id="cpv-popup" role="dialog" aria-label="Buscador de códigos CPV">
+          <div class="lm-cpv-popup" id="cpv-popup" role="dialog" aria-label="{{t.home.cpv_dialog}}">
             <div class="lm-cpv-popup-header">
-              <input type="text" id="cpv-search-input" class="lm-cpv-search-field" placeholder="ej: instalación frigorífica, limpieza viaria..." autocomplete="off" spellcheck="false">
+              <input type="text" id="cpv-search-input" class="lm-cpv-search-field" placeholder="{{t.home.cpv_example}}" autocomplete="off" spellcheck="false">
             </div>
             <div class="lm-cpv-results" id="cpv-results">
-              <div class="lm-cpv-hint">Escribe para buscar en el vocabulario CPV</div>
+              <div class="lm-cpv-hint">{{t.home.cpv_hint}}</div>
             </div>
           </div>
         </div>
-        <a href="/" class="btn btn-primary text-nowrap">Limpiar filtros</a>
-        <button type="button" class="btn lm-btn-export text-nowrap" id="export-btn" title="Exportar resultados a Excel">
+        <a href="/" class="btn btn-primary text-nowrap">{{t.home.clear_filters}}</a>
+        <button type="button" class="btn lm-btn-export text-nowrap" id="export-btn" title="{{t.home.export_title}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="margin-right:0.35rem;vertical-align:-1px"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>Excel
         </button>
     </div>
     <div class="lm-org-active mb-3" id="lm-org-active" style="{{organismo_display}}">
         <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink:0;opacity:0.6"><path d="M3 21h18"/><path d="M3 7v1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7m0 1a3 3 0 0 0 6 0V7H3l2-4h14l2 4"/><path d="M5 21V10.85M19 21V10.85"/><path d="M9 21v-4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v4"/></svg>
         <span id="lm-org-active-name">{{organismo}}</span>
-        <button type="button" class="lm-org-clear-btn" id="lm-org-clear-btn" aria-label="Quitar filtro de organismo">
+        <button type="button" class="lm-org-clear-btn" id="lm-org-clear-btn" aria-label="{{t.home.clear_org_filter}}">
             <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         </button>
     </div>
@@ -48,40 +48,40 @@
     <div class="lm-stats-bar mb-3">
         <div class="lm-stat-card">
             <div class="lm-stat-value">{{total}}</div>
-            <div class="lm-stat-label">Total licitaciones</div>
+            <div class="lm-stat-label">{{t.home.stat_total}}</div>
         </div>
         <div class="lm-stat-card">
             <div class="lm-stat-value lm-stat-accent" id="en-plazo-count">{{en_plazo}}</div>
-            <div class="lm-stat-label">En plazo ahora</div>
+            <div class="lm-stat-label">{{t.home.stat_active}}</div>
         </div>
         <div class="lm-stat-card">
             <div class="lm-stat-value" id="resultados-count">{{resultados}}</div>
-            <div class="lm-stat-label">Resultados filtrados</div>
+            <div class="lm-stat-label">{{t.home.stat_filtered}}</div>
         </div>
         <div class="lm-stat-card">
             <div class="lm-stat-value lm-stat-sync">{{ultima_sync}}</div>
-            <div class="lm-stat-label">Última sincronización</div>
+            <div class="lm-stat-label">{{t.home.stat_last_sync}}</div>
         </div>
     </div>
 
     <div class="row g-3 align-items-start">
         <div class="col-lg-3">
             <div class="lm-sidebar">
-                <div class="lm-sidebar-header">Filtros</div>
+                <div class="lm-sidebar-header">{{t.home.filters}}</div>
 
                 <div class="lm-sidebar-section">
                     <button class="lm-sidebar-toggle" type="button" data-section="fecha">
-                        Fecha límite
+                        {{t.home.f_deadline}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-fecha">
                         <div class="lm-sidebar-date-wrap">
                             <div class="lm-sidebar-date-field">
-                                <span class="lm-sidebar-date-label">Desde</span>
+                                <span class="lm-sidebar-date-label">{{t.home.f_from}}</span>
                                 <input type="date" name="fecha_desde" value="{{fecha_desde}}">
                             </div>
                             <div class="lm-sidebar-date-field">
-                                <span class="lm-sidebar-date-label">Hasta</span>
+                                <span class="lm-sidebar-date-label">{{t.home.f_to}}</span>
                                 <input type="date" name="fecha_hasta" value="{{fecha_hasta}}">
                             </div>
                         </div>
@@ -90,7 +90,7 @@
 
                 <div class="lm-sidebar-section">
                     <button class="lm-sidebar-toggle" type="button" data-section="tipo">
-                        Tipo de contrato
+                        {{t.home.f_contract}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-tipo">
@@ -100,7 +100,7 @@
 
                 <div class="lm-sidebar-section">
                     <button class="lm-sidebar-toggle" type="button" data-section="prange">
-                        Presupuesto
+                        {{t.home.f_budget}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-prange">
@@ -110,7 +110,7 @@
 
                 <div class="lm-sidebar-section">
                     <button class="lm-sidebar-toggle" type="button" data-section="territorio">
-                        Territorio
+                        {{t.home.f_territory}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-territorio">
@@ -135,13 +135,13 @@
 
                 <div class="lm-sidebar-section" id="sidebar-provincia-section" style="{{espana_only_display}}">
                     <button class="lm-sidebar-toggle" type="button" data-section="provincia">
-                        Provincia
+                        {{t.home.f_province}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-provincia">
                         <div style="padding: 0.35rem 0.75rem 0.6rem" class="lm-autocomplete">
                             <input type="text" id="sidebar-provincia-input" class="form-control form-control-sm"
-                                   placeholder="Buscar provincia..." value="{{provincia}}" autocomplete="off">
+                                   placeholder="{{t.home.f_province_search}}" value="{{provincia}}" autocomplete="off">
                             <div class="lm-autocomplete-list" id="sidebar-provincia-list"></div>
                         </div>
                     </div>
@@ -149,13 +149,13 @@
 
                 <div class="lm-sidebar-section" id="sidebar-municipio-section" style="{{espana_only_display}}">
                     <button class="lm-sidebar-toggle" type="button" data-section="municipio">
-                        Municipio
+                        {{t.home.f_municipality}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-municipio">
                         <div style="padding: 0.35rem 0.75rem 0.6rem" class="lm-autocomplete">
                             <input type="text" id="sidebar-municipio-input" class="form-control form-control-sm"
-                                   placeholder="Buscar municipio..." value="{{municipio}}" autocomplete="off">
+                                   placeholder="{{t.home.f_municipality_search}}" value="{{municipio}}" autocomplete="off">
                             <div class="lm-autocomplete-list" id="sidebar-municipio-list"></div>
                         </div>
                     </div>
@@ -163,7 +163,7 @@
 
                 <div class="lm-sidebar-section">
                     <button class="lm-sidebar-toggle" type="button" data-section="estado">
-                        Estado
+                        {{t.home.f_status}}
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body" id="sc-estado">
@@ -185,7 +185,7 @@
                 </div>
                 <div id="paginacion-top">{{paginacion}}</div>
                 <div class="lm-per-page">
-                    <span class="lm-per-page-label">Por página:</span>
+                    <span class="lm-per-page-label">{{t.home.per_page}}</span>
                     <div class="lm-per-page-btns" id="per-page-btns">
                         <button type="button" class="lm-per-page-btn" data-value="5">5</button>
                         <button type="button" class="lm-per-page-btn" data-value="10">10</button>
@@ -203,18 +203,18 @@
 
     <!-- Panel lateral: búsqueda por organismo -->
     <div class="lm-org-backdrop" id="lm-org-backdrop"></div>
-    <aside class="lm-org-panel" id="lm-org-panel" role="dialog" aria-modal="true" aria-label="Búsqueda por organismo">
+    <aside class="lm-org-panel" id="lm-org-panel" role="dialog" aria-modal="true" aria-label="{{t.home.panel_org_title}}">
         <div class="lm-org-header">
-            <span class="lm-org-title">Buscar por organismo</span>
-            <button class="lm-detail-close" id="lm-org-close" aria-label="Cerrar">
+            <span class="lm-org-title">{{t.home.panel_org_title}}</span>
+            <button class="lm-detail-close" id="lm-org-close" aria-label="{{t.detail.close}}">
                 <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
             </button>
         </div>
         <div class="lm-org-search-wrap">
-            <input type="text" id="lm-org-input" class="lm-org-search-field" placeholder="Nombre del organismo..." autocomplete="off" spellcheck="false">
+            <input type="text" id="lm-org-input" class="lm-org-search-field" placeholder="{{t.home.panel_org_placeholder}}" autocomplete="off" spellcheck="false">
         </div>
         <div class="lm-org-results" id="lm-org-results">
-            <div class="lm-org-hint">Escribe para buscar organismos</div>
+            <div class="lm-org-hint">{{t.home.panel_org_hint}}</div>
         </div>
     </aside>
 </form>
