@@ -141,7 +141,7 @@ def _render_landing(request: Request, db) -> str:
   <div class="lm-card-footer">
     <span class="lm-card-org">{lic.organo_contratacion or '—'} · {territorio}</span>
     <div class="lm-card-right">
-      <span class="lm-card-deadline">Plazo {fecha_str}</span>
+      <span class="lm-card-deadline">{{{{t.home.card_deadline}}}} {fecha_str}</span>
       <span class="lm-card-price">{presupuesto_str}</span>
     </div>
   </div>
@@ -474,7 +474,7 @@ def home(
   <div class="lm-card-footer">
     <span class="lm-card-org">{lic.organo_contratacion or '—'} · {territorio}</span>
     <div class="lm-card-right">
-      <span class="lm-card-deadline">Plazo {fecha_str}</span>
+      <span class="lm-card-deadline">{{{{t.home.card_deadline}}}} {fecha_str}</span>
       <span class="lm-card-price">{presupuesto_str}</span>
     </div>
   </div>
@@ -541,7 +541,7 @@ def home(
     mostrar_ccaa = pais in ("España", "")
     ccaa_display = "" if mostrar_ccaa else "display:none"
     paises_display = "display:none" if mostrar_ccaa else ""
-    territorio_title = "Comunidad autónoma" if mostrar_ccaa else "País"
+    territorio_title = "{{t.home.f_ccaa}}" if mostrar_ccaa else "{{t.home.f_country}}"
     espana_only_display = "" if mostrar_ccaa else "display:none"
 
     auth_block, busqueda_display, lang_selector = _nav_context(request)
@@ -582,7 +582,7 @@ def home(
         espana_only_display=espana_only_display,
         per_page=per_page,
         orden=orden,
-        orden_label="Pronta finalización" if orden == "asc" else "Más tiempo",
+        orden_label="{{t.home.orden_asc}}" if orden == "asc" else "{{t.home.orden_desc}}",
         orden_icon_desc="display:none" if orden == "asc" else "",
         orden_icon_asc="" if orden == "asc" else "display:none",
         paginacion=paginacion,

@@ -657,7 +657,8 @@ var LMFilters = (function () {
         var current = ordenInput.value || 'asc';
         var next = current === 'asc' ? 'desc' : 'asc';
         ordenInput.value = next;
-        document.getElementById('orden-label').textContent = next === 'asc' ? 'Pronta finalización' : 'Más tiempo';
+        var homeI18n = (window.I18N && window.I18N.home) || {};
+        document.getElementById('orden-label').textContent = next === 'asc' ? (homeI18n.ordenAsc || '') : (homeI18n.ordenDesc || '');
         var iconDesc = document.getElementById('orden-icon-desc');
         var iconAsc  = document.getElementById('orden-icon-asc');
         if (iconDesc) iconDesc.style.display = next === 'desc' ? '' : 'none';
@@ -704,7 +705,8 @@ var LMFilters = (function () {
           var esEspana = !value || value === 'España';
 
           var titleEl = document.getElementById('sidebar-territorio-title');
-          if (titleEl) titleEl.textContent = esEspana ? 'Comunidad autónoma' : 'País';
+          var homeI18n = (window.I18N && window.I18N.home) || {};
+          if (titleEl) titleEl.textContent = (esEspana ? homeI18n.fCcaa : homeI18n.fCountry) || titleEl.textContent;
 
           var ccaaInput = document.getElementById('h-ccaa');
           if (!esEspana && ccaaInput) {
@@ -759,7 +761,8 @@ var LMFilters = (function () {
               var espanaItem = sidebar.querySelector('.lm-sidebar-item[data-value="España"]');
               if (espanaItem) espanaItem.classList.add('lm-active');
               var titleEl2 = document.getElementById('sidebar-territorio-title');
-              if (titleEl2) titleEl2.textContent = 'Comunidad autónoma';
+              var hI18n2 = (window.I18N && window.I18N.home) || {};
+              if (titleEl2) titleEl2.textContent = hI18n2.fCcaa || titleEl2.textContent;
             }
           }
 
