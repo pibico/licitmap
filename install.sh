@@ -329,13 +329,17 @@ ok "CLI disponible: ejecuta 'licitmap help'."
 
 # systemd
 log "Instalando unidad systemd…"
+# Si hay nginx delante, la app escucha solo en loopback; si no, en todas las interfaces
+BIND_HOST="127.0.0.1"
+[ $USE_NGINX -eq 0 ] && BIND_HOST="0.0.0.0"
 sed -e "s|{{USER}}|$SYS_USER|g" \
     -e "s|{{INSTALL_DIR}}|$INSTALL_DIR|g" \
     -e "s|{{PORT}}|$APP_PORT|g" \
+    -e "s|{{HOST}}|$BIND_HOST|g" \
     "$INSTALL_DIR/deploy/licitmap.service" > /etc/systemd/system/licitmap.service
 systemctl daemon-reload
 systemctl enable --now licitmap >/dev/null
-ok "Servicio licitmap iniciado vía systemd."
+ok "Servicio licitmap iniciado vía systemd (escucha en ${BIND_HOST}:${APP_PORT})."
 
 # Nginx + SSL
 if [ $USE_NGINX -eq 1 ]; then
@@ -387,7 +391,9 @@ if [ $USE_NGINX -eq 1 ] && [ -n "$DOMAIN" ]; then
     PROTO="http"; [ "$USE_SSL" = "1" ] && PROTO="https"
     echo "  URL:          ${PROTO}://${DOMAIN}"
 else
-    echo "  URL interna:  http://127.0.0.1:$APP_PORT"
+    LAN_IP="$(hostname -I 2>/dev/null | awk '{print $1}')"
+    echo "  Local:        http://127.0.0.1:$APP_PORT"
+    [ -n "$LAN_IP" ] && echo "  LAN:          http://${LAN_IP}:${APP_PORT}"
 fi
 echo "  Config:       $INSTALL_DIR/.env"
 echo
