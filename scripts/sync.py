@@ -9,6 +9,7 @@ Uso:
     PYTHONPATH=/root/licitmap python scripts/sync.py --status           # Ver estado del último sync
     PYTHONPATH=/root/licitmap python scripts/sync.py --max-pages 3      # Limitar páginas (sync rápido)
 """
+import os
 import sys
 import json
 import requests
@@ -25,6 +26,7 @@ ROOT_FEED = "licitacionesPerfilesContratanteCompleto3.atom"
 STATE_FILE = Path("data/sync_state.json")
 NS_ATOM = "http://www.w3.org/2005/Atom"
 HEADERS = {"User-Agent": "LicitMap/1.0 (github.com/Ivisor/licitmap)"}
+HISTORY_YEARS = int(os.getenv("HISTORY_YEARS", "5"))
 
 
 def load_state():
@@ -130,7 +132,7 @@ def upsert(db, entries):
 
 
 def purge_old(db) -> int:
-    cutoff = date.today().replace(year=date.today().year - 5)
+    cutoff = date.today().replace(year=date.today().year - HISTORY_YEARS)
     deleted = (
         db.query(Licitacion)
         .filter(Licitacion.fecha_limite != None, Licitacion.fecha_limite < cutoff)
@@ -235,7 +237,7 @@ def main():
         try:
             borradas = purge_old(db2)
             if borradas:
-                print(f"Purga: {borradas} licitaciones eliminadas (fecha_limite < 5 años)")
+                print(f"Purga: {borradas} licitaciones eliminadas (fecha_limite < {HISTORY_YEARS} años)")
         finally:
             db2.close()
 

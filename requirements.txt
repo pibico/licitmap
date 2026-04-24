@@ -7,3 +7,5 @@ itsdangerous
 python-multipart
 bcrypt
 openpyxl
+python-dotenv
+requests

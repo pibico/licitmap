@@ -1,6 +1,13 @@
+import os
+import secrets
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
+
+load_dotenv(Path(__file__).resolve().parent / ".env")
 
 from app.routes.home import router as home_router
 from app.routes.mapa import router as mapa_router
@@ -11,8 +18,8 @@ from app.routes.alertas import router as alertas_router
 
 app = FastAPI(title="LicitMap")
 
-# Sesión firmada con cookie (itsdangerous) — cambiar SECRET_KEY en producción real
-app.add_middleware(SessionMiddleware, secret_key="licitmap-session-secret-2026", session_cookie="lm_session")
+SECRET_KEY = os.getenv("SECRET_KEY") or secrets.token_urlsafe(32)
+app.add_middleware(SessionMiddleware, secret_key=SECRET_KEY, session_cookie="lm_session")
 
 app.mount("/static", StaticFiles(directory="static"), name="static")
 app.include_router(auth_router)
