@@ -457,7 +457,7 @@ def _users_rows(db: Session) -> str:
             </form>
             <form method="post" action="/admin/users/{u.id}/delete" style="display:inline"
                   onsubmit="{confirm_js}">
-              <button class="btn btn-sm btn-outline-danger" type="submit" {disabled}>{{t.au.action_delete}}</button>
+              <button class="btn btn-sm btn-outline-danger" type="submit" {disabled}>{{{{t.au.action_delete}}}}</button>
             </form>
           </td>
         </tr>"""

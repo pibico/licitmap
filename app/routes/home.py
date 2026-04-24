@@ -12,6 +12,7 @@ import re
 from app.database import get_db
 from app.models import Licitacion
 from app.utils import _nav_context, get_setting
+from app.i18n import translate_html, get_lang_from_request
 
 router = APIRouter()
 
@@ -498,12 +499,21 @@ def home(
     en_plazo_str = f"{en_plazo_count:,}".replace(",", ".")
 
     if partial == "1":
+        # El JSON no pasa por el middleware i18n, así que traducimos los
+        # fragmentos HTML a mano con el idioma del request.
+        lang = get_lang_from_request(request)
+        def _tr(v):
+            if isinstance(v, str):
+                return translate_html(v, lang)
+            if isinstance(v, dict):
+                return {k: _tr(x) for k, x in v.items()}
+            return v
         return JSONResponse({
-            "filas": filas,
-            "paginacion": paginacion,
+            "filas": _tr(filas),
+            "paginacion": _tr(paginacion),
             "resultados": resultados_str,
             "en_plazo": en_plazo_str,
-            "sidebar": sidebar,
+            "sidebar": _tr(sidebar),
             "municipio": municipio,
             "organismo": organismo,
         })
