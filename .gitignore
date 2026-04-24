@@ -31,7 +31,10 @@ uvicorn.log
 .DS_Store
 Thumbs.db
 
-# Claude Code
-.claude/
-CLAUDE.md
-.planning/
+# Claude Code — tracked en dev (ver .claude/memory/). En el repo público se ignorará.
+# .claude/
+# CLAUDE.md
+# .planning/
+
+# Sesiones de Claude (logs jsonl locales, nunca al repo)
+.claude/projects/
