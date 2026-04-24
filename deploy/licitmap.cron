@@ -1,6 +1,9 @@
 # LicitMap — sincronización automática y alertas
 SHELL=/bin/bash
 PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+LANG=C.UTF-8
+LC_ALL=C.UTF-8
+PYTHONIOENCODING=utf-8
 
 # Sync rápido cada 10 minutos (máx 3 páginas, frescura de datos ≤ 10 min)
 */10 * * * *  {{USER}}  {{INSTALL_DIR}}/scripts/run_sync.sh --max-pages 3 >> /var/log/licitmap_sync.log 2>&1

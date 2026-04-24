@@ -503,6 +503,13 @@ print(\"OK\" if db.query(User).filter_by(username=\"admin\").first() else \"MISS
     _dr_check "Unidad systemd instalada"
     [ -f /etc/systemd/system/licitmap.service ] && _dr_pass || _dr_fail "Falta /etc/systemd/system/licitmap.service"
 
+    _dr_check "Locale UTF-8 configurado en el servicio"
+    if grep -q "LC_ALL=C.UTF-8\|LANG=.*UTF-8" /etc/systemd/system/licitmap.service 2>/dev/null; then
+        _dr_pass
+    else
+        _dr_fail "Añadir 'Environment=LANG=C.UTF-8' y 'Environment=LC_ALL=C.UTF-8' en [Service], luego 'systemctl daemon-reload && systemctl restart licitmap'"
+    fi
+
     _dr_check "licitmap.service habilitado"
     systemctl is-enabled --quiet licitmap && _dr_pass || _dr_warn "Habilitar: systemctl enable licitmap"
 
