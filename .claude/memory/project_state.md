@@ -73,11 +73,13 @@ El endpoint `/?partial=1` devuelve JSON con HTML fragmentos. El middleware i18n 
 
 ### Pendiente concreto por arreglar
 1. **`mapa.py` sidebar items hardcoded en español** (los chips de tipo/estado/presupuesto DENTRO del mapa). Idéntico fix al de `home.py` TIPOS_CONTRATO/ESTADOS/PRANGES con placeholders `"{{t.x.y}}"`.
-2. **`alertas.py` `_build_nl_section`, `_build_alertas_list`, `_build_subs_list`, `_build_watchlist`** generan ~500 líneas de HTML español. Labels: "Nombre", "Palabras clave", "Frecuencia", "Guardar", etc. Son f-strings — usar `{{{{t.xxx}}}}` o variables.
+2. ✅ **HECHO (commit 8aa2502)** — `alertas.py` `_build_nl_section/_build_alertas_list/_build_subs_list/_build_watchlist` traducidos. Constantes `TIPOS_CONTRATO/ESTADOS/DIAS/DIAS_SHORT/ENTIDAD_TIPOS` ahora son placeholders. `_freq_label/_last_label/_alerta_meta` emiten placeholders. `create_suscripcion` usa `t()` para el default name (evita placeholders crudos en BD).
 3. **Asistente CPV / Organismo** (popups en `home.html` + strings en `app.js`) sin traducir.
-4. **`alertas.js` toasts**: "Newsletter guardada correctamente", "Error de red", etc. (~15 strings). Exponer vía `window.I18N.al.*`.
-5. **CCAA desplegable vacío**: NO es bug — se construye desde `ccaa_counts_raw` (query). Con BD vacía no hay nada que mostrar. Cuando haya datos (post `licitmap sync`) aparecerán. Si quieres que siempre muestre las 19 CCAA con count 0, hay que refactorizar `home.py` para que sidebar_ccaa use una lista fija como ESTADOS.
-6. **Mapa provincias sin marcar al zoom**: el usuario reportó que `conteos.provincias` no coincide con los nombres del geojson. Requiere verificar que los valores de `licitacion.provincia` en BD coinciden con la propiedad `Texto` del geojson (o añadir mapping).
+4. ✅ **HECHO (commit f58c007)** — `alertas.js` toasts/confirms via `window.I18N.al.*`. Añadidos helpers `fmt(tmpl, vars)` (sustituye `%(name)s`) y `errMsg(err)`. `base.html` expone `al.toast.*`, `al.sending`, `al.sendTestBtn`, `al.confirmDelete`, `al.entidad.*`, `al.subPh.*`, `al.valorFallback`.
+5. **Template `alertas.html` aún con hardcoded**: chips CCAA y labels del form de alerta personalizada ("Nombre *", "Palabras clave en el título", "Tipo de contrato", "Estado", "Presup. mín./máx. (€)", placeholders "Ej:...", "Sin límite"). Reemplazo directo con `{{t.al.*}}` — no hay f-strings, no hay gotcha. Más unos 15 labels.
+6. **CCAA desplegable vacío**: NO es bug — se construye desde `ccaa_counts_raw` (query). Con BD vacía no hay nada que mostrar. Cuando haya datos (post `licitmap sync`) aparecerán. Si quieres que siempre muestre las 19 CCAA con count 0, hay que refactorizar `home.py` para que sidebar_ccaa use una lista fija como ESTADOS.
+7. **Mapa provincias sin marcar al zoom**: el usuario reportó que `conteos.provincias` no coincide con los nombres del geojson. Requiere verificar que los valores de `licitacion.provincia` en BD coinciden con la propiedad `Texto` del geojson (o añadir mapping). `static/js/mapa.js:1-22` tiene `CCAA_MAP` pero no mapping análogo para provincias.
+8. **Asistente CPV / Organismo** en `static/js/app.js:180-227` — labels del panel de detalle hardcoded (`'Presupuesto'`, `'Publicación'`, `'Fecha límite'`, `'Expediente'`, `'Tipo'`, `'CCAA'`, `'Códigos CPV'`). Exponer vía `window.I18N.detail.*`.
 
 ## Tareas pendientes estructurales
 - Crear repo público `Ivisor/licitmap` y push del `main` limpio (el usuario lo hará manualmente en GitHub UI).
