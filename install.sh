@@ -132,6 +132,7 @@ fi
 echo
 echo -e "${C_BOLD}=== SMTP (opcional) ===${C_RESET}"
 USE_SMTP=0
+SMTP_HOST=""; SMTP_PORT=""; SMTP_USER=""; SMTP_PASS=""; SMTP_FROM=""
 if ask_yn "¿Configurar correo SMTP ahora? (se puede hacer luego desde /admin/config)" "n"; then
     USE_SMTP=1
     SMTP_HOST=$(ask "Servidor SMTP" "smtp.gmail.com")
