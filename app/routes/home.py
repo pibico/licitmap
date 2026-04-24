@@ -412,7 +412,7 @@ def home(
     db: Session = Depends(get_db),
     q: str = Query(default=""),
     ccaa: str = Query(default=""),
-    pais: str = Query(default=""),
+    pais: str = Query(default="España"),
     estado: str = Query(default=""),
     page: int = Query(default=1, ge=1),
     partial: str = Query(default=""),
@@ -530,11 +530,9 @@ def home(
 
     ultima_sync = _ultima_sync_label(request)
 
-    mostrar_ccaa = pais in ("España", "")
-    ccaa_display = "" if mostrar_ccaa else "display:none"
-    paises_display = "display:none" if mostrar_ccaa else ""
-    territorio_title = "{{t.home.f_ccaa}}" if mostrar_ccaa else "{{t.home.f_country}}"
-    espana_only_display = "" if mostrar_ccaa else "display:none"
+    # MVP: sólo licitaciones de España. El filtro de Territorio se retiró
+    # del sidebar — las provincia/municipio y CCAA se asumen dentro de España.
+    espana_only_display = ""
 
     auth_block, busqueda_display, lang_selector = _nav_context(request)
     return render(
@@ -550,12 +548,7 @@ def home(
         ultima_sync=ultima_sync,
         filas=filas,
         sidebar_tipo=sidebar["sidebar_tipo"],
-        sidebar_pais=sidebar["sidebar_pais"],
-        sidebar_paises_ext=sidebar["sidebar_paises_ext"],
         sidebar_ccaa=sidebar["sidebar_ccaa"],
-        ccaa_display=ccaa_display,
-        paises_display=paises_display,
-        territorio_title=territorio_title,
         sidebar_estado=sidebar["sidebar_estado"],
         sidebar_prange=sidebar["sidebar_prange"],
         q=q,
@@ -615,7 +608,7 @@ def api_exportar(
     db: Session = Depends(get_db),
     q: str = Query(default=""),
     ccaa: str = Query(default=""),
-    pais: str = Query(default=""),
+    pais: str = Query(default="España"),
     estado: str = Query(default=""),
     tipo: str = Query(default=""),
     fecha_desde: str = Query(default=""),

@@ -108,27 +108,14 @@
                     </div>
                 </div>
 
-                <div class="lm-sidebar-section">
-                    <button class="lm-sidebar-toggle" type="button" data-section="territorio">
-                        {{t.home.f_territory}}
-                        <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
-                    </button>
-                    <div class="lm-sidebar-body" id="sc-territorio">
-                        <div id="sidebar-territorio-items">{{sidebar_pais}}</div>
-                    </div>
-                </div>
-
                 <div class="lm-sidebar-section" id="sidebar-territorio-section">
                     <button class="lm-sidebar-toggle" type="button" data-section="ccaa">
-                        <span id="sidebar-territorio-title">{{territorio_title}}</span>
+                        <span id="sidebar-territorio-title">{{t.home.f_ccaa}}</span>
                         <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="lm-chevron"><polyline points="6 9 12 15 18 9"></polyline></svg>
                     </button>
                     <div class="lm-sidebar-body lm-scrollable" id="sc-ccaa">
-                        <div id="sidebar-ccaa-items" style="{{ccaa_display}}">
+                        <div id="sidebar-ccaa-items">
                             {{sidebar_ccaa}}
-                        </div>
-                        <div id="sidebar-paises-items" style="{{paises_display}}">
-                            {{sidebar_paises_ext}}
                         </div>
                     </div>
                 </div>

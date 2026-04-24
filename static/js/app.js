@@ -131,6 +131,10 @@ var LMFilters = (function () {
     window.addEventListener('resize', updatePos);
   }
 
+  // Exponer a otros scripts (alertas.js lo reutiliza para el form de alerta
+  // y el sidebar de /alerts). La única exportación pública de app.js.
+  window.LMAutocomplete = setupAutocomplete;
+
   document.addEventListener('DOMContentLoaded', function () {
     setupSidebarToggles();
 
@@ -579,23 +583,8 @@ var LMFilters = (function () {
           if (s) {
             document.getElementById('sidebar-tipo-items').innerHTML = s.sidebar_tipo;
             document.getElementById('sidebar-prange-items').innerHTML = s.sidebar_prange;
-            document.getElementById('sidebar-territorio-items').innerHTML = s.sidebar_pais;
-
-            // Actualizar ccaa/paises con su contenido Y mostrar/ocultar juntos
-            // (evita layout shift al hacerlo en el mismo frame que el resto del sidebar)
             var ccaaItems = document.getElementById('sidebar-ccaa-items');
-            var paisesItems = document.getElementById('sidebar-paises-items');
-            var currentPais = document.getElementById('h-pais').value;
-            var esEspana = !currentPais || currentPais === 'España';
-            if (ccaaItems) {
-              ccaaItems.innerHTML = s.sidebar_ccaa;
-              ccaaItems.style.display = esEspana ? '' : 'none';
-            }
-            if (paisesItems) {
-              paisesItems.innerHTML = s.sidebar_paises_ext;
-              paisesItems.style.display = esEspana ? 'none' : '';
-            }
-
+            if (ccaaItems) ccaaItems.innerHTML = s.sidebar_ccaa;
             document.getElementById('sidebar-estado-items').innerHTML = s.sidebar_estado;
           }
         });
@@ -702,50 +691,7 @@ var LMFilters = (function () {
 
         var isActive = item.classList.contains('lm-active');
 
-        if (field === 'pais') {
-          // Territorio: comportamiento radio — desactiva todo el grupo, activa el ítem
-          sidebar.querySelectorAll('.lm-sidebar-item[data-field="pais"]')
-            .forEach(function (el) { el.classList.remove('lm-active'); });
-          input.value = value;
-          item.classList.add('lm-active');
-
-          var esEspana = !value || value === 'España';
-
-          var titleEl = document.getElementById('sidebar-territorio-title');
-          var homeI18n = (window.I18N && window.I18N.home) || {};
-          if (titleEl) titleEl.textContent = (esEspana ? homeI18n.fCcaa : homeI18n.fCountry) || titleEl.textContent;
-
-          var ccaaInput = document.getElementById('h-ccaa');
-          if (!esEspana && ccaaInput) {
-            ccaaInput.value = '';
-            sidebar.querySelectorAll('.lm-sidebar-item[data-field="ccaa"]')
-              .forEach(function (el) { el.classList.remove('lm-active'); });
-          }
-          // Reset provincia y municipio al salir de España
-          if (!esEspana) {
-            var hProv = document.getElementById('h-provincia');
-            var hMun  = document.getElementById('h-municipio');
-            var inProv = document.getElementById('sidebar-provincia-input');
-            var inMun  = document.getElementById('sidebar-municipio-input');
-            if (hProv) hProv.value = '';
-            if (hMun)  hMun.value  = '';
-            if (inProv) inProv.value = '';
-            if (inMun)  inMun.value  = '';
-          }
-          // Mostrar/ocultar secciones España-only
-          var secProv = document.getElementById('sidebar-provincia-section');
-          var secMun  = document.getElementById('sidebar-municipio-section');
-          if (secProv) secProv.style.display = esEspana ? '' : 'none';
-          if (secMun)  secMun.style.display  = esEspana ? '' : 'none';
-
-          if (!esEspana && value !== '__intl__') {
-            sidebar.querySelectorAll('.lm-sidebar-item[data-field="pais"]')
-              .forEach(function (el) { el.classList.remove('lm-active'); });
-            var intlItem = sidebar.querySelector('.lm-sidebar-item[data-value="__intl__"]');
-            if (intlItem) intlItem.classList.add('lm-active');
-          }
-
-        } else if (MULTI_FIELDS.indexOf(field) >= 0) {
+        if (MULTI_FIELDS.indexOf(field) >= 0) {
           // Multiselección: toggle este valor en lista separada por |
           var current = input.value ? input.value.split('|').filter(Boolean) : [];
           var idx = current.indexOf(value);
@@ -757,21 +703,6 @@ var LMFilters = (function () {
             item.classList.add('lm-active');
           }
           input.value = current.join('|');
-
-          // Al seleccionar una CCAA: auto-activar España si el territorio no lo está
-          if (field === 'ccaa' && idx < 0) {
-            var paisInput = document.getElementById('h-pais');
-            if (paisInput && paisInput.value !== 'España') {
-              paisInput.value = 'España';
-              sidebar.querySelectorAll('.lm-sidebar-item[data-field="pais"]')
-                .forEach(function (el) { el.classList.remove('lm-active'); });
-              var espanaItem = sidebar.querySelector('.lm-sidebar-item[data-value="España"]');
-              if (espanaItem) espanaItem.classList.add('lm-active');
-              var titleEl2 = document.getElementById('sidebar-territorio-title');
-              var hI18n2 = (window.I18N && window.I18N.home) || {};
-              if (titleEl2) titleEl2.textContent = hI18n2.fCcaa || titleEl2.textContent;
-            }
-          }
 
         } else {
           // Resto (paises individuales): toggle normal
