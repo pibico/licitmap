@@ -241,8 +241,10 @@ case "$DB_MODE" in
         systemctl enable --now postgresql >/dev/null
         runuser -u postgres -- psql -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 \
             || runuser -u postgres -- psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" >/dev/null
+        # ENCODING 'UTF8' TEMPLATE template0 garantiza UTF-8 aunque el sistema no
+        # tenga locales UTF-8 generadas (caso típico en LXC minimal de Proxmox).
         runuser -u postgres -- psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1 \
-            || runuser -u postgres -- psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER;" >/dev/null
+            || runuser -u postgres -- psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C';" >/dev/null
         ok "PostgreSQL nativo listo."
         ;;
     externo)
@@ -328,25 +330,11 @@ APP_PORT=$APP_PORT
 EOF
 chmod 644 /etc/default/licitmap
 
-# CLI
-log "Instalando CLI en /usr/local/bin/licitmap…"
+# CLI — se instala en /usr/local/bin (convención) y se enlaza en /usr/bin
+# (siempre presente en PATH, incluyendo shells no-login en LXC minimal).
+log "Instalando CLI en /usr/local/bin/licitmap (+ symlink en /usr/bin)…"
 install -m 755 "$INSTALL_DIR/scripts/licitmap" /usr/local/bin/licitmap
-
-# Asegura /usr/local/bin en el PATH de shells interactivas (afecta sobre todo a
-# LXC de Proxmox: `pct enter` da una shell no-login con PATH mínimo).
-if ! echo ":$PATH:" | grep -q ":/usr/local/bin:"; then
-    if ! grep -q '# LicitMap: ensure /usr/local/bin' /etc/bash.bashrc 2>/dev/null; then
-        cat >> /etc/bash.bashrc <<'EOF'
-
-# LicitMap: ensure /usr/local/bin is in PATH (Proxmox LXC / minimal shells)
-case ":$PATH:" in
-    *:/usr/local/bin:*) ;;
-    *) export PATH=/usr/local/sbin:/usr/local/bin:$PATH ;;
-esac
-EOF
-        warn "/usr/local/bin no estaba en PATH. Añadido a /etc/bash.bashrc. Abre una terminal nueva o ejecuta: source /etc/bash.bashrc"
-    fi
-fi
+ln -sf /usr/local/bin/licitmap /usr/bin/licitmap
 
 # Permite a root ejecutar git en el repo aunque sea propiedad del SYS_USER
 git config --system --add safe.directory "$INSTALL_DIR" 2>/dev/null || true

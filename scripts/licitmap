@@ -488,6 +488,20 @@ print(\"OK\" if \"language\" in cols else \"MISSING\")
         _dr_warn "Falta: ALTER TABLE users ADD COLUMN language VARCHAR(2) DEFAULT 'es' NOT NULL;"
     fi
 
+    _dr_check "Encoding de la BD es UTF8"
+    local db_enc
+    db_enc=$(run_as_app "-c '
+from sqlalchemy import text
+from app.database import engine
+with engine.connect() as c:
+    print(c.execute(text(\"SHOW server_encoding\")).scalar())
+'" 2>/dev/null)
+    if [ "$db_enc" = "UTF8" ]; then
+        _dr_pass
+    else
+        _dr_fail "Encoding del servidor: ${db_enc:-desconocido}. Recrear la BD con: CREATE DATABASE ... ENCODING 'UTF8' TEMPLATE template0;"
+    fi
+
     _dr_check "Usuario admin existe"
     local has_admin
     has_admin=$(run_as_app "-c '
