@@ -39,6 +39,7 @@ ask_yn() {
 
 ask_choice() {
     local prompt="$1"; shift
+    local default="$1"; shift
     local -a options=("$@")
     local i=1
     echo -e "${C_BOLD}?${C_RESET} $prompt" >&2
@@ -47,8 +48,8 @@ ask_choice() {
         ((i++))
     done
     local reply
-    read -r -p "   Elige [1-${#options[@]}]: " reply
-    echo "$reply"
+    read -r -p "   Elige [1-${#options[@]}] [$default]: " reply
+    echo "${reply:-$default}"
 }
 
 # ─── Checks previos ─────────────────────────────────────────────────────
@@ -79,9 +80,14 @@ echo
 echo -e "${C_BOLD}=== Credenciales del administrador ===${C_RESET}"
 ADMIN_USER=$(ask "Usuario admin" "admin")
 ADMIN_EMAIL=$(ask "Correo del admin (para notificaciones y recuperación)" "")
+DEFAULT_PASS=0
 while true; do
-    ADMIN_PASS=$(ask_secret "Contraseña del admin")
-    [ -z "$ADMIN_PASS" ] && { warn "La contraseña no puede estar vacía."; continue; }
+    ADMIN_PASS=$(ask_secret "Contraseña del admin (enter para usar '$ADMIN_USER')")
+    if [ -z "$ADMIN_PASS" ]; then
+        ADMIN_PASS="$ADMIN_USER"
+        DEFAULT_PASS=1
+        break
+    fi
     ADMIN_PASS2=$(ask_secret "Repite la contraseña")
     [ "$ADMIN_PASS" = "$ADMIN_PASS2" ] && break
     warn "Las contraseñas no coinciden. Inténtalo de nuevo."
@@ -89,8 +95,8 @@ done
 
 echo
 echo -e "${C_BOLD}=== PostgreSQL ===${C_RESET}"
-DB_CHOICE=$(ask_choice "¿Cómo quieres la base de datos?" \
-    "Docker (recomendado, aislado, se gestiona solo)" \
+DB_CHOICE=$(ask_choice "¿Cómo quieres la base de datos?" "2" \
+    "Docker (aislado en contenedor, requiere docker.io)" \
     "Nativo (apt install postgresql, corre en el host)" \
     "Externo (conexión a un PostgreSQL ya existente)")
 
@@ -118,7 +124,7 @@ fi
 
 echo
 echo -e "${C_BOLD}=== Nginx ===${C_RESET}"
-if ask_yn "¿Configurar nginx como proxy inverso?" "y"; then
+if ask_yn "¿Configurar nginx como proxy inverso?" "n"; then
     USE_NGINX=1
     DOMAIN=$(ask "Dominio (ej. licitmap.example.com, deja vacío para usar IP)" "")
     USE_SSL=0
@@ -144,7 +150,7 @@ fi
 
 echo
 echo -e "${C_BOLD}=== Carga inicial de datos ===${C_RESET}"
-LOAD_CHOICE=$(ask_choice "¿Cuándo cargar los datos históricos de PLACSP?" \
+LOAD_CHOICE=$(ask_choice "¿Cuándo cargar los datos históricos de PLACSP?" "3" \
     "Ahora (al finalizar la instalación, tarda según años)" \
     "En el próximo ciclo de cron (cada 10 min, gradual)" \
     "No cargar nada — solo preparar el servicio")
@@ -397,4 +403,9 @@ else
 fi
 echo "  Config:       $INSTALL_DIR/.env"
 echo
-echo -e "  Accede con usuario ${C_BOLD}$ADMIN_USER${C_RESET} y la contraseña que configuraste."
+if [ $DEFAULT_PASS -eq 1 ]; then
+    echo -e "${C_YELLOW}⚠${C_RESET}  Usuario: ${C_BOLD}$ADMIN_USER${C_RESET}  ·  Contraseña: ${C_BOLD}$ADMIN_USER${C_RESET} (por defecto)"
+    echo -e "   ${C_YELLOW}Cámbiala cuanto antes con:${C_RESET} sudo licitmap admin reset-password"
+else
+    echo -e "  Accede con usuario ${C_BOLD}$ADMIN_USER${C_RESET} y la contraseña que configuraste."
+fi
