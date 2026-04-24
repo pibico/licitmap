@@ -14,23 +14,29 @@ from app.i18n import get_lang_from_request, t
 router = APIRouter()
 
 
-def _load_provincias_canonical() -> list[str]:
-    """Lista canónica de provincias desde el geojson (52 entradas).
-    Usada para el autocompletado: funciona aunque la BD no tenga
-    Licitacion.provincia populado (el sync ATOM no siempre lo rellena)."""
+def _load_provincias_from_geojson() -> tuple[list[str], dict[str, str]]:
+    """Devuelve (lista canónica de 52 provincias, dict {codigo2dig: nombre}).
+    Usada para:
+    - Autocompletado del sidebar (lista).
+    - Derivar provincia desde codigo_postal (dict) en `/api/map/provincias`,
+      porque Licitacion.provincia está vacío en BD (el sync ATOM no lo
+      popula, pero sí rellena codigo_postal, cuyos 2 primeros dígitos son
+      el código de provincia en España)."""
     path = Path(__file__).parents[2] / "static" / "data" / "provincias.geojson"
     try:
-        data = _json.loads(path.read_text())
-        return sorted({
-            f["properties"].get("Texto")
-            for f in data.get("features", [])
-            if f.get("properties", {}).get("Texto")
-        })
+        features = _json.loads(path.read_text()).get("features", [])
     except Exception:
-        return []
+        return [], {}
+    cp_to_name: dict[str, str] = {}
+    for f in features:
+        p = f.get("properties", {})
+        cod, nom = p.get("Codigo"), p.get("Texto")
+        if cod and nom:
+            cp_to_name[cod.zfill(2)] = nom
+    return sorted(cp_to_name.values()), cp_to_name
 
 
-_PROVINCIAS_CANONICAL = _load_provincias_canonical()
+_PROVINCIAS_CANONICAL, _CP_TO_PROVINCIA = _load_provincias_from_geojson()
 
 ESTADOS = {k: f"{{{{t.estado.{k}}}}}" for k in ("PUB", "ADJ", "PRE", "RES", "EV", "ANUL")}
 
@@ -253,23 +259,38 @@ def api_provincias(
     municipio: str = Query(default=""),
     db: Session = Depends(get_db),
 ):
+    # Licitacion.provincia está vacía en BD. Derivamos la provincia desde los
+    # 2 primeros dígitos del codigo_postal (esquema español: CP 28xxx = Madrid,
+    # 08xxx = Barcelona, etc.). Filtramos por CP no nulo en vez de provincia.
     base = apply_common_filters(
-        db.query(Licitacion).filter(Licitacion.pais == "España", Licitacion.provincia.isnot(None)),
+        db.query(Licitacion).filter(Licitacion.pais == "España", Licitacion.codigo_postal.isnot(None)),
         q, tipo, estado, prange, fecha_desde, fecha_hasta, cpv_q=cpv_q,
     )
-    if provincia:
-        base = base.filter(Licitacion.provincia == provincia)
     if municipio:
         base = base.filter(Licitacion.municipio.ilike(f"%{municipio}%"))
+
     hoy = date.today()
+    cp2 = func.substr(Licitacion.codigo_postal, 1, 2)
     en_plazo_expr = func.count(case((and_(Licitacion.estado == "PUB", Licitacion.fecha_limite >= hoy), 1)))
     rows = (
-        base.with_entities(Licitacion.provincia, func.count().label("n"), en_plazo_expr.label("ep"))
-        .group_by(Licitacion.provincia)
-        .order_by(func.count().desc())
+        base.with_entities(cp2.label("cp2"), func.count().label("n"), en_plazo_expr.label("ep"))
+        .group_by("cp2")
         .all()
     )
-    return {"provincias": {row[0]: {"total": row[1], "en_plazo": row[2]} for row in rows if row[0]}}
+
+    # Agregamos en {nombre_provincia: {total, en_plazo}}. Si el usuario filtra
+    # por provincia, recortamos tras el mapeo (filtro por nombre, no por CP).
+    result: dict[str, dict] = {}
+    for code, n, ep in rows:
+        nombre = _CP_TO_PROVINCIA.get((code or "").zfill(2))
+        if not nombre:
+            continue
+        if provincia and nombre != provincia:
+            continue
+        acc = result.setdefault(nombre, {"total": 0, "en_plazo": 0})
+        acc["total"]    += int(n or 0)
+        acc["en_plazo"] += int(ep or 0)
+    return {"provincias": result}
 
 
 @router.get("/api/map/municipios", response_class=JSONResponse)
