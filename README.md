@@ -49,8 +49,40 @@ When the installer finishes, the service runs under `systemd`:
 ```bash
 licitmap status              # full summary
 systemctl status licitmap    # direct equivalent
-journalctl -u licitmap -f    # live logs
+licitmap logs                # live app logs (tails /var/log/licitmap.log)
 ```
+
+## Uninstallation
+
+Interactive uninstaller — stops the service, removes config/unit/CLI, optionally drops the database and the system user:
+
+```bash
+cd /path/to/licitmap-dev      # or wherever the repo is
+bash uninstall.sh
+```
+
+Manual one-shot (for scripts / fresh-install loops):
+
+```bash
+systemctl stop licitmap 2>/dev/null
+systemctl disable licitmap 2>/dev/null
+rm -f /etc/systemd/system/licitmap.service /etc/cron.d/licitmap /etc/default/licitmap
+rm -f /usr/local/bin/licitmap /usr/bin/licitmap
+rm -rf /opt/licitmap
+rm -f /var/log/licitmap*.log
+# PostgreSQL native (skip if you used Docker or external)
+runuser -u postgres -- psql -c "DROP DATABASE IF EXISTS licitmap;"
+runuser -u postgres -- psql -c "DROP USER IF EXISTS licitmap;"
+# Docker (if applicable)
+# docker rm -f licitmap-db && docker volume rm licitmap-pgdata
+# Nginx site (if applicable)
+# rm -f /etc/nginx/sites-enabled/licitmap /etc/nginx/sites-available/licitmap && systemctl reload nginx
+userdel -r licitmap 2>/dev/null || true
+git config --system --unset-all safe.directory 2>/dev/null || true
+systemctl daemon-reload
+```
+
+System packages (python, postgresql, docker, nginx, certbot) are left alone so they don't break other services. Use `apt remove` to purge them manually.
 
 ## Project layout
 

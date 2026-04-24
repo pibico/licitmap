@@ -49,8 +49,40 @@ Al finalizar, el servicio queda corriendo bajo `systemd`:
 ```bash
 licitmap status              # resumen completo
 systemctl status licitmap    # equivalente directo
-journalctl -u licitmap -f    # logs en vivo
+licitmap logs                # logs de la app en vivo (tail de /var/log/licitmap.log)
 ```
+
+## Desinstalación
+
+Desinstalador interactivo — para el servicio, borra config/unit/CLI y opcionalmente elimina la base de datos y el usuario del sistema:
+
+```bash
+cd /ruta/al/licitmap-dev      # o donde esté clonado el repo
+bash uninstall.sh
+```
+
+Versión manual (scripts, bucles de reinstalación limpia):
+
+```bash
+systemctl stop licitmap 2>/dev/null
+systemctl disable licitmap 2>/dev/null
+rm -f /etc/systemd/system/licitmap.service /etc/cron.d/licitmap /etc/default/licitmap
+rm -f /usr/local/bin/licitmap /usr/bin/licitmap
+rm -rf /opt/licitmap
+rm -f /var/log/licitmap*.log
+# PostgreSQL nativo (omitir si usaste Docker o externo)
+runuser -u postgres -- psql -c "DROP DATABASE IF EXISTS licitmap;"
+runuser -u postgres -- psql -c "DROP USER IF EXISTS licitmap;"
+# Docker (si aplica)
+# docker rm -f licitmap-db && docker volume rm licitmap-pgdata
+# Nginx (si aplica)
+# rm -f /etc/nginx/sites-enabled/licitmap /etc/nginx/sites-available/licitmap && systemctl reload nginx
+userdel -r licitmap 2>/dev/null || true
+git config --system --unset-all safe.directory 2>/dev/null || true
+systemctl daemon-reload
+```
+
+Los paquetes del sistema (python, postgresql, docker, nginx, certbot) no se tocan para no afectar a otros servicios. Usa `apt remove` si quieres purgarlos.
 
 ## Estructura del proyecto
 
