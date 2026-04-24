@@ -13,10 +13,11 @@ from app.models import User, Licitacion
 from app.utils import _nav_context, get_setting, set_setting
 from app.email_utils import send_test_email
 
-SYNC_STATE_FILE  = Path("/root/licitmap/data/sync_state.json")
-SYNC_PID_FILE    = Path("/root/licitmap/data/sync_pid.txt")
-VENV_PYTHON      = Path("/root/licitmap/.venv/bin/python")
-SYNC_SCRIPT_PY   = Path("/root/licitmap/scripts/sync.py")
+PROJECT_ROOT     = Path(__file__).resolve().parents[2]
+SYNC_STATE_FILE  = PROJECT_ROOT / "data" / "sync_state.json"
+SYNC_PID_FILE    = PROJECT_ROOT / "data" / "sync_pid.txt"
+VENV_PYTHON      = PROJECT_ROOT / ".venv" / "bin" / "python"
+SYNC_SCRIPT_PY   = PROJECT_ROOT / "scripts" / "sync.py"
 
 
 def _sync_running() -> bool:
@@ -110,12 +111,12 @@ async def admin_sync_now(request: Request):
         return JSONResponse({"error": "Sync ya en curso"}, status_code=409)
     try:
         env = os.environ.copy()
-        env["PYTHONPATH"] = "/root/licitmap"
+        env["PYTHONPATH"] = str(PROJECT_ROOT)
         proc = subprocess.Popen(
             [str(VENV_PYTHON), str(SYNC_SCRIPT_PY), "--max-pages", "5"],
             stdout=open("/var/log/licitmap_sync.log", "a"),
             stderr=subprocess.STDOUT,
-            cwd="/root/licitmap",
+            cwd=str(PROJECT_ROOT),
             start_new_session=True,
             env=env,
         )

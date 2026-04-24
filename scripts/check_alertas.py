@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
 """
 Envía emails de alertas, newsletter, suscripciones y watchlist.
-Cron recomendado: 0 8 * * * /root/licitmap/.venv/bin/python /root/licitmap/scripts/check_alertas.py
+Cron configurado automáticamente por el instalador en /etc/cron.d/licitmap.
 """
 import sys
-sys.path.insert(0, '/root/licitmap')
+from pathlib import Path
+sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from datetime import datetime, timedelta, date
 from sqlalchemy import or_

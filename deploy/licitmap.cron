@@ -1,0 +1,12 @@
+# LicitMap — sincronización automática y alertas
+SHELL=/bin/bash
+PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+
+# Sync rápido cada 10 minutos (máx 3 páginas, frescura de datos ≤ 10 min)
+*/10 * * * *  {{USER}}  {{INSTALL_DIR}}/scripts/run_sync.sh --max-pages 3 >> /var/log/licitmap_sync.log 2>&1
+
+# Sync completo diario a las 03:00 (incluye purga de licitaciones > HISTORY_YEARS)
+0 3  * * *  {{USER}}  {{INSTALL_DIR}}/scripts/run_sync.sh >> /var/log/licitmap_sync.log 2>&1
+
+# Procesado de alertas por correo cada hora
+0 * * * *  {{USER}}  {{INSTALL_DIR}}/.venv/bin/python {{INSTALL_DIR}}/scripts/check_alertas.py >> /var/log/licitmap_alertas.log 2>&1

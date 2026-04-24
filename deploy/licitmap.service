@@ -1,0 +1,19 @@
+[Unit]
+Description=LicitMap — servicio web
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User={{USER}}
+Group={{USER}}
+WorkingDirectory={{INSTALL_DIR}}
+EnvironmentFile={{INSTALL_DIR}}/.env
+ExecStart={{INSTALL_DIR}}/.venv/bin/uvicorn main:app --host 127.0.0.1 --port {{PORT}} --workers 2
+Restart=on-failure
+RestartSec=5
+StandardOutput=append:/var/log/licitmap.log
+StandardError=append:/var/log/licitmap.log
+
+[Install]
+WantedBy=multi-user.target
