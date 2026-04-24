@@ -2,6 +2,19 @@
 
 (function () {
 
+  // ── i18n shortcuts ─────────────────────────────────────────────────────────
+  var I18N = window.I18N || {};
+  var AL   = I18N.al || {};
+  var T    = AL.toast || {};
+  function fmt(template, vars) {
+    return String(template || '').replace(/%\((\w+)\)s/g, function (_, k) {
+      return (vars && vars[k] != null) ? vars[k] : '';
+    });
+  }
+  function errMsg(err) {
+    return (T.errorPrefix || 'Error:') + ' ' + (err || T.unknown || '');
+  }
+
   // ── Toast ──────────────────────────────────────────────────────────────────
   function showToast(msg, type) {
     var t = document.getElementById('lm-toast');
@@ -88,10 +101,10 @@
         };
         guardar.disabled = true;
         api('/api/alerts/newsletter', payload).then(function (r) {
-          if (r.ok) showToast('Newsletter guardada correctamente.', 'success');
-          else showToast('Error: ' + (r.error || 'desconocido'), 'error');
+          if (r.ok) showToast(T.nlSaved, 'success');
+          else showToast(errMsg(r.error), 'error');
         }).catch(function () {
-          showToast('Error de red al guardar.', 'error');
+          showToast(T.saveError, 'error');
         }).finally(function () { guardar.disabled = false; });
       });
     }
@@ -99,15 +112,15 @@
     if (probar) {
       probar.addEventListener('click', function () {
         probar.disabled = true;
-        probar.textContent = 'Enviando…';
+        probar.textContent = AL.sending || '…';
         fetch('/api/alerts/newsletter/probar', { method: 'POST' })
           .then(function (r) { return r.json(); })
           .then(function (r) {
-            if (r.ok) showToast('Prueba enviada (' + r.count + ' licitaciones).', 'success');
-            else showToast('Error: ' + (r.error || 'desconocido'), 'error');
+            if (r.ok) showToast(fmt(T.testSent, { count: r.count }), 'success');
+            else showToast(errMsg(r.error), 'error');
           })
-          .catch(function () { showToast('Error de red.', 'error'); })
-          .finally(function () { probar.disabled = false; probar.textContent = 'Enviar prueba'; });
+          .catch(function () { showToast(T.netError, 'error'); })
+          .finally(function () { probar.disabled = false; probar.textContent = AL.sendTestBtn || ''; });
       });
     }
   }
@@ -163,7 +176,7 @@
     if (btnGuard) {
       btnGuard.addEventListener('click', function () {
         var nombre = document.getElementById('al-nombre').value.trim();
-        if (!nombre) { showToast('El nombre es obligatorio.', 'error'); return; }
+        if (!nombre) { showToast(T.nameRequired, 'error'); return; }
         var payload = {
           edit_id:      document.getElementById('alerta-edit-id').value || null,
           nombre:       nombre,
@@ -182,13 +195,13 @@
         btnGuard.disabled = true;
         api('/api/alerts/nueva', payload).then(function (r) {
           if (r.ok) {
-            showToast('Alerta guardada.', 'success');
+            showToast(T.saved, 'success');
             setTimeout(function () { location.reload(); }, 800);
           } else {
-            showToast('Error: ' + (r.error || 'desconocido'), 'error');
+            showToast(errMsg(r.error), 'error');
           }
         }).catch(function () {
-          showToast('Error de red.', 'error');
+          showToast(T.netError, 'error');
         }).finally(function () { btnGuard.disabled = false; });
       });
     }
@@ -231,12 +244,9 @@
 
     if (!wrap) return;
 
-    var PLACEHOLDERS = {
-      provincia: 'Ej: Madrid, Barcelona…',
-      organismo: 'Ej: Ministerio de Defensa…',
-      cpv:       'Ej: 72212000',
-    };
-    var LABELS = { provincia: 'Provincia', organismo: 'Organismo', cpv: 'Código CPV' };
+    var PLACEHOLDERS = (AL.subPh) || {};
+    var LABELS       = (AL.entidad) || {};
+    var fallbackValor = AL.valorFallback || 'Valor';
 
     function updateTipoUI() {
       var tipo = tipoSel.value;
@@ -244,7 +254,7 @@
         selCol.style.display = ''; txtCol.style.display = 'none';
       } else {
         selCol.style.display = 'none'; txtCol.style.display = '';
-        if (valorLbl) valorLbl.textContent = LABELS[tipo] || 'Valor';
+        if (valorLbl) valorLbl.textContent = LABELS[tipo] || fallbackValor;
         var inp = document.getElementById('sub-valor-text');
         if (inp) inp.placeholder = PLACEHOLDERS[tipo] || '';
       }
@@ -278,7 +288,7 @@
         var valor = tipo === 'ccaa'
           ? document.getElementById('sub-valor-ccaa').value
           : document.getElementById('sub-valor-text').value.trim();
-        if (!valor) { showToast('Indica el valor de la entidad.', 'error'); return; }
+        if (!valor) { showToast(T.valueRequired, 'error'); return; }
         var payload = {
           edit_id:       document.getElementById('sub-edit-id').value || null,
           nombre:        document.getElementById('sub-nombre').value.trim(),
@@ -291,13 +301,13 @@
         btnGuard.disabled = true;
         api('/api/alerts/suscripcion', payload).then(function (r) {
           if (r.ok) {
-            showToast('Suscripción guardada.', 'success');
+            showToast(T.subSaved, 'success');
             setTimeout(function () { location.reload(); }, 800);
           } else {
-            showToast('Error: ' + (r.error || 'desconocido'), 'error');
+            showToast(errMsg(r.error), 'error');
           }
         }).catch(function () {
-          showToast('Error de red.', 'error');
+          showToast(T.netError, 'error');
         }).finally(function () { btnGuard.disabled = false; });
       });
     }
@@ -335,7 +345,7 @@
       api('/api/alerts/' + id + '/toggle', {}).then(function (r) {
         var item = document.querySelector('.lm-alertas-item[data-id="' + id + '"]');
         if (r.ok && item) item.classList.toggle('lm-ai-inactive', !r.activa);
-        else if (!r.ok) showToast('Error al cambiar estado.', 'error');
+        else if (!r.ok) showToast(T.toggleError, 'error');
       });
     });
 
@@ -344,14 +354,14 @@
       if (!btn) return;
       var id = btn.dataset.id;
       var orig = btn.innerHTML;
-      btn.disabled = true; btn.textContent = '…';
+      btn.disabled = true; btn.textContent = AL.sending || '…';
       fetch('/api/alerts/' + id + '/probar', { method: 'POST' })
         .then(function (r) { return r.json(); })
         .then(function (r) {
-          if (r.ok) showToast('Prueba enviada — ' + r.count + ' licitaciones.', 'success');
-          else showToast('Error: ' + (r.error || 'desconocido'), 'error');
+          if (r.ok) showToast(fmt(T.testSentShort, { count: r.count }), 'success');
+          else showToast(errMsg(r.error), 'error');
         })
-        .catch(function () { showToast('Error de red.', 'error'); })
+        .catch(function () { showToast(T.netError, 'error'); })
         .finally(function () { btn.disabled = false; btn.innerHTML = orig; });
     });
 
@@ -360,11 +370,11 @@
       if (!btn) return;
       var id   = btn.dataset.id;
       var item = document.querySelector('.lm-alertas-item[data-id="' + id + '"]');
-      var nombre = item ? (item.querySelector('.lm-ai-nombre') || {}).textContent : 'esta alerta';
-      if (!confirm('¿Eliminar "' + nombre + '"?')) return;
+      var nombre = item ? (item.querySelector('.lm-ai-nombre') || {}).textContent : '';
+      if (!confirm(fmt(AL.confirmDelete, { name: nombre }))) return;
       api('/api/alerts/' + id + '/eliminar', {}).then(function (r) {
         if (r.ok && item) { item.style.opacity = '0'; setTimeout(function () { item.remove(); }, 300); }
-        else showToast('Error al eliminar.', 'error');
+        else showToast(T.deleteError, 'error');
       });
     });
 
@@ -373,10 +383,10 @@
       if (!btn) return;
       var segId = btn.dataset.segId;
       var item  = document.querySelector('.lm-watch-item[data-seg-id="' + segId + '"]');
-      if (!confirm('¿Dejar de seguir esta licitación?')) return;
+      if (!confirm((I18N.confirm && I18N.confirm.unfollow) || '')) return;
       api('/api/alerts/watchlist/' + segId + '/eliminar', {}).then(function (r) {
         if (r.ok && item) { item.style.opacity = '0'; setTimeout(function () { item.remove(); }, 300); }
-        else showToast('Error al eliminar seguimiento.', 'error');
+        else showToast(T.unfollowError, 'error');
       });
     });
 
