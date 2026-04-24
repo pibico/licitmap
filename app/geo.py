@@ -25,7 +25,7 @@ _GEOJSON_PATH = Path(__file__).resolve().parent.parent / "static" / "data" / "pr
 # y cortos ("Illes Balears", "Rioja, La"…), mientras que el feed usa
 # denominaciones largas ("Ciudad Autónoma de Melilla"…) o cortas ("La Rioja").
 _CCAA_ALIAS = {
-    # feed → geojson CCAA
+    # feed (Licitacion.comunidad_autonoma) → geojson CCAA
     "Illes Balears":                  "Illes Balears",          # coincide
     "Comunidad Valenciana":           "Comunitat Valenciana",
     "Principado de Asturias":         "Asturias, Principado de",
@@ -33,6 +33,10 @@ _CCAA_ALIAS = {
     "La Rioja":                       "Rioja, La",
     "Ciudad Autónoma de Ceuta":       "Ceuta",
     "Ciudad Autónoma de Melilla":     "Melilla",
+    # Formas cortas usadas por los CCAA pickers de /alerts (CCAA_LIST en
+    # app/routes/alertas.py + chips del template) → geojson CCAA.
+    "Asturias":                       "Asturias, Principado de",
+    "Baleares":                       "Illes Balears",
     # Coinciden tal cual: Andalucía, Aragón, Canarias, Cantabria, Castilla y
     # León, Cataluña, Comunidad de Madrid, Comunidad Foral de Navarra,
     # Extremadura, Galicia, País Vasco, Región de Murcia.
