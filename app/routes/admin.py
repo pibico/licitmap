@@ -455,9 +455,9 @@ def _users_rows(db: Session) -> str:
             <form method="post" action="/admin/users/{u.id}/toggle" style="display:inline">
               <button class="btn btn-sm btn-outline-secondary" type="submit" {disabled}>{toggle_label}</button>
             </form>
-            <form method="post" action="/admin/users/{u.id}/eliminar" style="display:inline"
+            <form method="post" action="/admin/users/{u.id}/delete" style="display:inline"
                   onsubmit="{confirm_js}">
-              <button class="btn btn-sm btn-outline-danger" type="submit" {disabled}>Eliminar</button>
+              <button class="btn btn-sm btn-outline-danger" type="submit" {disabled}>{{t.au.action_delete}}</button>
             </form>
           </td>
         </tr>"""

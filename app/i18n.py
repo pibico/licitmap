@@ -341,6 +341,38 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "g.success": "Hecho",
         "g.required": "obligatorio",
         "g.optional": "opcional",
+        # Estados PLACSP
+        "estado.PUB":  "Publicada",
+        "estado.ADJ":  "Adjudicada",
+        "estado.PRE":  "Preevaluación",
+        "estado.RES":  "Resuelta",
+        "estado.EV":   "En evaluación",
+        "estado.ANUL": "Anulada",
+        # Tipos de contrato PLACSP
+        "tipo.1":  "Obras",
+        "tipo.2":  "Servicios",
+        "tipo.3":  "Suministros",
+        "tipo.7":  "Gestión de servicios públicos",
+        "tipo.8":  "Colaboración público-privada",
+        "tipo.22": "Concesión de servicios",
+        "tipo.31": "Privado",
+        "tipo.32": "Patrimonial",
+        "tipo.40": "Administrativo especial",
+        "tipo.50": "Otros",
+        # Rangos de presupuesto
+        "prange.5k":     "Menos de 5.000 €",
+        "prange.15k":    "5.000 – 15.000 €",
+        "prange.100k":   "15.000 – 100.000 €",
+        "prange.1m":     "100.000 – 1M €",
+        "prange.1mplus": "Más de 1M €",
+        # Territorio
+        "territory.all":   "Todos los territorios",
+        "territory.spain": "España",
+        "territory.intl":  "Internacional",
+        # Strings cortos para el mapa (tooltips + leyenda)
+        "stat_tenders_short": "Licitaciones",
+        "stat_active_short": "En plazo",
+        "map_legend": "Licitaciones",
     },
     "en": {
         "nav.search": "Search",
@@ -644,6 +676,38 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "g.success": "Done",
         "g.required": "required",
         "g.optional": "optional",
+        # PLACSP tender status
+        "estado.PUB":  "Published",
+        "estado.ADJ":  "Awarded",
+        "estado.PRE":  "Pre-evaluation",
+        "estado.RES":  "Resolved",
+        "estado.EV":   "Under evaluation",
+        "estado.ANUL": "Cancelled",
+        # PLACSP contract types
+        "tipo.1":  "Works",
+        "tipo.2":  "Services",
+        "tipo.3":  "Supplies",
+        "tipo.7":  "Public service management",
+        "tipo.8":  "Public-private partnership",
+        "tipo.22": "Service concession",
+        "tipo.31": "Private",
+        "tipo.32": "Patrimonial",
+        "tipo.40": "Special administrative",
+        "tipo.50": "Other",
+        # Budget ranges
+        "prange.5k":     "Under €5,000",
+        "prange.15k":    "€5,000 – €15,000",
+        "prange.100k":   "€15,000 – €100,000",
+        "prange.1m":     "€100,000 – €1M",
+        "prange.1mplus": "Over €1M",
+        # Territory
+        "territory.all":   "All territories",
+        "territory.spain": "Spain",
+        "territory.intl":  "International",
+        # Short strings for map (tooltips + legend)
+        "stat_tenders_short": "Tenders",
+        "stat_active_short": "Open",
+        "map_legend": "Tenders",
     },
 }
 

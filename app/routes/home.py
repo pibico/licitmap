@@ -54,36 +54,38 @@ def cpv_search(q: str, limit: int = 15) -> list[dict]:
 
 PER_PAGE = 20
 
+# Los labels usan placeholders {{t.key}} que el middleware i18n resuelve en cada
+# respuesta según el idioma del usuario.
 ESTADOS = {
-    "PUB": "Publicada",
-    "ADJ": "Adjudicada",
-    "PRE": "Preevaluación",
-    "RES": "Resuelta",
-    "EV": "En evaluación",
-    "ANUL": "Anulada",
+    "PUB":  "{{t.estado.PUB}}",
+    "ADJ":  "{{t.estado.ADJ}}",
+    "PRE":  "{{t.estado.PRE}}",
+    "RES":  "{{t.estado.RES}}",
+    "EV":   "{{t.estado.EV}}",
+    "ANUL": "{{t.estado.ANUL}}",
 }
 
 TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
 
 TIPOS_CONTRATO = {
-    "1": "Obras",
-    "2": "Servicios",
-    "3": "Suministros",
-    "7": "Gestión de servicios públicos",
-    "8": "Colaboración público-privada",
-    "22": "Concesión de servicios",
-    "31": "Privado",
-    "32": "Patrimonial",
-    "40": "Administrativo especial",
-    "50": "Otros",
+    "1":  "{{t.tipo.1}}",
+    "2":  "{{t.tipo.2}}",
+    "3":  "{{t.tipo.3}}",
+    "7":  "{{t.tipo.7}}",
+    "8":  "{{t.tipo.8}}",
+    "22": "{{t.tipo.22}}",
+    "31": "{{t.tipo.31}}",
+    "32": "{{t.tipo.32}}",
+    "40": "{{t.tipo.40}}",
+    "50": "{{t.tipo.50}}",
 }
 
 PRANGES = [
-    ("5k",   "Menos de 5.000 €",   None,        5_000),
-    ("15k",  "5.000 – 15.000 €",   5_000,       15_000),
-    ("100k", "15.000 – 100.000 €", 15_000,      100_000),
-    ("1m",   "100.000 – 1M €",     100_000,     1_000_000),
-    ("1m+",  "Más de 1M €",        1_000_000,   None),
+    ("5k",   "{{t.prange.5k}}",   None,        5_000),
+    ("15k",  "{{t.prange.15k}}",  5_000,       15_000),
+    ("100k", "{{t.prange.100k}}", 15_000,      100_000),
+    ("1m",   "{{t.prange.1m}}",   100_000,     1_000_000),
+    ("1m+",  "{{t.prange.1mplus}}",  1_000_000,   None),
 ]
 
 
@@ -366,10 +368,10 @@ def compute_sidebar(db, q, pais, ccaa, estado, tipo, fecha_desde, fecha_hasta, p
     todos_count = espana_count + intl_count
     intl_active = pais not in ("España", "")
 
-    sidebar_pais = sidebar_item("Todos los territorios", todos_count, "pais", "", pais == "")
-    sidebar_pais += sidebar_item("España", espana_count, "pais", "España", pais == "España")
+    sidebar_pais = sidebar_item("{{t.territory.all}}", todos_count, "pais", "", pais == "")
+    sidebar_pais += sidebar_item("{{t.territory.spain}}", espana_count, "pais", "España", pais == "España")
     if intl_count > 0:
-        sidebar_pais += sidebar_item("Internacional", intl_count, "pais", "__intl__", intl_active)
+        sidebar_pais += sidebar_item("{{t.territory.intl}}", intl_count, "pais", "__intl__", intl_active)
 
     # HTML lista países extranjeros — todos visibles (scroll en CSS)
     sidebar_paises_ext = "".join(sidebar_item(v, c, "pais", v, pais == v) for v, c in paises_ext_raw)

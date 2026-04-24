@@ -149,14 +149,17 @@ function getLabel(nivel, feature) {
 function buildTooltipHtml(label, datos) {
     const total    = (datos.total    || 0).toLocaleString('es');
     const en_plazo = (datos.en_plazo || 0).toLocaleString('es');
+    const I18N = window.I18N || {};
+    const L_TENDERS = (I18N.map && I18N.map.tenders) || 'Licitaciones';
+    const L_ACTIVE  = (I18N.map && I18N.map.active)  || 'En plazo';
     return `
         <div class="lm-tt-title">${label}</div>
         <div class="lm-tt-row">
-            <span class="lm-tt-label">Licitaciones</span>
+            <span class="lm-tt-label">${L_TENDERS}</span>
             <span class="lm-tt-value">${total}</span>
         </div>
         <div class="lm-tt-row">
-            <span class="lm-tt-label">En plazo</span>
+            <span class="lm-tt-label">${L_ACTIVE}</span>
             <span class="lm-tt-value lm-tt-accent">${en_plazo}</span>
         </div>`;
 }
@@ -325,7 +328,8 @@ function actualizarLeyenda(cnt, max) {
     const legend = document.getElementById('mapa-legend');
     if (!legend) return;
     const steps = [0, 0.25, 0.5, 0.75, 1];
-    legend.innerHTML = '<span class="lm-legend-label">Licitaciones:</span>'
+    const legendLabel = (window.I18N && window.I18N.map && window.I18N.map.legend) || 'Licitaciones';
+    legend.innerHTML = '<span class="lm-legend-label">' + legendLabel + ':</span>'
         + steps.map(t => `<span class="lm-legend-item">
             <span class="lm-legend-dot" style="background:${getColor(t * max, max)}"></span>
             ${Math.round(t * t * max).toLocaleString('es')}
