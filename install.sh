@@ -405,7 +405,9 @@ echo "  Config:       $INSTALL_DIR/.env"
 echo
 if [ $DEFAULT_PASS -eq 1 ]; then
     echo -e "${C_YELLOW}⚠${C_RESET}  Usuario: ${C_BOLD}$ADMIN_USER${C_RESET}  ·  Contraseña: ${C_BOLD}$ADMIN_USER${C_RESET} (por defecto)"
-    echo -e "   ${C_YELLOW}Cámbiala cuanto antes con:${C_RESET} sudo licitmap admin reset-password"
+    echo -e "   ${C_YELLOW}Cámbiala cuanto antes:${C_RESET}"
+    echo -e "     · Desde la web:      Inicia sesión y ve a ${C_BOLD}Admin → Configuración → Seguridad${C_RESET}"
+    echo -e "     · Desde la terminal: ${C_BOLD}sudo licitmap admin reset-password${C_RESET}"
 else
     echo -e "  Accede con usuario ${C_BOLD}$ADMIN_USER${C_RESET} y la contraseña que configuraste."
 fi
