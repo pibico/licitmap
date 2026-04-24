@@ -428,8 +428,16 @@
       <div id="form-sub-wrap" class="lm-alertas-form-wrap" style="display:none">
         <form id="form-sub" autocomplete="off">
           <input type="hidden" id="sub-edit-id">
-          <div class="row g-2 mb-3 align-items-end">
-            <div class="col-12 col-sm-3">
+
+          <!-- Nombre -->
+          <div class="mb-3">
+            <label class="lm-form-label" for="sub-nombre">{{t.al.field_name}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+            <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="{{t.al.sub_nombre_ph}}">
+          </div>
+
+          <!-- Tipo entidad + valor -->
+          <div class="row g-2 mb-3">
+            <div class="col-12 col-sm-4">
               <label class="lm-form-label" for="sub-tipo">{{t.al.field_sub_type}}</label>
               <select class="form-select form-select-sm" id="sub-tipo">
                 <option value="ccaa">{{t.al.entidad.ccaa}}</option>
@@ -438,7 +446,7 @@
                 <option value="cpv">{{t.al.entidad.cpv}}</option>
               </select>
             </div>
-            <div class="col-12 col-sm-4" id="sub-valor-select-col">
+            <div class="col-12 col-sm-8" id="sub-valor-select-col">
               <label class="lm-form-label" for="sub-valor-ccaa">{{t.al.entidad.ccaa}}</label>
               <select class="form-select form-select-sm" id="sub-valor-ccaa">
                 <option value="Andalucía">Andalucía</option>
@@ -462,17 +470,14 @@
                 <option value="Región de Murcia">Región de Murcia</option>
               </select>
             </div>
-            <div class="col-12 col-sm-4" id="sub-valor-text-col" style="display:none">
+            <div class="col-12 col-sm-8" id="sub-valor-text-col" style="display:none">
               <label class="lm-form-label" id="sub-valor-label">{{t.al.valor_fallback}}</label>
               <input type="text" class="form-control form-control-sm" id="sub-valor-text" placeholder="{{t.al.sub_value_ph}}">
             </div>
-            <div class="col-12 col-sm-3">
-              <label class="lm-form-label" for="sub-nombre">{{t.al.field_name}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
-              <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="{{t.al.sub_nombre_ph}}">
-            </div>
           </div>
-          <!-- Filtros opcionales adicionales: provincia + municipio (con autocomplete) -->
-          <div class="row g-2 mb-3 align-items-end">
+
+          <!-- Filtros opcionales adicionales: provincia + municipio -->
+          <div class="row g-2 mb-3">
             <div class="col-12 col-sm-6">
               <label class="lm-form-label" for="sub-provincia">{{t.al.field_province}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
               <div class="lm-autocomplete">
@@ -489,6 +494,7 @@
             </div>
           </div>
 
+          <!-- Programación -->
           <div class="row g-2 mb-3 align-items-end">
             <div class="col-6 col-sm-3">
               <label class="lm-form-label" for="sub-frecuencia">{{t.al.nl_freq}}</label>
