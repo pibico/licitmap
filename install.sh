@@ -331,6 +331,11 @@ chmod 644 /etc/default/licitmap
 # CLI
 log "Instalando CLI en /usr/local/bin/licitmap…"
 install -m 755 "$INSTALL_DIR/scripts/licitmap" /usr/local/bin/licitmap
+if ! echo ":$PATH:" | grep -q ":/usr/local/bin:"; then
+    warn "/usr/local/bin NO está en tu PATH actual. Para usar 'licitmap' directamente añádelo:"
+    warn "  echo 'export PATH=/usr/local/sbin:/usr/local/bin:\$PATH' >> ~/.bashrc && source ~/.bashrc"
+    warn "O invoca siempre con ruta absoluta: /usr/local/bin/licitmap"
+fi
 ok "CLI disponible: ejecuta 'licitmap help'."
 
 # systemd
