@@ -194,7 +194,7 @@
                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Nueva
+          {{t.al.btn_new}}
         </button>
       </div>
 
@@ -205,30 +205,30 @@
 
           <!-- Nombre -->
           <div class="mb-3">
-            <label class="lm-form-label" for="al-nombre">Nombre <span style="color:var(--co-red)">*</span></label>
+            <label class="lm-form-label" for="al-nombre">{{t.al.field_name}} <span style="color:var(--co-red)">*</span></label>
             <input type="text" class="form-control form-control-sm" id="al-nombre"
-                   placeholder="Ej: Obras TIC Madrid" required>
+                   placeholder="{{t.al.form_name_ph}}" required>
           </div>
 
           <!-- Keywords + CPV -->
           <div class="row g-2 mb-3">
             <div class="col-12 col-sm-6">
-              <label class="lm-form-label" for="al-keywords">Palabras clave en el título</label>
+              <label class="lm-form-label" for="al-keywords">{{t.al.form_kw_label}}</label>
               <input type="text" class="form-control form-control-sm" id="al-keywords"
-                     placeholder="Ej: obras, consultoría, TIC">
-              <div class="lm-form-hint">Separa con comas. Todas deben aparecer en el título.</div>
+                     placeholder="{{t.al.nl_keywords_ph}}">
+              <div class="lm-form-hint">{{t.al.form_kw_hint}}</div>
             </div>
             <div class="col-12 col-sm-6">
-              <label class="lm-form-label" for="al-cpv">Códigos CPV</label>
+              <label class="lm-form-label" for="al-cpv">{{t.al.form_cpv_label}}</label>
               <input type="text" class="form-control form-control-sm" id="al-cpv"
-                     placeholder="Ej: 72212000, 4500">
-              <div class="lm-form-hint">Separados por coma — admite prefijos</div>
+                     placeholder="{{t.al.form_cpv_ph}}">
+              <div class="lm-form-hint">{{t.al.form_cpv_hint}}</div>
             </div>
           </div>
 
           <!-- CCAA chip picker -->
           <div class="mb-3">
-            <label class="lm-form-label">Comunidades autónomas <span class="lm-form-hint" style="display:inline;margin:0">(vacío = todas)</span></label>
+            <label class="lm-form-label">{{t.al.nl_ccaa_title}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.nl_ccaa_hint}}</span></label>
             <div class="lm-chip-picker lm-chip-picker-scroll" id="al-ccaa">
               <button type="button" class="lm-chip" data-val="Andalucía">Andalucía</button>
               <button type="button" class="lm-chip" data-val="Aragón">Aragón</button>
@@ -255,7 +255,7 @@
           <!-- Tipo + Estado chip pickers -->
           <div class="row g-2 mb-3">
             <div class="col-12 col-sm-6">
-              <label class="lm-form-label">Tipo de contrato</label>
+              <label class="lm-form-label">{{t.al.field_contract}}</label>
               <div class="lm-chip-picker" id="al-tipo">
                 <button type="button" class="lm-chip" data-val="1">{{t.tipo.1}}</button>
                 <button type="button" class="lm-chip" data-val="2">{{t.tipo.2}}</button>
@@ -270,14 +270,14 @@
               </div>
             </div>
             <div class="col-12 col-sm-6">
-              <label class="lm-form-label">Estado</label>
+              <label class="lm-form-label">{{t.al.form_status_label}}</label>
               <div class="lm-chip-picker" id="al-estado">
-                <button type="button" class="lm-chip" data-val="PUB">Publicada</button>
-                <button type="button" class="lm-chip" data-val="ADJ">Adjudicada</button>
-                <button type="button" class="lm-chip" data-val="PRE">Preevaluación</button>
-                <button type="button" class="lm-chip" data-val="RES">Resuelta</button>
-                <button type="button" class="lm-chip" data-val="EV">En evaluación</button>
-                <button type="button" class="lm-chip" data-val="ANUL">Anulada</button>
+                <button type="button" class="lm-chip" data-val="PUB">{{t.estado.PUB}}</button>
+                <button type="button" class="lm-chip" data-val="ADJ">{{t.estado.ADJ}}</button>
+                <button type="button" class="lm-chip" data-val="PRE">{{t.estado.PRE}}</button>
+                <button type="button" class="lm-chip" data-val="RES">{{t.estado.RES}}</button>
+                <button type="button" class="lm-chip" data-val="EV">{{t.estado.EV}}</button>
+                <button type="button" class="lm-chip" data-val="ANUL">{{t.estado.ANUL}}</button>
               </div>
             </div>
           </div>
@@ -285,44 +285,44 @@
           <!-- Presupuesto + Solo activas -->
           <div class="row g-2 mb-3 align-items-end">
             <div class="col-6 col-sm-3">
-              <label class="lm-form-label" for="al-presmin">Presup. mín. (€)</label>
+              <label class="lm-form-label" for="al-presmin">{{t.al.form_presmin_label}}</label>
               <input type="number" class="form-control form-control-sm" id="al-presmin"
                      placeholder="0" min="0" step="1000">
             </div>
             <div class="col-6 col-sm-3">
-              <label class="lm-form-label" for="al-presmax">Presup. máx. (€)</label>
+              <label class="lm-form-label" for="al-presmax">{{t.al.form_presmax_label}}</label>
               <input type="number" class="form-control form-control-sm" id="al-presmax"
-                     placeholder="Sin límite" min="0" step="1000">
+                     placeholder="{{t.al.form_presmax_ph}}" min="0" step="1000">
             </div>
             <div class="col-12 col-sm-3 d-flex align-items-center gap-2" style="padding-bottom:0.2rem">
               <label class="lm-toggle-switch">
                 <input type="checkbox" id="al-solo-activas">
                 <span class="lm-toggle-slider"></span>
               </label>
-              <span class="lm-form-label" style="margin:0">Solo activas</span>
+              <span class="lm-form-label" style="margin:0">{{t.al.field_only_active}}</span>
             </div>
           </div>
 
           <!-- Programación -->
           <div class="row g-2 mb-3 align-items-end">
             <div class="col-6 col-sm-3">
-              <label class="lm-form-label" for="al-frecuencia">Frecuencia</label>
+              <label class="lm-form-label" for="al-frecuencia">{{t.al.nl_freq}}</label>
               <select class="form-select form-select-sm" id="al-frecuencia">
-                <option value="diaria">Diaria</option>
-                <option value="semanal">Semanal</option>
+                <option value="diaria">{{t.al.nl_daily}}</option>
+                <option value="semanal">{{t.al.nl_weekly}}</option>
               </select>
             </div>
             <div class="col-6 col-sm-3" id="al-dia-col" style="display:none">
-              <label class="lm-form-label" for="al-dia">Día</label>
+              <label class="lm-form-label" for="al-dia">{{t.al.nl_day_short}}</label>
               <select class="form-select form-select-sm" id="al-dia">
-                <option value="0">Lunes</option><option value="1">Martes</option>
-                <option value="2">Miércoles</option><option value="3">Jueves</option>
-                <option value="4">Viernes</option><option value="5">Sábado</option>
-                <option value="6">Domingo</option>
+                <option value="0">{{t.al.day.0}}</option><option value="1">{{t.al.day.1}}</option>
+                <option value="2">{{t.al.day.2}}</option><option value="3">{{t.al.day.3}}</option>
+                <option value="4">{{t.al.day.4}}</option><option value="5">{{t.al.day.5}}</option>
+                <option value="6">{{t.al.day.6}}</option>
               </select>
             </div>
             <div class="col-6 col-sm-3">
-              <label class="lm-form-label" for="al-hora">Hora de envío</label>
+              <label class="lm-form-label" for="al-hora">{{t.al.nl_time}}</label>
               <select class="form-select form-select-sm" id="al-hora">
                 <option value="0">00:00</option><option value="1">01:00</option>
                 <option value="2">02:00</option><option value="3">03:00</option>
@@ -341,8 +341,8 @@
           </div>
 
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-primary" id="al-guardar">Guardar alerta</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="al-cancelar">Cancelar</button>
+            <button type="button" class="btn btn-sm btn-primary" id="al-guardar">{{t.al.form_save_alert}}</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="al-cancelar">{{t.g.cancel}}</button>
           </div>
         </form>
       </div>
@@ -364,8 +364,8 @@
             </svg>
           </div>
           <div>
-            <div class="lm-al-card-name">Suscripciones de entidad</div>
-            <div class="lm-al-card-desc">Sigue CCAA, provincias, organismos o códigos CPV</div>
+            <div class="lm-al-card-name">{{t.al.sec_subs}}</div>
+            <div class="lm-al-card-desc">{{t.al.sec_subs_alt_desc}}</div>
           </div>
         </div>
         <button class="lm-btn-add" id="btn-nueva-sub">
@@ -373,7 +373,7 @@
                stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
           </svg>
-          Nueva
+          {{t.al.btn_new}}
         </button>
       </div>
 
@@ -382,16 +382,16 @@
           <input type="hidden" id="sub-edit-id">
           <div class="row g-2 mb-3 align-items-end">
             <div class="col-12 col-sm-3">
-              <label class="lm-form-label" for="sub-tipo">Tipo de entidad</label>
+              <label class="lm-form-label" for="sub-tipo">{{t.al.field_sub_type}}</label>
               <select class="form-select form-select-sm" id="sub-tipo">
-                <option value="ccaa">Comunidad autónoma</option>
-                <option value="provincia">Provincia</option>
-                <option value="organismo">Organismo</option>
-                <option value="cpv">Código CPV</option>
+                <option value="ccaa">{{t.al.entidad.ccaa}}</option>
+                <option value="provincia">{{t.al.entidad.provincia}}</option>
+                <option value="organismo">{{t.al.entidad.organismo}}</option>
+                <option value="cpv">{{t.al.entidad.cpv}}</option>
               </select>
             </div>
             <div class="col-12 col-sm-4" id="sub-valor-select-col">
-              <label class="lm-form-label" for="sub-valor-ccaa">Comunidad autónoma</label>
+              <label class="lm-form-label" for="sub-valor-ccaa">{{t.al.entidad.ccaa}}</label>
               <select class="form-select form-select-sm" id="sub-valor-ccaa">
                 <option value="Andalucía">Andalucía</option>
                 <option value="Aragón">Aragón</option>
@@ -415,33 +415,33 @@
               </select>
             </div>
             <div class="col-12 col-sm-4" id="sub-valor-text-col" style="display:none">
-              <label class="lm-form-label" id="sub-valor-label">Valor</label>
-              <input type="text" class="form-control form-control-sm" id="sub-valor-text" placeholder="Escribe el valor">
+              <label class="lm-form-label" id="sub-valor-label">{{t.al.valor_fallback}}</label>
+              <input type="text" class="form-control form-control-sm" id="sub-valor-text" placeholder="{{t.al.sub_value_ph}}">
             </div>
             <div class="col-12 col-sm-3">
-              <label class="lm-form-label" for="sub-nombre">Nombre <span class="lm-form-hint" style="display:inline;margin:0">(opcional)</span></label>
-              <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="Se genera automáticamente">
+              <label class="lm-form-label" for="sub-nombre">{{t.al.field_name}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+              <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="{{t.al.sub_nombre_ph}}">
             </div>
           </div>
           <div class="row g-2 mb-3 align-items-end">
             <div class="col-6 col-sm-3">
-              <label class="lm-form-label" for="sub-frecuencia">Frecuencia</label>
+              <label class="lm-form-label" for="sub-frecuencia">{{t.al.nl_freq}}</label>
               <select class="form-select form-select-sm" id="sub-frecuencia">
-                <option value="diaria">Diaria</option>
-                <option value="semanal">Semanal</option>
+                <option value="diaria">{{t.al.nl_daily}}</option>
+                <option value="semanal">{{t.al.nl_weekly}}</option>
               </select>
             </div>
             <div class="col-6 col-sm-3" id="sub-dia-col" style="display:none">
-              <label class="lm-form-label" for="sub-dia">Día</label>
+              <label class="lm-form-label" for="sub-dia">{{t.al.nl_day_short}}</label>
               <select class="form-select form-select-sm" id="sub-dia">
-                <option value="0">Lunes</option><option value="1">Martes</option>
-                <option value="2">Miércoles</option><option value="3">Jueves</option>
-                <option value="4">Viernes</option><option value="5">Sábado</option>
-                <option value="6">Domingo</option>
+                <option value="0">{{t.al.day.0}}</option><option value="1">{{t.al.day.1}}</option>
+                <option value="2">{{t.al.day.2}}</option><option value="3">{{t.al.day.3}}</option>
+                <option value="4">{{t.al.day.4}}</option><option value="5">{{t.al.day.5}}</option>
+                <option value="6">{{t.al.day.6}}</option>
               </select>
             </div>
             <div class="col-6 col-sm-3">
-              <label class="lm-form-label" for="sub-hora">Hora de envío</label>
+              <label class="lm-form-label" for="sub-hora">{{t.al.nl_time}}</label>
               <select class="form-select form-select-sm" id="sub-hora">
                 <option value="0">00:00</option><option value="6">06:00</option>
                 <option value="7">07:00</option><option value="8" selected>08:00</option>
@@ -452,8 +452,8 @@
             </div>
           </div>
           <div class="d-flex gap-2">
-            <button type="button" class="btn btn-sm btn-primary" id="sub-guardar">Guardar suscripción</button>
-            <button type="button" class="btn btn-sm btn-outline-secondary" id="sub-cancelar">Cancelar</button>
+            <button type="button" class="btn btn-sm btn-primary" id="sub-guardar">{{t.al.form_save_sub}}</button>
+            <button type="button" class="btn btn-sm btn-outline-secondary" id="sub-cancelar">{{t.g.cancel}}</button>
           </div>
         </form>
       </div>
@@ -474,15 +474,15 @@
             </svg>
           </div>
           <div>
-            <div class="lm-al-card-name">Licitaciones seguidas</div>
-            <div class="lm-al-card-desc">Notificaciones de cambios de estado y próximos vencimientos</div>
+            <div class="lm-al-card-name">{{t.al.sec_watch}}</div>
+            <div class="lm-al-card-desc">{{t.al.sec_watch_alt_desc}}</div>
           </div>
         </div>
       </div>
       <div class="lm-al-card-body">
         <div class="mb-3">
           <input type="search" id="watchlist-filter" class="form-control form-control-sm"
-                 placeholder="Filtrar por título…" autocomplete="off">
+                 placeholder="{{t.al.watchlist_filter_ph}}" autocomplete="off">
         </div>
         <div id="watchlist">
         {{watchlist_list}}
