@@ -312,6 +312,21 @@ print("OK")
 PYEOF
 ok "BD inicializada, admin creado."
 
+# Config runtime para el CLI
+log "Registrando configuración en /etc/default/licitmap…"
+cat > /etc/default/licitmap <<EOF
+# Generado por install.sh — usado por /usr/local/bin/licitmap
+INSTALL_DIR=$INSTALL_DIR
+SYS_USER=$SYS_USER
+APP_PORT=$APP_PORT
+EOF
+chmod 644 /etc/default/licitmap
+
+# CLI
+log "Instalando CLI en /usr/local/bin/licitmap…"
+install -m 755 "$INSTALL_DIR/scripts/licitmap" /usr/local/bin/licitmap
+ok "CLI disponible: ejecuta 'licitmap help'."
+
 # systemd
 log "Instalando unidad systemd…"
 sed -e "s|{{USER}}|$SYS_USER|g" \
@@ -361,16 +376,19 @@ fi
 echo
 ok "Instalación completada."
 echo
-echo -e "${C_BOLD}Resumen:${C_RESET}"
-echo "  Servicio:     systemctl status licitmap"
-echo "  Logs app:     journalctl -u licitmap -f"
-echo "  Logs sync:    tail -f /var/log/licitmap_sync.log"
-echo "  Config:       $INSTALL_DIR/.env"
+echo -e "${C_BOLD}Comandos útiles:${C_RESET}"
+echo "  licitmap status       Estado del servicio, BD y último sync"
+echo "  licitmap logs         Ver logs en vivo"
+echo "  licitmap sync         Lanzar sync manual"
+echo "  licitmap help         Lista completa de comandos"
+echo
+echo -e "${C_BOLD}Acceso:${C_RESET}"
 if [ $USE_NGINX -eq 1 ] && [ -n "$DOMAIN" ]; then
     PROTO="http"; [ "$USE_SSL" = "1" ] && PROTO="https"
     echo "  URL:          ${PROTO}://${DOMAIN}"
 else
     echo "  URL interna:  http://127.0.0.1:$APP_PORT"
 fi
+echo "  Config:       $INSTALL_DIR/.env"
 echo
 echo -e "  Accede con usuario ${C_BOLD}$ADMIN_USER${C_RESET} y la contraseña que configuraste."

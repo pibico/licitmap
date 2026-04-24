@@ -79,16 +79,46 @@ HISTORY_YEARS=5
 
 El resto de ajustes (SMTP, límites de exportación, etc.) se gestionan desde el panel web `/admin/config` y se guardan en la tabla `settings`.
 
-## Mantenimiento
+## CLI de administración
 
-| Tarea | Comando |
+El instalador deja disponible el comando `licitmap` en el PATH del sistema. Cubre las operaciones más habituales sin necesidad de recordar rutas ni invocar `systemctl`/`sudo -u licitmap` a mano.
+
+### Servicio
+
+| Comando | Descripción |
 |---|---|
-| Reiniciar el servicio | `systemctl restart licitmap` |
-| Ver logs en vivo | `journalctl -u licitmap -f` |
-| Ver log de sync | `tail -f /var/log/licitmap_sync.log` |
-| Sync manual completo | `sudo -u licitmap /opt/licitmap/scripts/run_sync.sh` |
-| Sync desde fecha | `sudo -u licitmap /opt/licitmap/scripts/run_sync.sh --force --since-date YYYY-MM-DD` |
-| Cambiar años de histórico | Editar `HISTORY_YEARS` en `/opt/licitmap/.env` y reiniciar |
+| `licitmap status` | Resumen del servicio, conexión a BD, último sync y URL pública |
+| `licitmap start` | Arranca el servicio |
+| `licitmap stop` | Detiene el servicio |
+| `licitmap restart` | Reinicia el servicio |
+| `licitmap logs` | Logs de la app en vivo (equivalente a `journalctl -u licitmap -f`) |
+| `licitmap logs sync` | Tail del log de sincronizaciones |
+| `licitmap logs alertas` | Tail del log del procesado de alertas |
+| `licitmap url` | Imprime la URL pública del servicio |
+
+### Datos
+
+| Comando | Descripción |
+|---|---|
+| `licitmap sync` | Sync rápido (máx. 5 páginas, ~250 licitaciones recientes) |
+| `licitmap sync --full` | Sync completo con purga de históricos antiguos |
+| `licitmap sync --since 2023-01-01` | Sync histórico desde la fecha indicada |
+| `licitmap stats` | Estadísticas de la BD (licitaciones, usuarios, alertas) |
+
+### Administración
+
+| Comando | Descripción |
+|---|---|
+| `licitmap config` | Muestra `.env` con secretos enmascarados |
+| `licitmap admin reset-password` | Resetea la contraseña del admin interactivamente |
+| `licitmap update` | `git pull` + reinstala dependencias + reinicia el servicio |
+| `licitmap help` | Lista completa de comandos |
+
+### Ajustes fuera del CLI
+
+- **Años de histórico**: editar `HISTORY_YEARS` en `/opt/licitmap/.env` y ejecutar `licitmap restart`.
+- **SMTP, límite de exportación, políticas de seguridad**: desde el panel web en `/admin/config` (se guardan en la tabla `settings`).
+- **Cambiar puerto o dominio**: reconfigurar nginx en `/etc/nginx/sites-available/licitmap` y la unidad systemd en `/etc/systemd/system/licitmap.service`.
 
 ### Cron instalado
 

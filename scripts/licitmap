@@ -1,0 +1,212 @@
+#!/bin/bash
+# LicitMap — CLI de administración
+# Instalado por install.sh como /usr/local/bin/licitmap
+
+set -euo pipefail
+
+CONFIG_FILE="/etc/default/licitmap"
+if [ ! -f "$CONFIG_FILE" ]; then
+    echo "✗ No se encuentra $CONFIG_FILE. ¿Está LicitMap instalado?" >&2
+    exit 1
+fi
+# shellcheck source=/dev/null
+. "$CONFIG_FILE"
+
+: "${INSTALL_DIR:?INSTALL_DIR no definido en $CONFIG_FILE}"
+: "${SYS_USER:?SYS_USER no definido en $CONFIG_FILE}"
+
+C_RESET="\033[0m"; C_BOLD="\033[1m"; C_RED="\033[31m"; C_GREEN="\033[32m"; C_YELLOW="\033[33m"; C_DIM="\033[2m"
+ok()   { echo -e "${C_GREEN}✓${C_RESET} $*"; }
+bad()  { echo -e "${C_RED}✗${C_RESET} $*"; }
+warn() { echo -e "${C_YELLOW}⚠${C_RESET} $*"; }
+info() { echo -e "${C_DIM}$*${C_RESET}"; }
+
+require_root() {
+    [ "$EUID" -eq 0 ] || { bad "Este comando requiere root (sudo)."; exit 1; }
+}
+
+run_as_app() {
+    # Ejecuta comando como el usuario del servicio, con PYTHONPATH y cwd correctos
+    sudo -u "$SYS_USER" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' $1"
+}
+
+cmd_help() {
+    cat <<EOF
+${C_BOLD}LicitMap CLI${C_RESET}
+
+${C_BOLD}Servicio:${C_RESET}
+  licitmap status                   Resumen completo del sistema
+  licitmap start|stop|restart       Controla el servicio systemd
+  licitmap logs [app|sync|alertas]  Tail en vivo del log (default: app)
+  licitmap url                      Imprime la URL pública
+
+${C_BOLD}Datos:${C_RESET}
+  licitmap sync                     Lanza sync rápido (máx 5 páginas)
+  licitmap sync --full              Sync completo (incluye purga)
+  licitmap sync --since YYYY-MM-DD  Sync histórico desde fecha
+  licitmap stats                    Estadísticas de la BD
+
+${C_BOLD}Administración:${C_RESET}
+  licitmap config                   Muestra .env (secretos enmascarados)
+  licitmap admin reset-password     Resetea contraseña del admin
+  licitmap update                   git pull + pip install + restart
+  licitmap help                     Esta ayuda
+EOF
+}
+
+cmd_status() {
+    echo -e "${C_BOLD}── Servicio ──${C_RESET}"
+    if systemctl is-active --quiet licitmap; then
+        ok "licitmap ACTIVO (pid $(systemctl show -p MainPID --value licitmap), uptime $(systemctl show -p ActiveEnterTimestamp --value licitmap | awk '{print $2,$3}'))"
+    else
+        bad "licitmap INACTIVO"
+    fi
+
+    echo; echo -e "${C_BOLD}── Base de datos ──${C_RESET}"
+    if run_as_app "-c 'from app.database import engine; engine.connect().close(); print(\"OK\")'" &>/dev/null; then
+        COUNT=$(run_as_app "-c 'from app.database import SessionLocal; from app.models import Licitacion; db=SessionLocal(); print(db.query(Licitacion).count())'" 2>/dev/null || echo "?")
+        ok "Conexión OK — $COUNT licitaciones"
+    else
+        bad "Sin conexión a la BD"
+    fi
+
+    echo; echo -e "${C_BOLD}── Último sync ──${C_RESET}"
+    if [ -f "$INSTALL_DIR/data/sync_state.json" ]; then
+        python3 -c "
+import json
+s = json.load(open('$INSTALL_DIR/data/sync_state.json'))
+print(f\"  Fecha:        {s.get('last_sync','—')}\")
+print(f\"  Feeds:        {s.get('feeds','—')}\")
+print(f\"  Nuevas:       {s.get('nuevas','—')}\")
+print(f\"  Actualizadas: {s.get('actualizadas','—')}\")
+"
+    else
+        info "  Sin sincronizaciones registradas todavía."
+    fi
+
+    echo; echo -e "${C_BOLD}── URL ──${C_RESET}"
+    cmd_url
+}
+
+cmd_url() {
+    local url=""
+    if [ -f /etc/nginx/sites-enabled/licitmap ]; then
+        local server_name
+        server_name=$(grep -oP 'server_name\s+\K[^;]+' /etc/nginx/sites-enabled/licitmap | head -1 | awk '{print $1}')
+        local has_ssl=0
+        grep -q "listen 443" /etc/nginx/sites-enabled/licitmap 2>/dev/null && has_ssl=1
+        if [ -n "$server_name" ] && [ "$server_name" != "_" ]; then
+            url="$([ $has_ssl -eq 1 ] && echo 'https' || echo 'http')://${server_name}"
+        fi
+    fi
+    if [ -z "$url" ]; then
+        local port
+        port=$(grep -oP '(?<=--port )\d+' /etc/systemd/system/licitmap.service 2>/dev/null || echo "8000")
+        url="http://127.0.0.1:${port}"
+    fi
+    echo "$url"
+}
+
+cmd_start()   { require_root; systemctl start   licitmap && ok "Servicio iniciado."; }
+cmd_stop()    { require_root; systemctl stop    licitmap && ok "Servicio detenido."; }
+cmd_restart() { require_root; systemctl restart licitmap && ok "Servicio reiniciado."; }
+
+cmd_logs() {
+    local target="${1:-app}"
+    case "$target" in
+        app)     journalctl -u licitmap -f --no-pager ;;
+        sync)    tail -f /var/log/licitmap_sync.log ;;
+        alertas) tail -f /var/log/licitmap_alertas.log ;;
+        *)       bad "Log desconocido: $target (usa app|sync|alertas)"; exit 1 ;;
+    esac
+}
+
+cmd_sync() {
+    local args=("--max-pages" "5")
+    while [ $# -gt 0 ]; do
+        case "$1" in
+            --full)  args=() ;;
+            --since) args=("--force" "--since-date" "$2"); shift ;;
+            *)       bad "Opción desconocida: $1"; exit 1 ;;
+        esac
+        shift || true
+    done
+    info "Lanzando sync: ${args[*]:-(completo)}"
+    sudo -u "$SYS_USER" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' scripts/sync.py ${args[*]}"
+}
+
+cmd_stats() {
+    run_as_app "-c '
+from app.database import SessionLocal
+from app.models import Licitacion, User, Alerta, LicitacionSeguida
+db = SessionLocal()
+print(f\"Licitaciones:        {db.query(Licitacion).count():>8}\")
+print(f\"Usuarios:            {db.query(User).count():>8}  (activos: {db.query(User).filter_by(is_active=True).count()})\")
+print(f\"Alertas:             {db.query(Alerta).count():>8}  (activas: {db.query(Alerta).filter_by(activa=True).count()})\")
+print(f\"Licitaciones seguidas:{db.query(LicitacionSeguida).count():>7}\")
+'"
+}
+
+cmd_config() {
+    if [ ! -f "$INSTALL_DIR/.env" ]; then
+        bad "No existe $INSTALL_DIR/.env"; exit 1
+    fi
+    sed -E 's/(SECRET_KEY=).*/\1***/; s/(:\/\/[^:]+:)[^@]+(@)/\1***\2/' "$INSTALL_DIR/.env"
+}
+
+cmd_admin_reset_password() {
+    require_root
+    local user="${1:-admin}"
+    echo -n "Nueva contraseña para '$user': "; read -r -s pass; echo
+    echo -n "Repite la contraseña:          "; read -r -s pass2; echo
+    [ "$pass" = "$pass2" ] || { bad "Las contraseñas no coinciden."; exit 1; }
+    [ -z "$pass" ] && { bad "Contraseña vacía."; exit 1; }
+    run_as_app "-c '
+import bcrypt
+from app.database import SessionLocal
+from app.models import User
+db = SessionLocal()
+u = db.query(User).filter_by(username=\"$user\").first()
+if not u:
+    print(\"Usuario no encontrado: $user\"); raise SystemExit(1)
+u.hashed_password = bcrypt.hashpw(\"$pass\".encode(), bcrypt.gensalt()).decode()
+db.commit()
+print(\"OK\")
+'"
+    ok "Contraseña actualizada para '$user'."
+}
+
+cmd_update() {
+    require_root
+    info "Actualizando código desde git…"
+    sudo -u "$SYS_USER" git -C "$INSTALL_DIR" pull --ff-only
+    info "Actualizando dependencias Python…"
+    sudo -u "$SYS_USER" "$INSTALL_DIR/.venv/bin/pip" install -q -r "$INSTALL_DIR/requirements.txt"
+    info "Reiniciando servicio…"
+    systemctl restart licitmap
+    ok "LicitMap actualizado."
+}
+
+# ─── Router ────────────────────────────────────────────────────────────
+CMD="${1:-help}"; shift || true
+case "$CMD" in
+    help|-h|--help) cmd_help ;;
+    status)         cmd_status ;;
+    start)          cmd_start ;;
+    stop)           cmd_stop ;;
+    restart)        cmd_restart ;;
+    logs)           cmd_logs "$@" ;;
+    sync)           cmd_sync "$@" ;;
+    url)            cmd_url ;;
+    stats)          cmd_stats ;;
+    config)         cmd_config ;;
+    update)         cmd_update ;;
+    admin)
+        SUB="${1:-help}"; shift || true
+        case "$SUB" in
+            reset-password) cmd_admin_reset_password "$@" ;;
+            *) bad "Subcomando admin desconocido: $SUB"; exit 1 ;;
+        esac
+        ;;
+    *) bad "Comando desconocido: $CMD"; echo; cmd_help; exit 1 ;;
+esac
