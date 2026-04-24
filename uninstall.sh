@@ -11,6 +11,22 @@ die()  { echo -e "${C_RED}✗${C_RESET} $*" >&2; exit 1; }
 
 [ "$EUID" -eq 0 ] || die "Debe ejecutarse como root."
 
+# -y / --yes: elimina todo sin preguntar (útil para reinstalación limpia scriptable)
+AUTO_YES=0
+for arg in "$@"; do
+    case "$arg" in
+        -y|--yes) AUTO_YES=1 ;;
+        -h|--help)
+            cat <<EOF
+Uso: bash uninstall.sh [opciones]
+  -y, --yes    No preguntar, asume sí a todo (borra todo sin confirmar).
+  -h, --help   Esta ayuda.
+EOF
+            exit 0
+            ;;
+    esac
+done
+
 # Lee config runtime si existe
 INSTALL_DIR="/opt/licitmap"
 SYS_USER="licitmap"
@@ -20,7 +36,9 @@ if [ -f /etc/default/licitmap ]; then
 fi
 
 ask_yn() {
-    local prompt="$1"; local default="${2:-n}"; local reply hint="[y/N]"
+    local prompt="$1"; local default="${2:-n}"
+    [ $AUTO_YES -eq 1 ] && return 0
+    local reply hint="[y/N]"
     [ "$default" = "y" ] && hint="[Y/n]"
     read -r -p "$(echo -e "${C_BOLD}?${C_RESET} $prompt $hint: ")" reply
     reply="${reply:-$default}"
@@ -30,6 +48,7 @@ ask_yn() {
 echo -e "${C_BOLD}=== Desinstalación de LicitMap ===${C_RESET}"
 echo "Se eliminará la instalación en: $INSTALL_DIR"
 echo "Usuario del sistema: $SYS_USER"
+[ $AUTO_YES -eq 1 ] && echo -e "${C_YELLOW}Modo no-interactivo: se borrará TODO sin preguntar.${C_RESET}"
 echo
 ask_yn "¿Continuar?" "n" || { log "Cancelado."; exit 0; }
 
