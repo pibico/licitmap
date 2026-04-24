@@ -9,6 +9,7 @@ import json as _json
 from app.database import get_db
 from app.models import Licitacion
 from app.utils import _nav_context
+from app.i18n import get_lang_from_request, t
 
 router = APIRouter()
 
@@ -31,34 +32,16 @@ def _load_provincias_canonical() -> list[str]:
 
 _PROVINCIAS_CANONICAL = _load_provincias_canonical()
 
-ESTADOS = {
-    "PUB": "Publicada",
-    "ADJ": "Adjudicada",
-    "PRE": "Preevaluación",
-    "RES": "Resuelta",
-    "EV": "En evaluación",
-    "ANUL": "Anulada",
-}
+ESTADOS = {k: f"{{{{t.estado.{k}}}}}" for k in ("PUB", "ADJ", "PRE", "RES", "EV", "ANUL")}
 
-TIPOS_CONTRATO = {
-    "1": "Obras",
-    "2": "Servicios",
-    "3": "Suministros",
-    "7": "Gestión de servicios públicos",
-    "8": "Colaboración público-privada",
-    "22": "Concesión de servicios",
-    "31": "Privado",
-    "32": "Patrimonial",
-    "40": "Administrativo especial",
-    "50": "Otros",
-}
+TIPOS_CONTRATO = {k: f"{{{{t.tipo.{k}}}}}" for k in ("1", "2", "3", "7", "8", "22", "31", "32", "40", "50")}
 
 PRANGES = [
-    ("5k",   "Menos de 5.000 €",   None,      5_000),
-    ("15k",  "5.000 – 15.000 €",   5_000,     15_000),
-    ("100k", "15.000 – 100.000 €", 15_000,    100_000),
-    ("1m",   "100.000 – 1M €",     100_000,   1_000_000),
-    ("1m+",  "Más de 1M €",        1_000_000, None),
+    ("5k",   "{{t.prange.5k}}",     None,      5_000),
+    ("15k",  "{{t.prange.15k}}",    5_000,     15_000),
+    ("100k", "{{t.prange.100k}}",   15_000,    100_000),
+    ("1m",   "{{t.prange.1m}}",     100_000,   1_000_000),
+    ("1m+",  "{{t.prange.1mplus}}", 1_000_000, None),
 ]
 
 
@@ -163,16 +146,21 @@ def mapa_page(
         stats_query.filter(Licitacion.estado == "PUB", Licitacion.fecha_limite >= date.today()).count()
     )
 
-    # Última sincronización
-    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
+    # Última sincronización (traducida)
     ultima_sync = "—"
+    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
     if _state_file.exists():
         try:
-            _state = _json.loads(_state_file.read_text())
-            _last = _state.get("last_sync")
+            _last = _json.loads(_state_file.read_text()).get("last_sync")
             if _last:
                 _diff = (date.today() - datetime.fromisoformat(_last).date()).days
-                ultima_sync = "Hoy" if _diff == 0 else "Ayer" if _diff == 1 else f"Hace {_diff} días"
+                _lang = get_lang_from_request(request)
+                if _diff == 0:
+                    ultima_sync = t("home.sync_today", _lang)
+                elif _diff == 1:
+                    ultima_sync = t("home.sync_yesterday", _lang)
+                else:
+                    ultima_sync = t("home.sync_days_ago", _lang, n=_diff)
         except Exception:
             pass
 

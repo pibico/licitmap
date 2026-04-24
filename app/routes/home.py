@@ -12,7 +12,7 @@ import re
 from app.database import get_db
 from app.models import Licitacion
 from app.utils import _nav_context, get_setting
-from app.i18n import translate_html, get_lang_from_request
+from app.i18n import translate_html, get_lang_from_request, t
 
 router = APIRouter()
 
@@ -99,6 +99,27 @@ def render(template, **kwargs):
     return html
 
 
+def _ultima_sync_label(request: Request) -> str:
+    """Devuelve 'Hoy'/'Ayer'/'Hace N días' traducido según el idioma del
+    request, leyendo la fecha de data/sync_state.json."""
+    state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
+    if not state_file.exists():
+        return "—"
+    try:
+        import json as _json
+        last = _json.loads(state_file.read_text()).get("last_sync")
+        if not last:
+            return "—"
+        diff = (date.today() - datetime.fromisoformat(last).date()).days
+    except Exception:
+        return "—"
+    lang = get_lang_from_request(request)
+    if diff == 0:
+        return t("home.sync_today", lang)
+    if diff == 1:
+        return t("home.sync_yesterday", lang)
+    return t("home.sync_days_ago", lang, n=diff)
+
 
 def _render_landing(request: Request, db) -> str:
     total = db.query(func.count(Licitacion.id)).scalar() or 0
@@ -147,18 +168,7 @@ def _render_landing(request: Request, db) -> str:
   </div>
 </div>"""
 
-    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
-    ultima_sync = "—"
-    if _state_file.exists():
-        try:
-            import json as _json
-            _state = _json.loads(_state_file.read_text())
-            _last = _state.get("last_sync")
-            if _last:
-                _diff = (date.today() - datetime.fromisoformat(_last).date()).days
-                ultima_sync = "Hoy" if _diff == 0 else "Ayer" if _diff == 1 else f"Hace {_diff} días"
-        except Exception:
-            pass
+    ultima_sync = _ultima_sync_label(request)
 
     auth_block, busqueda_display, lang_selector = _nav_context(request)
     return render(
@@ -518,25 +528,7 @@ def home(
             "organismo": organismo,
         })
 
-    # Última sincronización: leída del fichero de estado del script de sync
-    _state_file = Path(__file__).parents[2] / "data" / "sync_state.json"
-    ultima_sync = "—"
-    if _state_file.exists():
-        try:
-            import json as _json
-            _state = _json.loads(_state_file.read_text())
-            _last = _state.get("last_sync")
-            if _last:
-                _sync_date = datetime.fromisoformat(_last).date()
-                _diff = (date.today() - _sync_date).days
-                if _diff == 0:
-                    ultima_sync = "Hoy"
-                elif _diff == 1:
-                    ultima_sync = "Ayer"
-                else:
-                    ultima_sync = f"Hace {_diff} días"
-        except Exception:
-            pass
+    ultima_sync = _ultima_sync_label(request)
 
     mostrar_ccaa = pais in ("España", "")
     ccaa_display = "" if mostrar_ccaa else "display:none"

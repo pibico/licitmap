@@ -9,37 +9,20 @@ import re
 from app.database import get_db
 from app.models import Licitacion
 from app.utils import _nav_context
+from app.i18n import get_lang_from_request, translate_html
 
 router = APIRouter()
 
-ESTADOS = {
-    "PUB": "Publicada",
-    "ADJ": "Adjudicada",
-    "PRE": "Preevaluación",
-    "RES": "Resuelta",
-    "EV": "En evaluación",
-    "ANUL": "Anulada",
-}
+ESTADOS = {k: f"{{{{t.estado.{k}}}}}" for k in ("PUB", "ADJ", "PRE", "RES", "EV", "ANUL")}
 
-TIPOS_CONTRATO = {
-    "1": "Obras",
-    "2": "Servicios",
-    "3": "Suministros",
-    "7": "Gestión de servicios públicos",
-    "8": "Colaboración público-privada",
-    "22": "Concesión de servicios",
-    "31": "Privado",
-    "32": "Patrimonial",
-    "40": "Administrativo especial",
-    "50": "Otros",
-}
+TIPOS_CONTRATO = {k: f"{{{{t.tipo.{k}}}}}" for k in ("1", "2", "3", "7", "8", "22", "31", "32", "40", "50")}
 
 PRANGES = [
-    ("5k",   "< 5.000 €",           None,       5_000),
-    ("15k",  "5.000 – 15.000 €",    5_000,      15_000),
-    ("100k", "15.000 – 100.000 €",  15_000,     100_000),
-    ("1m",   "100.000 – 1M €",      100_000,    1_000_000),
-    ("1m+",  "> 1M €",              1_000_000,  None),
+    ("5k",   "{{t.prange.5k}}",     None,       5_000),
+    ("15k",  "{{t.prange.15k}}",    5_000,      15_000),
+    ("100k", "{{t.prange.100k}}",   15_000,     100_000),
+    ("1m",   "{{t.prange.1m}}",     100_000,    1_000_000),
+    ("1m+",  "{{t.prange.1mplus}}", 1_000_000,  None),
 ]
 
 TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
@@ -278,6 +261,8 @@ def analisis_data(
         .all()
     )
 
+    _lang = get_lang_from_request(request)
+
     def f(v):
         return round(float(v), 2) if v is not None else None
 
@@ -297,9 +282,9 @@ def analisis_data(
             "provincias_distintas": int(provincias_dist),
         },
         "por_ccaa": [{"label": r[0], "value": r[1]} for r in por_ccaa],
-        "por_tipo": [{"label": TIPOS_CONTRATO.get(r[0], r[0]), "value": r[1]} for r in por_tipo],
-        "por_estado": [{"label": ESTADOS.get(r[0], r[0]), "value": r[1]} for r in por_estado],
-        "por_prange": prange_data,
+        "por_tipo": [{"label": translate_html(TIPOS_CONTRATO.get(r[0], r[0]), _lang), "value": r[1]} for r in por_tipo],
+        "por_estado": [{"label": translate_html(ESTADOS.get(r[0], r[0]), _lang), "value": r[1]} for r in por_estado],
+        "por_prange": [{"label": translate_html(d["label"], _lang), "value": d["value"]} for d in prange_data],
         "por_mes": [{"label": r[0], "value": r[1]} for r in por_mes if r[0]],
         "top_organismos": [{"label": r[0], "value": r[1]} for r in top_org],
         "top_provincias": [{"label": r[0], "value": r[1]} for r in top_prov],
