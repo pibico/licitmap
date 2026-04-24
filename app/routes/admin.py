@@ -159,7 +159,7 @@ async def admin_sync_cancel(request: Request):
 
 # ── Usuarios ──────────────────────────────────────────────────────────────────
 
-@router.get("/usuarios", response_class=HTMLResponse)
+@router.get("/users", response_class=HTMLResponse)
 def admin_usuarios(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -169,7 +169,7 @@ def admin_usuarios(request: Request, ok: str = "", db: Session = Depends(get_db)
     }))
 
 
-@router.post("/usuarios/nuevo")
+@router.post("/users/new")
 async def admin_crear_usuario(
     request: Request,
     username: str = Form(...),
@@ -199,7 +199,7 @@ async def admin_crear_usuario(
     return RedirectResponse(f"/admin/users?ok=Usuario '{username}' creado", status_code=303)
 
 
-@router.post("/usuarios/{user_id}/toggle")
+@router.post("/users/{user_id}/toggle")
 def admin_toggle_usuario(user_id: int, request: Request, db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -210,7 +210,7 @@ def admin_toggle_usuario(user_id: int, request: Request, db: Session = Depends(g
     return RedirectResponse("/admin/users", status_code=303)
 
 
-@router.post("/usuarios/{user_id}/email")
+@router.post("/users/{user_id}/email")
 async def admin_cambiar_email(
     user_id: int,
     request: Request,
@@ -239,7 +239,7 @@ async def admin_cambiar_email(
     return RedirectResponse("/admin/users?ok=Correo+actualizado", status_code=303)
 
 
-@router.post("/usuarios/{user_id}/eliminar")
+@router.post("/users/{user_id}/delete")
 def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -256,7 +256,7 @@ def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends
 
 # ── Configuración: redirige a primera pestaña ─────────────────────────────────
 
-@router.get("/config", response_class=HTMLResponse)
+@router.get("/settings", response_class=HTMLResponse)
 def admin_config_redirect(request: Request):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -265,7 +265,7 @@ def admin_config_redirect(request: Request):
 
 # ── Config / Exportación ──────────────────────────────────────────────────────
 
-@router.get("/config/exportacion", response_class=HTMLResponse)
+@router.get("/settings/export", response_class=HTMLResponse)
 def admin_config_exportacion(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -275,7 +275,7 @@ def admin_config_exportacion(request: Request, ok: str = "", db: Session = Depen
     }))
 
 
-@router.post("/config/exportacion")
+@router.post("/settings/export")
 def admin_config_exportacion_post(
     request: Request, export_limit: int = Form(...), db: Session = Depends(get_db)
 ):
@@ -287,7 +287,7 @@ def admin_config_exportacion_post(
 
 # ── Config / Correo SMTP ──────────────────────────────────────────────────────
 
-@router.get("/config/correo", response_class=HTMLResponse)
+@router.get("/settings/email", response_class=HTMLResponse)
 def admin_config_correo(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -302,7 +302,7 @@ def admin_config_correo(request: Request, ok: str = "", db: Session = Depends(ge
     }))
 
 
-@router.post("/config/correo/test")
+@router.post("/settings/email/test")
 async def admin_config_correo_test(
     request: Request,
     db: Session = Depends(get_db),
@@ -350,7 +350,7 @@ async def admin_config_correo_test(
     return HTMLResponse(_correo_page(block))
 
 
-@router.post("/config/correo")
+@router.post("/settings/email")
 async def admin_config_correo_post(
     request: Request,
     smtp_host: str = Form(""),
@@ -373,7 +373,7 @@ async def admin_config_correo_post(
 
 # ── Config / Seguridad ────────────────────────────────────────────────────────
 
-@router.get("/config/seguridad", response_class=HTMLResponse)
+@router.get("/settings/security", response_class=HTMLResponse)
 def admin_config_seguridad(request: Request, ok: str = "", db: Session = Depends(get_db)):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
@@ -382,7 +382,7 @@ def admin_config_seguridad(request: Request, ok: str = "", db: Session = Depends
     }))
 
 
-@router.post("/config/seguridad")
+@router.post("/settings/security")
 async def admin_config_seguridad_post(
     request: Request,
     password_actual: str = Form(...),

@@ -9,6 +9,8 @@ _REDIRECTS = {
     "/analisis": "/analytics",
     "/alertas": "/alerts",
     "/admin/usuarios": "/admin/users",
+    "/admin/usuarios/nuevo": "/admin/users/new",
+    "/admin/usuarios/eliminar": "/admin/users/delete",
     "/admin/config": "/admin/settings",
     "/admin/config/exportacion": "/admin/settings/export",
     "/admin/config/correo": "/admin/settings/email",

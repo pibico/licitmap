@@ -14,7 +14,8 @@ build/
 !.env.example
 
 # Datos (ZIPs y atom — demasiado pesados para git)
-data/
+# Ojo: usar "/data/" para no ignorar también "static/data/"
+/data/
 
 # Logs
 *.log

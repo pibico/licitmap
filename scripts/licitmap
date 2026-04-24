@@ -577,14 +577,11 @@ print(\"OK\" if db.query(User).filter_by(username=\"admin\").first() else \"MISS
 
     echo
     echo -e "${C_BOLD}── CLI y PATH ──${C_RESET}"
-    _dr_check "/usr/local/bin/licitmap existe"
-    [ -x /usr/local/bin/licitmap ] && _dr_pass || _dr_fail "Reinstalar: install -m 755 $INSTALL_DIR/scripts/licitmap /usr/local/bin/licitmap"
-
-    _dr_check "/usr/local/bin en PATH"
-    if echo ":$PATH:" | grep -q ':/usr/local/bin:'; then
+    _dr_check "CLI accesible desde PATH"
+    if command -v licitmap >/dev/null 2>&1; then
         _dr_pass
     else
-        _dr_warn "Añadir: echo 'export PATH=/usr/local/sbin:/usr/local/bin:\$PATH' >> /etc/bash.bashrc"
+        _dr_fail "Reinstalar: install -m 755 $INSTALL_DIR/scripts/licitmap /usr/local/bin/licitmap && ln -sf /usr/local/bin/licitmap /usr/bin/licitmap"
     fi
 
     echo
@@ -600,10 +597,10 @@ print(\"OK\" if db.query(User).filter_by(username=\"admin\").first() else \"MISS
 
     echo
     if [ $_dr_errors -gt 0 ]; then
-        bad "Diagnóstico: ${errors} error(es), ${warnings} aviso(s)"
+        bad "Diagnóstico: ${_dr_errors} error(es), ${_dr_warnings} aviso(s)"
         return 1
     elif [ $_dr_warnings -gt 0 ]; then
-        warn "Diagnóstico: ${warnings} aviso(s) — funcional pero revisa las notas"
+        warn "Diagnóstico: ${_dr_warnings} aviso(s) — funcional pero revisa las notas"
     else
         ok "Todo OK"
     fi

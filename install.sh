@@ -182,7 +182,7 @@ log "Actualizando índice de paquetes…"
 apt-get update -qq
 
 log "Instalando dependencias base…"
-PKGS="python3 python3-venv python3-pip git cron openssl"
+PKGS="python3 python3-venv python3-pip git cron openssl curl"
 [ "$DB_MODE" = "docker" ]  && PKGS="$PKGS docker.io"
 [ "$DB_MODE" = "nativo" ]  && PKGS="$PKGS postgresql"
 [ $USE_NGINX -eq 1 ]       && PKGS="$PKGS nginx"
