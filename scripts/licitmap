@@ -15,7 +15,7 @@ fi
 : "${INSTALL_DIR:?INSTALL_DIR no definido en $CONFIG_FILE}"
 : "${SYS_USER:?SYS_USER no definido en $CONFIG_FILE}"
 
-C_RESET="\033[0m"; C_BOLD="\033[1m"; C_RED="\033[31m"; C_GREEN="\033[32m"; C_YELLOW="\033[33m"; C_DIM="\033[2m"
+C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_RED=$'\033[31m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_DIM=$'\033[2m'
 ok()   { echo -e "${C_GREEN}✓${C_RESET} $*"; }
 bad()  { echo -e "${C_RED}✗${C_RESET} $*"; }
 warn() { echo -e "${C_YELLOW}⚠${C_RESET} $*"; }
