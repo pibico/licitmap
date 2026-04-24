@@ -9,6 +9,7 @@ import re, json
 from app.database import get_db
 from app.models import User, Alerta, LicitacionSeguida, Licitacion
 from app.utils import _nav_context
+from app.i18n import get_lang_from_request, t
 from app.email_utils import (
     send_alerta_email, send_newsletter_email,
     send_seguimiento_email, send_vencimiento_email,
@@ -31,26 +32,18 @@ CCAA_LIST = [
     "Extremadura", "Galicia", "La Rioja", "Melilla", "País Vasco", "Región de Murcia",
 ]
 
-TIPOS_CONTRATO = {
-    "1": "Obras", "2": "Servicios", "3": "Suministros",
-    "7": "Gestión servicios públicos", "8": "Colaboración público-privada",
-    "22": "Concesión de servicios", "31": "Privado", "32": "Patrimonial",
-    "40": "Administrativo especial", "50": "Otros",
-}
+TIPOS_CONTRATO = {k: f"{{{{t.tipo.{k}}}}}" for k in ("1", "2", "3", "7", "8", "22", "31", "32", "40", "50")}
 
-ESTADOS = {
-    "PUB": "Publicada", "ADJ": "Adjudicada", "PRE": "Preevaluación",
-    "RES": "Resuelta", "EV": "En evaluación", "ANUL": "Anulada",
-}
+ESTADOS = {k: f"{{{{t.estado.{k}}}}}" for k in ("PUB", "ADJ", "PRE", "RES", "EV", "ANUL")}
 
-DIAS = ["Lunes", "Martes", "Miércoles", "Jueves", "Viernes", "Sábado", "Domingo"]
-DIAS_SHORT = ["Lun", "Mar", "Mié", "Jue", "Vie", "Sáb", "Dom"]
+DIAS = [f"{{{{t.al.day.{i}}}}}" for i in range(7)]
+DIAS_SHORT = [f"{{{{t.al.day_short.{i}}}}}" for i in range(7)]
 
 ENTIDAD_TIPOS = {
-    "ccaa": "Comunidad autónoma",
-    "provincia": "Provincia",
-    "organismo": "Organismo",
-    "cpv": "Código CPV",
+    "ccaa":       "{{t.al.entidad.ccaa}}",
+    "provincia":  "{{t.al.entidad.provincia}}",
+    "organismo":  "{{t.al.entidad.organismo}}",
+    "cpv":        "{{t.al.entidad.cpv}}",
 }
 
 ENTIDAD_ICONS = {
@@ -117,9 +110,11 @@ def _estado_options(sel_pipe="") -> str:
 
 def _freq_label(a: Alerta) -> str:
     dia_s = DIAS_SHORT[a.dia_semana or 0]
+    weekly = "{{t.al.nl_weekly}}"
+    daily  = "{{t.al.nl_daily}}"
     if a.frecuencia == "semanal":
-        return f"Semanal ({dia_s}) · {(a.hora_envio or 8):02d}:00"
-    return f"Diaria · {(a.hora_envio or 8):02d}:00"
+        return f"{weekly} ({dia_s}) · {(a.hora_envio or 8):02d}:00"
+    return f"{daily} · {(a.hora_envio or 8):02d}:00"
 
 
 def _alerta_meta(a: Alerta) -> str:
@@ -128,7 +123,7 @@ def _alerta_meta(a: Alerta) -> str:
         parts.append(f'"{_esc(a.keywords.replace("|", ", "))}"')
     if a.comunidades:
         cc = [c.split()[-1] for c in a.comunidades.split("|") if c]
-        parts.append(", ".join(cc[:3]) + (" +más" if len(cc) > 3 else ""))
+        parts.append(", ".join(cc[:3]) + (" {{t.al.meta_more}}" if len(cc) > 3 else ""))
     if a.tipo_contrato:
         tp = [TIPOS_CONTRATO.get(t, t) for t in a.tipo_contrato.split("|") if t]
         parts.append(", ".join(tp[:2]))
@@ -138,13 +133,14 @@ def _alerta_meta(a: Alerta) -> str:
         lo = f"{a.presupuesto_min:,.0f} €" if a.presupuesto_min else "0 €"
         hi = f"{a.presupuesto_max:,.0f} €" if a.presupuesto_max else "∞"
         parts.append(f"{lo} – {hi}")
-    return " · ".join(parts) if parts else "Todas las licitaciones"
+    return " · ".join(parts) if parts else "{{t.al.meta_all}}"
 
 
 def _last_label(a: Alerta) -> str:
     if not a.last_checked_at:
-        return "Sin verificar aún"
-    return f"Última: {a.last_checked_at.strftime('%d/%m %H:%M')}"
+        return "{{t.al.last_none}}"
+    prefix = "{{t.al.last_prefix}}"
+    return f"{prefix} {a.last_checked_at.strftime('%d/%m %H:%M')}"
 
 
 def _build_nl_section(nl: Alerta | None) -> str:
@@ -163,6 +159,26 @@ def _build_nl_section(nl: Alerta | None) -> str:
     d_sel     = " selected" if freq == "diaria" else ""
     s_sel     = " selected" if freq == "semanal" else ""
 
+    L = {
+        "active":   "{{t.al.nl_active}}",
+        "name":     "{{t.al.field_name}}",
+        "freq":     "{{t.al.nl_freq}}",
+        "daily":    "{{t.al.nl_daily}}",
+        "weekly":   "{{t.al.nl_weekly}}",
+        "day":      "{{t.al.nl_day_short}}",
+        "hour":     "{{t.al.nl_hour}}",
+        "kw":       "{{t.al.field_keywords}}",
+        "kw_opt":   "{{t.al.nl_keywords_opt}}",
+        "kw_ph":    "{{t.al.nl_keywords_ph}}",
+        "kw_hint":  "{{t.al.nl_keywords_hint}}",
+        "presmin":  "{{t.al.nl_presmin}}",
+        "solo":     "{{t.al.nl_solo}}",
+        "ccaa":     "{{t.al.nl_ccaa_title}}",
+        "ccaa_h":   "{{t.al.nl_ccaa_hint}}",
+        "save":     "{{t.al.save_changes}}",
+        "test":     "{{t.al.test}}",
+    }
+
     return f"""
 <form id="nl-form" data-id="{nl_id}">
   <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -171,45 +187,45 @@ def _build_nl_section(nl: Alerta | None) -> str:
         <input type="checkbox" id="nl-activa"{checked}>
         <span class="lm-toggle-slider"></span>
       </label>
-      <span class="fw-semibold small">Newsletter activa</span>
+      <span class="fw-semibold small">{L['active']}</span>
     </div>
     <small class="text-muted">{last}</small>
   </div>
   <div class="row g-2 mb-2">
     <div class="col-12 col-sm-5">
-      <label class="form-label small mb-1">Nombre</label>
+      <label class="form-label small mb-1">{L['name']}</label>
       <input type="text" class="form-control form-control-sm" id="nl-nombre" value="{nombre}">
     </div>
     <div class="col-6 col-sm-3">
-      <label class="form-label small mb-1">Frecuencia</label>
+      <label class="form-label small mb-1">{L['freq']}</label>
       <select class="form-select form-select-sm" id="nl-frecuencia">
-        <option value="diaria"{d_sel}>Diaria</option>
-        <option value="semanal"{s_sel}>Semanal</option>
+        <option value="diaria"{d_sel}>{L['daily']}</option>
+        <option value="semanal"{s_sel}>{L['weekly']}</option>
       </select>
     </div>
     <div class="col-6 col-sm-2" id="nl-dia-col" style="{dia_col_style}">
-      <label class="form-label small mb-1">Día</label>
+      <label class="form-label small mb-1">{L['day']}</label>
       <select class="form-select form-select-sm" id="nl-dia">{_dia_options(dia)}</select>
     </div>
     <div class="col-6 col-sm-2">
-      <label class="form-label small mb-1">Hora</label>
+      <label class="form-label small mb-1">{L['hour']}</label>
       <select class="form-select form-select-sm" id="nl-hora">{_hora_options(hora)}</select>
     </div>
   </div>
   <div class="row g-2 mb-2">
     <div class="col-12 col-sm-6">
-      <label class="form-label small mb-1">Palabras clave <span class="text-muted">(opcional, vacío = todas)</span></label>
+      <label class="form-label small mb-1">{L['kw']} <span class="text-muted">{L['kw_opt']}</span></label>
       <input type="text" class="form-control form-control-sm" id="nl-keywords"
-             value="{keywords}" placeholder="Ej: obras, consultoría, TIC">
-      <div class="form-text">Separa varias palabras clave con comas (se aplican todas).</div>
+             value="{keywords}" placeholder="{L['kw_ph']}">
+      <div class="form-text">{L['kw_hint']}</div>
     </div>
     <div class="col-6 col-sm-3">
-      <label class="form-label small mb-1">Presupuesto mín. (€)</label>
+      <label class="form-label small mb-1">{L['presmin']}</label>
       <input type="number" class="form-control form-control-sm" id="nl-presmin"
              value="{presmin}" placeholder="0" min="0" step="1000">
     </div>
     <div class="col-6 col-sm-3">
-      <label class="form-label small mb-1">Solo activas</label>
+      <label class="form-label small mb-1">{L['solo']}</label>
       <div class="pt-1">
         <label class="lm-toggle-switch">
           <input type="checkbox" id="nl-solo-activas"{solo}>
@@ -219,21 +235,24 @@ def _build_nl_section(nl: Alerta | None) -> str:
     </div>
   </div>
   <div class="mb-3">
-    <label class="lm-form-label">Comunidades autónomas <span class="lm-form-hint" style="display:inline;margin:0">(vacío = todas)</span></label>
+    <label class="lm-form-label">{L['ccaa']} <span class="lm-form-hint" style="display:inline;margin:0">{L['ccaa_h']}</span></label>
     <div class="lm-chip-picker lm-chip-picker-scroll" id="nl-ccaa">
       {_ccaa_chips(comunidades)}
     </div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
-    <button type="button" class="btn btn-sm btn-primary" id="nl-guardar">Guardar cambios</button>
-    <button type="button" class="btn btn-sm btn-outline-secondary" id="nl-probar">Enviar prueba</button>
+    <button type="button" class="btn btn-sm btn-primary" id="nl-guardar">{L['save']}</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" id="nl-probar">{L['test']}</button>
   </div>
 </form>"""
 
 
 def _build_alertas_list(alertas: list) -> str:
     if not alertas:
-        return '<div class="lm-alertas-empty">Aún no tienes alertas. Pulsa <strong>+ Nueva alerta</strong> para crear una.</div>'
+        return '<div class="lm-alertas-empty">{{t.al.empty_alerts}}</div>'
+    tt_test   = "{{t.al.tt_test}}"
+    tt_edit   = "{{t.al.tt_edit}}"
+    tt_delete = "{{t.al.tt_delete}}"
     items = []
     for a in alertas:
         checked  = " checked" if a.activa else ""
@@ -258,7 +277,7 @@ def _build_alertas_list(alertas: list) -> str:
     </div>
   </div>
   <div class="lm-ai-actions">
-    <button class="lm-btn-icon btn-probar" data-id="{a.id}" title="Enviar prueba">{_SVG_PLAY}</button>
+    <button class="lm-btn-icon btn-probar" data-id="{a.id}" title="{tt_test}">{_SVG_PLAY}</button>
     <button class="lm-btn-icon btn-editar" data-id="{a.id}"
       data-nombre="{_esc(a.nombre)}"
       data-keywords="{_esc(a.keywords or '')}"
@@ -272,8 +291,8 @@ def _build_alertas_list(alertas: list) -> str:
       data-frecuencia="{a.frecuencia}"
       data-dia="{a.dia_semana or 0}"
       data-hora="{a.hora_envio or 8}"
-      title="Editar">{_SVG_EDIT}</button>
-    <button class="lm-btn-icon lm-btn-danger btn-eliminar" data-id="{a.id}" title="Eliminar">{_SVG_TRASH}</button>
+      title="{tt_edit}">{_SVG_EDIT}</button>
+    <button class="lm-btn-icon lm-btn-danger btn-eliminar" data-id="{a.id}" title="{tt_delete}">{_SVG_TRASH}</button>
   </div>
 </div>""")
     return "\n".join(items)
@@ -281,7 +300,10 @@ def _build_alertas_list(alertas: list) -> str:
 
 def _build_subs_list(subs: list) -> str:
     if not subs:
-        return '<div class="lm-alertas-empty">Aún no tienes suscripciones. Pulsa <strong>+ Nueva suscripción</strong> para seguir una entidad.</div>'
+        return '<div class="lm-alertas-empty">{{t.al.empty_subs}}</div>'
+    tt_test   = "{{t.al.tt_test}}"
+    tt_edit   = "{{t.al.tt_edit}}"
+    tt_delete = "{{t.al.tt_delete}}"
     items = []
     for s in subs:
         checked  = " checked" if s.activa else ""
@@ -307,7 +329,7 @@ def _build_subs_list(subs: list) -> str:
     </div>
   </div>
   <div class="lm-ai-actions">
-    <button class="lm-btn-icon btn-probar" data-id="{s.id}" title="Enviar prueba">{_SVG_PLAY}</button>
+    <button class="lm-btn-icon btn-probar" data-id="{s.id}" title="{tt_test}">{_SVG_PLAY}</button>
     <button class="lm-btn-icon btn-editar-sub" data-id="{s.id}"
       data-nombre="{_esc(s.nombre)}"
       data-tipo="{_esc(s.entidad_tipo or '')}"
@@ -315,8 +337,8 @@ def _build_subs_list(subs: list) -> str:
       data-frecuencia="{s.frecuencia}"
       data-dia="{s.dia_semana or 0}"
       data-hora="{s.hora_envio or 8}"
-      title="Editar">{_SVG_EDIT}</button>
-    <button class="lm-btn-icon lm-btn-danger btn-eliminar" data-id="{s.id}" title="Eliminar">{_SVG_TRASH}</button>
+      title="{tt_edit}">{_SVG_EDIT}</button>
+    <button class="lm-btn-icon lm-btn-danger btn-eliminar" data-id="{s.id}" title="{tt_delete}">{_SVG_TRASH}</button>
   </div>
 </div>""")
     return "\n".join(items)
@@ -324,7 +346,18 @@ def _build_subs_list(subs: list) -> str:
 
 def _build_watchlist(seguidas: list) -> str:
     if not seguidas:
-        return '<div class="lm-alertas-empty">Aún no sigues ninguna licitación. Abre el panel de detalle de una licitación y pulsa <strong>Seguir</strong>.</div>'
+        return '<div class="lm-alertas-empty">{{t.al.empty_watch}}</div>'
+    deadline_prefix = "{{t.al.watch_limit}}"
+    status_change   = "{{t.al.watch_status_change}}"
+    deadline_label  = "{{t.al.watch_deadline_label}}"
+    tt_view         = "{{t.al.tt_view_placsp}}"
+    tt_unfollow     = "{{t.al.tt_unfollow}}"
+    dias_labels = [
+        (None, "{{t.al.watch_dias_no}}"),
+        (3,    "{{t.al.watch_dias_3}}"),
+        (7,    "{{t.al.watch_dias_7}}"),
+        (15,   "{{t.al.watch_dias_15}}"),
+    ]
     items = []
     for seg, lic in seguidas:
         estado_label = _ESTADO_LABELS.get(lic.estado, lic.estado or "—")
@@ -339,7 +372,7 @@ def _build_watchlist(seguidas: list) -> str:
         cambio_chk = " checked" if seg.notif_cambio_estado else ""
         dias_opts  = "".join(
             f'<option value="{v}"{" selected" if seg.notif_dias_vencimiento == v else ""}>{l}</option>'
-            for v, l in [(None, "No"), (3, "3 días"), (7, "7 días"), (15, "15 días")]
+            for v, l in dias_labels
         )
         items.append(f"""
 <div class="lm-watch-item" data-seg-id="{seg.id}">
@@ -350,17 +383,17 @@ def _build_watchlist(seguidas: list) -> str:
     </div>
     <div class="lm-watch-meta">
       <span>{_esc(lic.organo_contratacion or '')}</span>
-      {"<span class='lm-watch-sep'>·</span><span>Límite: " + fecha + "</span>" if fecha != "—" else ""}
+      {"<span class='lm-watch-sep'>·</span><span>" + deadline_prefix + " " + fecha + "</span>" if fecha != "—" else ""}
       {"<span class='lm-watch-sep'>·</span><span>" + presup + "</span>" if presup else ""}
       {"<span class='lm-watch-sep'>·</span><span>" + _esc(lic.comunidad_autonoma or '') + "</span>" if lic.comunidad_autonoma else ""}
     </div>
     <div class="lm-watch-notifs">
       <label class="lm-watch-notif-label">
         <input type="checkbox" class="watch-cambio-toggle" data-seg-id="{seg.id}"{cambio_chk}>
-        <span>Cambio de estado</span>
+        <span>{status_change}</span>
       </label>
       <label class="lm-watch-notif-label">
-        <span>Aviso vencimiento:</span>
+        <span>{deadline_label}</span>
         <select class="form-select form-select-sm lm-watch-dias-select" data-seg-id="{seg.id}">
           {dias_opts}
         </select>
@@ -368,10 +401,10 @@ def _build_watchlist(seguidas: list) -> str:
     </div>
   </div>
   <div class="lm-watch-actions">
-    <a href="{_esc(lic.url or '#')}" target="_blank" class="lm-btn-icon" title="Ver en PLACSP">
+    <a href="{_esc(lic.url or '#')}" target="_blank" class="lm-btn-icon" title="{tt_view}">
       <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
     </a>
-    <button class="lm-btn-icon lm-btn-danger btn-unfollow" data-seg-id="{seg.id}" title="Dejar de seguir">{_SVG_BELL_OFF}</button>
+    <button class="lm-btn-icon lm-btn-danger btn-unfollow" data-seg-id="{seg.id}" title="{tt_unfollow}">{_SVG_BELL_OFF}</button>
   </div>
 </div>""")
     return "\n".join(items)
@@ -385,11 +418,10 @@ def _render_page(request: Request, nl, alertas_list, subs_list, watchlist, user)
     no_email = (not user.email)
     email_notice = ""
     if no_email:
-        email_notice = """
-<div class="alert alert-warning py-2 px-3 small mt-3" role="alert">
-  <strong>Sin email configurado.</strong> Esta cuenta no tiene correo electrónico y no recibirá notificaciones.
-  Contacta con el administrador para configurarlo.
-</div>"""
+        email_notice = (
+            '<div class="alert alert-warning py-2 px-3 small mt-3" role="alert">'
+            '{{t.al.no_email_warn}}</div>'
+        )
 
     html = base.replace("{{content}}", tpl)
     for k, v in {
@@ -647,7 +679,8 @@ async def create_suscripcion(request: Request, db: Session = Depends(get_db)):
 
     entidad_tipo  = data.get("entidad_tipo", "ccaa")
     entidad_valor = (data.get("entidad_valor") or "").strip()
-    tipo_label    = ENTIDAD_TIPOS.get(entidad_tipo, entidad_tipo)
+    lang          = get_lang_from_request(request)
+    tipo_label    = t(f"al.entidad.{entidad_tipo}", lang) if entidad_tipo in ("ccaa", "provincia", "organismo", "cpv") else entidad_tipo
     s.nombre        = data.get("nombre") or f"{tipo_label}: {entidad_valor}"
     s.entidad_tipo  = entidad_tipo
     s.entidad_valor = entidad_valor
