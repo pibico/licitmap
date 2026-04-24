@@ -30,6 +30,7 @@ def _auto_migrate() -> None:
     statements = [
         'ALTER TABLE users ADD COLUMN IF NOT EXISTS language VARCHAR(2) DEFAULT \'es\' NOT NULL',
         'ALTER TABLE alertas ADD COLUMN IF NOT EXISTS municipios VARCHAR',
+        'ALTER TABLE alertas ADD COLUMN IF NOT EXISTS organismo VARCHAR',
     ]
     try:
         with engine.begin() as conn:

@@ -61,8 +61,9 @@ class Alerta(Base):
     presupuesto_min = Column(Float, nullable=True)
     presupuesto_max = Column(Float, nullable=True)
     solo_activas = Column(Boolean, default=False)
-    entidad_tipo = Column(String, nullable=True)  # ccaa|provincia|organismo|cpv
-    entidad_valor = Column(String, nullable=True)
+    entidad_tipo = Column(String, nullable=True)  # legacy: ccaa|provincia|organismo|cpv
+    entidad_valor = Column(String, nullable=True) # legacy (sustituido por las columnas de filtro)
+    organismo = Column(String, nullable=True)     # substring ILIKE sobre organo_contratacion
     frecuencia = Column(String, default="diaria")  # diaria|semanal
     dia_semana = Column(Integer, default=0)          # 0=lun..6=dom
     hora_envio = Column(Integer, default=8)

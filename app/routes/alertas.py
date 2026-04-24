@@ -347,6 +347,32 @@ def _build_alertas_list(alertas: list) -> str:
     return "\n".join(items)
 
 
+def _sub_meta(s: Alerta) -> str:
+    """Resumen del filtro de una suscripción: CCAA, provincia, municipio,
+    organismo, CPV. Si el registro es legacy (sólo entidad_tipo/valor),
+    se formatea como 'Tipo: valor'."""
+    # Legacy: sólo entidad_tipo/valor.
+    if s.entidad_tipo and not any([s.comunidades, s.provincias, s.municipios, s.organismo]):
+        tipo_label = ENTIDAD_TIPOS.get(s.entidad_tipo or "", s.entidad_tipo or "")
+        return f"{tipo_label}: <strong>{_esc(s.entidad_valor or '')}</strong>"
+    # Nuevo: resumen de filtros activos.
+    parts: list[str] = []
+    if s.comunidades:
+        cc = [c for c in s.comunidades.split("|") if c]
+        parts.append(", ".join(cc[:3]) + (" {{t.al.meta_more}}" if len(cc) > 3 else ""))
+    if s.provincias:
+        pp = [p for p in s.provincias.split("|") if p]
+        parts.append(", ".join(pp[:3]))
+    if s.municipios:
+        mm = [m for m in s.municipios.split("|") if m]
+        parts.append(", ".join(mm[:3]))
+    if s.organismo:
+        parts.append(_esc(s.organismo[:40]))
+    if s.cpv_codes:
+        parts.append(f"CPV: {_esc(s.cpv_codes[:30])}")
+    return " · ".join(parts) if parts else "{{t.al.meta_all}}"
+
+
 def _build_subs_list(subs: list) -> str:
     if not subs:
         return '<div class="lm-alertas-empty">{{t.al.empty_subs}}</div>'
@@ -357,8 +383,7 @@ def _build_subs_list(subs: list) -> str:
     for s in subs:
         checked  = " checked" if s.activa else ""
         inactive = "" if s.activa else " lm-ai-inactive"
-        icon     = ENTIDAD_ICONS.get(s.entidad_tipo or "", "")
-        tipo_label = ENTIDAD_TIPOS.get(s.entidad_tipo or "", s.entidad_tipo or "")
+        meta     = _sub_meta(s)
         freq     = _freq_label(s)
         last     = _last_label(s)
         items.append(f"""
@@ -369,8 +394,8 @@ def _build_subs_list(subs: list) -> str:
       <span class="lm-toggle-slider"></span>
     </label>
     <div class="lm-ai-info">
-      <div class="lm-ai-nombre">{icon} {_esc(s.nombre)}</div>
-      <div class="lm-ai-meta">{tipo_label}: <strong>{_esc(s.entidad_valor or '')}</strong></div>
+      <div class="lm-ai-nombre">{_esc(s.nombre)}</div>
+      <div class="lm-ai-meta">{meta}</div>
       <div class="lm-ai-freq">
         <span class="lm-badge-freq">{freq}</span>
         <span class="lm-ai-last">{last}</span>
@@ -381,10 +406,13 @@ def _build_subs_list(subs: list) -> str:
     <button class="lm-btn-icon btn-probar" data-id="{s.id}" title="{tt_test}">{_SVG_PLAY}</button>
     <button class="lm-btn-icon btn-editar-sub" data-id="{s.id}"
       data-nombre="{_esc(s.nombre)}"
-      data-tipo="{_esc(s.entidad_tipo or '')}"
-      data-valor="{_esc(s.entidad_valor or '')}"
+      data-ccaa="{_esc(s.comunidades or '')}"
       data-provincias="{_esc(s.provincias or '')}"
       data-municipios="{_esc(s.municipios or '')}"
+      data-organismo="{_esc(s.organismo or '')}"
+      data-cpv="{_esc(s.cpv_codes or '')}"
+      data-tipo="{_esc(s.entidad_tipo or '')}"
+      data-valor="{_esc(s.entidad_valor or '')}"
       data-frecuencia="{s.frecuencia}"
       data-dia="{s.dia_semana or 0}"
       data-hora="{s.hora_envio or 8}"
@@ -671,19 +699,7 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
     q = db.query(Licitacion).filter(Licitacion.fecha_publicacion >= desde)
 
     if a.tipo == "suscripcion":
-        if a.entidad_tipo == "ccaa":
-            q = q.filter(Licitacion.comunidad_autonoma == a.entidad_valor)
-        elif a.entidad_tipo == "provincia":
-            # Licitacion.provincia está siempre NULL; derivamos vía CP prefix.
-            cp = PROVINCIA_TO_CP.get(a.entidad_valor or "")
-            if cp:
-                q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2) == cp)
-            else:
-                q = q.filter(False)  # provincia desconocida → 0 resultados
-        elif a.entidad_tipo == "organismo":
-            q = q.filter(Licitacion.organo_contratacion.ilike(f"%{a.entidad_valor}%"))
-        elif a.entidad_tipo == "cpv":
-            q = q.filter(Licitacion.cpv.ilike(f"%{a.entidad_valor}%"))
+        q = _apply_suscripcion_filters(q, a)
     else:
         if a.keywords:
             for kw in a.keywords.split("|"):
@@ -739,15 +755,34 @@ async def create_suscripcion(request: Request, db: Session = Depends(get_db)):
         s = Alerta(user_id=user.id, tipo="suscripcion", created_at=datetime.now())
         db.add(s)
 
-    entidad_tipo  = data.get("entidad_tipo", "ccaa")
-    entidad_valor = (data.get("entidad_valor") or "").strip()
-    lang          = get_lang_from_request(request)
-    tipo_label    = t(f"al.entidad.{entidad_tipo}", lang) if entidad_tipo in ("ccaa", "provincia", "organismo", "cpv") else entidad_tipo
-    s.nombre        = data.get("nombre") or f"{tipo_label}: {entidad_valor}"
-    s.entidad_tipo  = entidad_tipo
-    s.entidad_valor = entidad_valor
-    s.provincias    = _pipe(data.get("provincias"))
-    s.municipios    = _pipe(data.get("municipios"))
+    # Nueva UI unifica filtros: CCAA/provincia/municipio/organismo/CPV son
+    # columnas independientes, sin entidad_tipo/entidad_valor (legacy).
+    comunidades = _pipe(data.get("ccaa"))
+    provincias  = _pipe(data.get("provincias"))
+    municipios  = _pipe(data.get("municipios"))
+    organismo   = (data.get("organismo") or "").strip() or None
+    cpv         = (data.get("cpv") or "").strip() or None
+
+    s.comunidades   = comunidades
+    s.provincias    = provincias
+    s.municipios    = municipios
+    s.organismo     = organismo
+    s.cpv_codes     = cpv
+    # Cualquier registro nuevo guardado con la UI nueva limpia los legacy.
+    s.entidad_tipo  = None
+    s.entidad_valor = None
+
+    # Nombre por defecto: primer filtro no vacío resumido.
+    if not (data.get("nombre") or "").strip():
+        resumen = comunidades or provincias or municipios or organismo or cpv
+        if resumen:
+            # "Andalucía|Madrid" → "Andalucía, Madrid"
+            s.nombre = resumen.replace("|", ", ")[:120]
+        else:
+            lang = get_lang_from_request(request)
+            s.nombre = t("al.sec_subs", lang)
+    else:
+        s.nombre = data.get("nombre").strip()
     s.frecuencia    = data.get("frecuencia", "diaria")
     s.dia_semana    = int(data.get("dia_semana", 0))
     s.hora_envio    = int(data.get("hora_envio", 8))

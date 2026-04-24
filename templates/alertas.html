@@ -435,62 +435,59 @@
             <input type="text" class="form-control form-control-sm" id="sub-nombre" placeholder="{{t.al.sub_nombre_ph}}">
           </div>
 
-          <!-- Tipo entidad + valor -->
+          <!-- Organismo + CPV (filtros de entidad) -->
           <div class="row g-2 mb-3">
             <div class="col-12 col-sm-6">
-              <label class="lm-form-label" for="sub-tipo">{{t.al.field_sub_type}}</label>
-              <select class="form-select form-select-sm" id="sub-tipo">
-                <option value="ccaa">{{t.al.entidad.ccaa}}</option>
-                <option value="provincia">{{t.al.entidad.provincia}}</option>
-                <option value="organismo">{{t.al.entidad.organismo}}</option>
-                <option value="cpv">{{t.al.entidad.cpv}}</option>
-              </select>
+              <label class="lm-form-label" for="sub-organismo">{{t.al.entidad.organismo}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+              <input type="text" class="form-control form-control-sm" id="sub-organismo"
+                     placeholder="{{t.al.sub_ph.organismo}}">
             </div>
-            <div class="col-12 col-sm-6" id="sub-valor-select-col">
-              <label class="lm-form-label" for="sub-valor-ccaa">{{t.al.entidad.ccaa}}</label>
-              <select class="form-select form-select-sm" id="sub-valor-ccaa">
-                <option value="Andalucía">Andalucía</option>
-                <option value="Aragón">Aragón</option>
-                <option value="Asturias">Asturias</option>
-                <option value="Baleares">Baleares</option>
-                <option value="Canarias">Canarias</option>
-                <option value="Cantabria">Cantabria</option>
-                <option value="Castilla-La Mancha">Castilla-La Mancha</option>
-                <option value="Castilla y León">Castilla y León</option>
-                <option value="Cataluña">Cataluña</option>
-                <option value="Ceuta">Ceuta</option>
-                <option value="Comunidad de Madrid">Comunidad de Madrid</option>
-                <option value="Comunidad Foral de Navarra">Comunidad Foral de Navarra</option>
-                <option value="Comunidad Valenciana">Comunidad Valenciana</option>
-                <option value="Extremadura">Extremadura</option>
-                <option value="Galicia">Galicia</option>
-                <option value="La Rioja">La Rioja</option>
-                <option value="Melilla">Melilla</option>
-                <option value="País Vasco">País Vasco</option>
-                <option value="Región de Murcia">Región de Murcia</option>
-              </select>
-            </div>
-            <div class="col-12 col-sm-6" id="sub-valor-text-col" style="display:none">
-              <label class="lm-form-label" id="sub-valor-label">{{t.al.valor_fallback}}</label>
-              <input type="text" class="form-control form-control-sm" id="sub-valor-text" placeholder="{{t.al.sub_value_ph}}">
+            <div class="col-12 col-sm-6">
+              <label class="lm-form-label" for="sub-cpv">{{t.al.form_cpv_label}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+              <input type="text" class="form-control form-control-sm" id="sub-cpv"
+                     placeholder="{{t.al.form_cpv_ph}}">
             </div>
           </div>
 
-          <!-- Filtros opcionales adicionales: provincia + municipio -->
-          <div class="row g-2 mb-3">
-            <div class="col-12 col-sm-6">
-              <label class="lm-form-label" for="sub-provincia">{{t.al.field_province}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
-              <div class="lm-autocomplete">
-                <input type="text" class="form-control form-control-sm" id="sub-provincia" placeholder="{{t.al.mun_ph}}" autocomplete="off">
-                <div class="lm-autocomplete-list" id="sub-provincia-list"></div>
-              </div>
+          <!-- CCAA chip picker (misma estructura que custom alert) -->
+          <div class="mb-3">
+            <label class="lm-form-label">{{t.al.nl_ccaa_title}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.nl_ccaa_hint}}</span></label>
+            <div class="lm-chip-picker lm-chip-picker-scroll" id="sub-ccaa">
+              <button type="button" class="lm-chip" data-val="Andalucía">Andalucía</button>
+              <button type="button" class="lm-chip" data-val="Aragón">Aragón</button>
+              <button type="button" class="lm-chip" data-val="Asturias">Asturias</button>
+              <button type="button" class="lm-chip" data-val="Baleares">Baleares</button>
+              <button type="button" class="lm-chip" data-val="Canarias">Canarias</button>
+              <button type="button" class="lm-chip" data-val="Cantabria">Cantabria</button>
+              <button type="button" class="lm-chip" data-val="Castilla-La Mancha">Castilla-La Mancha</button>
+              <button type="button" class="lm-chip" data-val="Castilla y León">Castilla y León</button>
+              <button type="button" class="lm-chip" data-val="Cataluña">Cataluña</button>
+              <button type="button" class="lm-chip" data-val="Ceuta">Ceuta</button>
+              <button type="button" class="lm-chip" data-val="Comunidad de Madrid">Madrid</button>
+              <button type="button" class="lm-chip" data-val="Comunidad Foral de Navarra">Navarra</button>
+              <button type="button" class="lm-chip" data-val="Comunidad Valenciana">C. Valenciana</button>
+              <button type="button" class="lm-chip" data-val="Extremadura">Extremadura</button>
+              <button type="button" class="lm-chip" data-val="Galicia">Galicia</button>
+              <button type="button" class="lm-chip" data-val="La Rioja">La Rioja</button>
+              <button type="button" class="lm-chip" data-val="Melilla">Melilla</button>
+              <button type="button" class="lm-chip" data-val="País Vasco">País Vasco</button>
+              <button type="button" class="lm-chip" data-val="Región de Murcia">Murcia</button>
             </div>
-            <div class="col-12 col-sm-6">
-              <label class="lm-form-label" for="sub-municipio">{{t.al.field_municipality}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
-              <div class="lm-autocomplete">
-                <input type="text" class="form-control form-control-sm" id="sub-municipio" placeholder="{{t.al.mun_ph}}" autocomplete="off">
-                <div class="lm-autocomplete-list" id="sub-municipio-list"></div>
-              </div>
+          </div>
+
+          <!-- Provincia chip picker (oculto hasta seleccionar CCAA multi) -->
+          <div class="mb-3 lm-geo-prov-col" id="sub-prov-col" style="display:none">
+            <label class="lm-form-label">{{t.al.field_province}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+            <div class="lm-chip-picker lm-chip-picker-scroll lm-geo-prov-picker" id="sub-provincia" data-selected=""></div>
+          </div>
+
+          <!-- Municipio text input con autocomplete acotado -->
+          <div class="mb-3 lm-geo-mun-col" id="sub-mun-col" style="display:none">
+            <label class="lm-form-label" for="sub-municipio">{{t.al.field_municipality}} <span class="lm-form-hint" style="display:inline;margin:0">{{t.al.sub_nombre_opt}}</span></label>
+            <div class="lm-autocomplete">
+              <input type="text" class="form-control form-control-sm lm-geo-mun-input" id="sub-municipio"
+                     placeholder="{{t.al.mun_ph}}" autocomplete="off">
+              <div class="lm-autocomplete-list" id="sub-municipio-list"></div>
             </div>
           </div>
 
