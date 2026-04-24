@@ -499,7 +499,7 @@ async def test_newsletter(request: Request, db: Session = Depends(get_db)):
                 q = q.filter(Licitacion.comunidad_autonoma.in_(cc))
     lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(20).all()
     try:
-        send_newsletter_email(user.email, user.username, lics, desde, db)
+        send_newsletter_email(user.email, user.username, lics, desde, db, lang=user.language)
         return JSONResponse({"ok": True, "count": len(lics)})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)
@@ -620,7 +620,7 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
 
     lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(20).all()
     try:
-        send_alerta_email(user.email, user.username, a.nombre, lics, db)
+        send_alerta_email(user.email, user.username, a.nombre, lics, db, lang=user.language)
         return JSONResponse({"ok": True, "count": len(lics)})
     except Exception as e:
         return JSONResponse({"error": str(e)}, status_code=500)

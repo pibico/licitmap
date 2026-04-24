@@ -329,7 +329,8 @@ async def admin_config_correo_test(
         return HTMLResponse(_correo_page(block))
 
     try:
-        send_test_email(dest, db)
+        admin = db.query(User).filter_by(username='admin').first()
+        send_test_email(dest, db, lang=(admin.language if admin else 'es'))
         block = (
             f'<div class="alert alert-success d-flex align-items-center gap-2 mb-3">'
             f'<svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" fill="none" viewBox="0 0 24 24"'

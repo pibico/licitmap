@@ -77,9 +77,9 @@ def check_alertas_newsletter(db):
         if lics:
             try:
                 if a.tipo == "newsletter":
-                    send_newsletter_email(user.email, user.username, lics, since, db)
+                    send_newsletter_email(user.email, user.username, lics, since, db, lang=user.language)
                 else:
-                    send_alerta_email(user.email, user.username, a.nombre, lics, db)
+                    send_alerta_email(user.email, user.username, a.nombre, lics, db, lang=user.language)
                 print(f"[OK] {a.tipo} '{a.nombre}' → {user.email} ({len(lics)} lics)")
             except Exception as e:
                 print(f"[ERR] {a.tipo} {a.id}: {e}")
@@ -118,7 +118,7 @@ def check_suscripciones(db):
         lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(50).all()
         if lics:
             try:
-                send_alerta_email(user.email, user.username, s.nombre, lics, db)
+                send_alerta_email(user.email, user.username, s.nombre, lics, db, lang=user.language)
                 print(f"[OK] suscripcion '{s.nombre}' → {user.email} ({len(lics)} lics)")
             except Exception as e:
                 print(f"[ERR] suscripcion {s.id}: {e}")
@@ -144,7 +144,7 @@ def check_watchlist(db):
         if seg.notif_cambio_estado and seg.last_estado and seg.last_estado != lic.estado:
             old = seg.last_estado
             try:
-                send_seguimiento_email(user.email, user.username, lic, old, lic.estado, db)
+                send_seguimiento_email(user.email, user.username, lic, old, lic.estado, db, lang=user.language)
                 print(f"[OK] estado change '{lic.titulo[:40]}' → {user.email}: {old}→{lic.estado}")
             except Exception as e:
                 print(f"[ERR] estado change {seg.id}: {e}")
@@ -157,7 +157,7 @@ def check_watchlist(db):
             days_left = (lic.fecha_limite - today).days
             if days_left in (0, seg.notif_dias_vencimiento):
                 try:
-                    send_vencimiento_email(user.email, user.username, lic, days_left, db)
+                    send_vencimiento_email(user.email, user.username, lic, days_left, db, lang=user.language)
                     print(f"[OK] vencimiento '{lic.titulo[:40]}' → {user.email}: {days_left}d")
                 except Exception as e:
                     print(f"[ERR] vencimiento {seg.id}: {e}")
