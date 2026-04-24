@@ -4,20 +4,20 @@
   <div class="col-lg-3">
     <div class="lm-sidebar" id="an-sidebar">
       <div class="lm-sidebar-header d-flex justify-content-between align-items-center">
-        <span>Filtros</span>
+        <span>{{t.home.filters}}</span>
         <button id="an-reset" type="button" class="lm-an-reset-btn">
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" fill="none" viewBox="0 0 24 24"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
             <polyline points="1 4 1 10 7 10"/><path d="M3.51 15a9 9 0 1 0 .49-3.78"/>
           </svg>
-          Limpiar filtros
+          {{t.home.clear_filters}}
         </button>
       </div>
 
       <!-- Solo activas -->
       <div class="lm-sidebar-section">
         <div class="lm-sidebar-item lm-an-filter-bool" id="an-solo-plazo" style="cursor:pointer">
-          <span>Solo activas ahora</span>
+          <span>{{t.analisis.only_active}}</span>
           <svg id="an-plazo-check" xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none"
             viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"
             stroke-linejoin="round" style="opacity:0;color:var(--ac-main);flex-shrink:0">
@@ -29,13 +29,13 @@
       <!-- CCAA -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="an-ccaa">
-          Comunidad autónoma
+          {{t.home.f_ccaa}}
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
             class="lm-chevron"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="lm-sidebar-body lm-scrollable" id="sc-an-ccaa">
-          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="ccaa" data-value="">Todas</div>
+          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="ccaa" data-value="">{{t.home.f_status_any}}</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="ccaa" data-value="Andalucía">Andalucía</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="ccaa" data-value="Aragón">Aragón</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="ccaa" data-value="Asturias">Asturias</div>
@@ -61,13 +61,13 @@
       <!-- Estado -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="an-estado">
-          Estado
+          {{t.home.f_status}}
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
             class="lm-chevron"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="lm-sidebar-body" id="sc-an-estado">
-          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="estado" data-value="">Todos</div>
+          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="estado" data-value="">{{t.home.f_status_any}}</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="estado" data-value="PUB">Publicada</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="estado" data-value="ADJ">Adjudicada</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="estado" data-value="PRE">Preevaluación</div>
@@ -80,13 +80,13 @@
       <!-- Tipo -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="an-tipo">
-          Tipo de contrato
+          {{t.home.f_contract}}
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
             class="lm-chevron"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="lm-sidebar-body lm-scrollable" id="sc-an-tipo">
-          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="tipo" data-value="">Todos</div>
+          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="tipo" data-value="">{{t.home.f_status_any}}</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="tipo" data-value="1">Obras</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="tipo" data-value="2">Servicios</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="tipo" data-value="3">Suministros</div>
@@ -103,13 +103,13 @@
       <!-- Presupuesto -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="an-prange">
-          Presupuesto
+          {{t.home.f_budget}}
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
             class="lm-chevron"><polyline points="6 9 12 15 18 9"/></svg>
         </button>
         <div class="lm-sidebar-body" id="sc-an-prange">
-          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="prange" data-value="">Todos</div>
+          <div class="lm-sidebar-item lm-an-fi lm-active" data-section="prange" data-value="">{{t.home.f_status_any}}</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="prange" data-value="5k">&lt; 5.000 €</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="prange" data-value="15k">5.000 – 15.000 €</div>
           <div class="lm-sidebar-item lm-an-fi" data-section="prange" data-value="100k">15.000 – 100.000 €</div>
@@ -121,7 +121,7 @@
       <!-- Período publicación -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="an-periodo">
-          Período publicación
+          {{t.analisis.period}}
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
             class="lm-chevron"><polyline points="6 9 12 15 18 9"/></svg>
@@ -129,11 +129,11 @@
         <div class="lm-sidebar-body" id="sc-an-periodo">
           <div class="lm-sidebar-date-wrap">
             <div class="lm-sidebar-date-field">
-              <span class="lm-sidebar-date-label">Desde</span>
+              <span class="lm-sidebar-date-label">{{t.home.f_from}}</span>
               <input type="date" id="an-fecha-desde">
             </div>
             <div class="lm-sidebar-date-field">
-              <span class="lm-sidebar-date-label">Hasta</span>
+              <span class="lm-sidebar-date-label">{{t.home.f_to}}</span>
               <input type="date" id="an-fecha-hasta">
             </div>
           </div>
@@ -143,7 +143,7 @@
       <!-- Organismo -->
       <div class="lm-sidebar-section">
         <button class="lm-sidebar-toggle" type="button" data-section="an-org">
-          Organismo contratante
+          {{t.analisis.organismo}}
           <svg xmlns="http://www.w3.org/2000/svg" width="11" height="11" viewBox="0 0 24 24" fill="none"
             stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"
             class="lm-chevron"><polyline points="6 9 12 15 18 9"/></svg>
@@ -151,7 +151,7 @@
         <div class="lm-sidebar-body" id="sc-an-org">
           <div style="padding:0.35rem 0.75rem 0.6rem">
             <input type="text" id="an-organismo-input" class="form-control form-control-sm"
-              placeholder="Buscar organismo…" autocomplete="off">
+              placeholder="{{t.analisis.search_org}}" autocomplete="off">
           </div>
         </div>
       </div>
@@ -166,48 +166,48 @@
     <div class="lm-an-kpis mb-3">
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-total">—</div>
-        <div class="lm-stat-label">Total</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_total}}</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value lm-stat-accent" id="kpi-plazo">—</div>
-        <div class="lm-stat-label">En plazo</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_active}}</div>
         <div class="lm-stat-sub" id="kpi-pct-plazo">—</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-presup-total">—</div>
-        <div class="lm-stat-label">Presup. total</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_budget_total}}</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-presup-medio">—</div>
-        <div class="lm-stat-label">Presup. medio</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_budget_avg}}</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-presup-max">—</div>
-        <div class="lm-stat-label">Mayor presup.</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_budget_max}}</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-con-presup">—</div>
-        <div class="lm-stat-label">Con presup.</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_with_budget}}</div>
         <div class="lm-stat-sub" id="kpi-pct-presup">—</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-organismos">—</div>
-        <div class="lm-stat-label">Organismos</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_orgs}}</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-provincias">—</div>
-        <div class="lm-stat-label">Provincias</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_provs}}</div>
       </div>
       <div class="lm-stat-card">
         <div class="lm-stat-value" id="kpi-municipios">—</div>
-        <div class="lm-stat-label">Municipios</div>
+        <div class="lm-stat-label">{{t.analisis.kpi_muns}}</div>
       </div>
     </div>
 
     <!-- Loading -->
     <div id="an-loading" class="text-center py-5">
       <div class="spinner-border" style="color:var(--ac-main);width:2rem;height:2rem;border-width:3px" role="status"></div>
-      <div class="mt-3" style="font-size:0.85rem;color:var(--tx-muted)">Calculando estadísticas…</div>
+      <div class="mt-3" style="font-size:0.85rem;color:var(--tx-muted)">{{t.analisis.loading}}</div>
     </div>
 
     <!-- Gráficas -->
@@ -219,7 +219,7 @@
           <div class="card lm-card h-100">
             <div class="card-body">
               <div class="lm-an-chart-header">
-                <h6 class="lm-an-chart-title">Por comunidad autónoma</h6>
+                <h6 class="lm-an-chart-title">{{t.analisis.chart_by_ccaa}}</h6>
                 <span class="lm-an-chart-badge" id="badge-ccaa"></span>
               </div>
               <div style="position:relative;height:480px">
@@ -231,7 +231,7 @@
         <div class="col-lg-5">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Tipo de contrato</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_by_type}}</h6>
               <div style="position:relative;height:480px">
                 <canvas id="chart-tipo"></canvas>
               </div>
@@ -245,7 +245,7 @@
         <div class="col-12">
           <div class="card lm-card">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Evolución mensual de publicaciones</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_by_month}}</h6>
               <div style="position:relative;height:220px">
                 <canvas id="chart-mes"></canvas>
               </div>
@@ -259,7 +259,7 @@
         <div class="col-lg-4">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Estado</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_by_status}}</h6>
               <div style="position:relative;height:300px">
                 <canvas id="chart-estado"></canvas>
               </div>
@@ -269,7 +269,7 @@
         <div class="col-lg-8">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Distribución por rango de presupuesto</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_budget_range}}</h6>
               <div style="position:relative;height:300px">
                 <canvas id="chart-prange"></canvas>
               </div>
@@ -283,7 +283,7 @@
         <div class="col-12">
           <div class="card lm-card">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Top 15 organismos contratantes</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_top_orgs}}</h6>
               <div style="position:relative;height:420px">
                 <canvas id="chart-org"></canvas>
               </div>
@@ -297,7 +297,7 @@
         <div class="col-lg-6">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Top 15 provincias</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_top_provs}}</h6>
               <div style="position:relative;height:300px">
                 <canvas id="chart-prov"></canvas>
               </div>
@@ -307,7 +307,7 @@
         <div class="col-lg-6">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Top 15 municipios</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_top_muns}}</h6>
               <div style="position:relative;height:300px">
                 <canvas id="chart-mun"></canvas>
               </div>
@@ -321,7 +321,7 @@
         <div class="col-lg-6">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Presupuesto medio por CCAA</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_budget_avg_ccaa}}</h6>
               <div style="position:relative;height:480px">
                 <canvas id="chart-presup-medio"></canvas>
               </div>
@@ -331,7 +331,7 @@
         <div class="col-lg-6">
           <div class="card lm-card h-100">
             <div class="card-body">
-              <h6 class="lm-an-chart-title">Presupuesto total por CCAA</h6>
+              <h6 class="lm-an-chart-title">{{t.analisis.chart_budget_total_ccaa}}</h6>
               <div style="position:relative;height:480px">
                 <canvas id="chart-presup-total"></canvas>
               </div>
