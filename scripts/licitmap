@@ -98,6 +98,7 @@ declare -A STR_ES=(
     [help_config]="Muestra .env (secretos enmascarados)"
     [help_reset_pwd]="Resetea contraseña (default: admin)"
     [help_update]="git pull + reinstala deps + reinicia"
+    [help_doctor]="Diagnóstico completo de la instalación"
     [help_version]="Muestra el commit desplegado"
     [help_lang]="Idioma: auto-detecta de \$LANG, o fija con --lang=en|es o LICITMAP_LANG"
     [help_help]="Esta ayuda (alias: -h, --help)"
@@ -170,6 +171,7 @@ declare -A STR_EN=(
     [help_config]="Shows .env (secrets masked)"
     [help_reset_pwd]="Resets password (default user: admin)"
     [help_update]="git pull + reinstall deps + restart"
+    [help_doctor]="Full diagnostic of the installation"
     [help_version]="Shows the deployed commit"
     [help_lang]="Language: auto-detected from \$LANG, or set with --lang=en|es or LICITMAP_LANG"
     [help_help]="This help (aliases: -h, --help)"
@@ -236,6 +238,7 @@ ${C_BOLD}$(t help_grp_admin)${C_RESET}
   ${C_BOLD}config${C_RESET}                            $(t help_config)
   ${C_BOLD}admin reset-password${C_RESET} [user]       $(t help_reset_pwd)
   ${C_BOLD}update${C_RESET}                            $(t help_update)
+  ${C_BOLD}doctor${C_RESET}                            $(t help_doctor)
   ${C_BOLD}version${C_RESET}                           $(t help_version)
   ${C_BOLD}--lang${C_RESET}=en|es                      $(t help_lang)
   ${C_BOLD}help${C_RESET}                              $(t help_help)
@@ -402,6 +405,199 @@ print(\"OK\")
     ok "$upd_msg"
 }
 
+_dr_errors=0
+_dr_warnings=0
+_dr_check() { printf "  %-48s " "$1"; }
+_dr_pass()  { echo -e "${C_GREEN}✓${C_RESET}"; }
+_dr_fail()  { echo -e "${C_RED}✗${C_RESET}  $1"; _dr_errors=$((_dr_errors+1)); }
+_dr_warn()  { echo -e "${C_YELLOW}⚠${C_RESET}  $1"; _dr_warnings=$((_dr_warnings+1)); }
+
+cmd_doctor() {
+    _dr_errors=0
+    _dr_warnings=0
+
+    echo -e "${C_BOLD}── Instalación ──${C_RESET}"
+    _dr_check "INSTALL_DIR existe: $INSTALL_DIR"
+    [ -d "$INSTALL_DIR" ] && _dr_pass || _dr_fail "Directorio no encontrado"
+
+    _dr_check "Usuario del sistema '$SYS_USER' existe"
+    id "$SYS_USER" &>/dev/null && _dr_pass || _dr_fail "Crear con: useradd --system $SYS_USER"
+
+    _dr_check "Propietario del directorio"
+    local owner
+    owner=$(stat -c '%U' "$INSTALL_DIR" 2>/dev/null)
+    [ "$owner" = "$SYS_USER" ] && _dr_pass || _dr_warn "Propietario es '$owner', esperado '$SYS_USER'"
+
+    _dr_check ".env existe (permisos 600)"
+    if [ -f "$INSTALL_DIR/.env" ]; then
+        local perms
+        perms=$(stat -c '%a' "$INSTALL_DIR/.env")
+        [ "$perms" = "600" ] && _dr_pass || _dr_warn "Permisos $perms (debería ser 600)"
+    else
+        _dr_fail "Falta $INSTALL_DIR/.env"
+    fi
+
+    _dr_check "venv existe con Python"
+    [ -x "$INSTALL_DIR/.venv/bin/python" ] && _dr_pass || _dr_fail "Crear con: python3 -m venv $INSTALL_DIR/.venv"
+
+    echo
+    echo -e "${C_BOLD}── Base de datos ──${C_RESET}"
+    _dr_check "Conexión a la BD"
+    if run_as_app "-c 'from app.database import engine; engine.connect().close()'" &>/dev/null; then
+        _dr_pass
+    else
+        _dr_fail "Revisa DATABASE_URL en $INSTALL_DIR/.env"
+    fi
+
+    _dr_check "Tablas del esquema presentes"
+    local tables_ok
+    tables_ok=$(run_as_app "-c '
+from app.database import engine
+from sqlalchemy import inspect
+insp = inspect(engine)
+want = {\"users\",\"licitaciones\",\"alertas\",\"settings\",\"licitaciones_seguidas\"}
+have = set(insp.get_table_names())
+missing = want - have
+print(\"OK\" if not missing else \"MISSING:\" + \",\".join(missing))
+'" 2>/dev/null)
+    if [ "$tables_ok" = "OK" ]; then
+        _dr_pass
+    else
+        _dr_fail "$tables_ok"
+    fi
+
+    _dr_check "Columna users.language (i18n)"
+    local has_col
+    has_col=$(run_as_app "-c '
+from app.database import engine
+from sqlalchemy import inspect
+cols = [c[\"name\"] for c in inspect(engine).get_columns(\"users\")]
+print(\"OK\" if \"language\" in cols else \"MISSING\")
+'" 2>/dev/null)
+    if [ "$has_col" = "OK" ]; then
+        _dr_pass
+    else
+        _dr_warn "Falta: ALTER TABLE users ADD COLUMN language VARCHAR(2) DEFAULT 'es' NOT NULL;"
+    fi
+
+    _dr_check "Usuario admin existe"
+    local has_admin
+    has_admin=$(run_as_app "-c '
+from app.database import SessionLocal
+from app.models import User
+db = SessionLocal()
+print(\"OK\" if db.query(User).filter_by(username=\"admin\").first() else \"MISSING\")
+'" 2>/dev/null)
+    [ "$has_admin" = "OK" ] && _dr_pass || _dr_fail "No hay usuario admin en la BD"
+
+    echo
+    echo -e "${C_BOLD}── Servicio systemd ──${C_RESET}"
+    _dr_check "Unidad systemd instalada"
+    [ -f /etc/systemd/system/licitmap.service ] && _dr_pass || _dr_fail "Falta /etc/systemd/system/licitmap.service"
+
+    _dr_check "licitmap.service habilitado"
+    systemctl is-enabled --quiet licitmap && _dr_pass || _dr_warn "Habilitar: systemctl enable licitmap"
+
+    _dr_check "licitmap.service activo"
+    if systemctl is-active --quiet licitmap; then
+        _dr_pass
+    else
+        _dr_fail "Iniciar: systemctl start licitmap · Logs: journalctl -u licitmap -n 50"
+    fi
+
+    _dr_check "Puerto app respondiendo"
+    local port
+    port=$(grep -oP '(?<=--port )\d+' /etc/systemd/system/licitmap.service 2>/dev/null || echo "8000")
+    if command -v curl >/dev/null 2>&1 && curl -s -o /dev/null -w "%{http_code}" "http://127.0.0.1:${port}/" | grep -qE '^(2|3)'; then
+        _dr_pass
+    elif command -v curl >/dev/null 2>&1; then
+        _dr_fail "Puerto ${port} no responde con 2xx/3xx"
+    else
+        _dr_warn "curl no instalado — no se puede verificar"
+    fi
+
+    echo
+    echo -e "${C_BOLD}── Cron y logs ──${C_RESET}"
+    _dr_check "/etc/cron.d/licitmap presente"
+    [ -f /etc/cron.d/licitmap ] && _dr_pass || _dr_fail "Reinstalar con: install.sh (o copiar desde deploy/licitmap.cron)"
+
+    _dr_check "Ficheros de log creados"
+    local log_issues=""
+    for f in /var/log/licitmap.log /var/log/licitmap_sync.log /var/log/licitmap_alertas.log; do
+        if [ -f "$f" ]; then
+            local log_owner
+            log_owner=$(stat -c '%U' "$f")
+            [ "$log_owner" = "$SYS_USER" ] || log_issues="$log_issues $f(owner=$log_owner)"
+        else
+            log_issues="$log_issues $f(missing)"
+        fi
+    done
+    [ -z "$log_issues" ] && _dr_pass || _dr_warn "$log_issues"
+
+    echo
+    echo -e "${C_BOLD}── Nginx (opcional) ──${C_RESET}"
+    if command -v nginx >/dev/null 2>&1; then
+        _dr_check "Nginx instalado"; pass
+        _dr_check "Sitio licitmap habilitado"
+        [ -f /etc/nginx/sites-enabled/licitmap ] && _dr_pass || _dr_warn "Sin nginx → accede en http://IP:${port}"
+        _dr_check "Configuración nginx válida"
+        nginx -t &>/dev/null && _dr_pass || _dr_fail "Revisa con: nginx -t"
+    else
+        info "  (nginx no instalado — se accede directo en el puerto de la app)"
+    fi
+
+    echo
+    echo -e "${C_BOLD}── CLI y PATH ──${C_RESET}"
+    _dr_check "/usr/local/bin/licitmap existe"
+    [ -x /usr/local/bin/licitmap ] && _dr_pass || _dr_fail "Reinstalar: install -m 755 $INSTALL_DIR/scripts/licitmap /usr/local/bin/licitmap"
+
+    _dr_check "/usr/local/bin en PATH"
+    if echo ":$PATH:" | grep -q ':/usr/local/bin:'; then
+        _dr_pass
+    else
+        _dr_warn "Añadir: echo 'export PATH=/usr/local/sbin:/usr/local/bin:\$PATH' >> /etc/bash.bashrc"
+    fi
+
+    echo
+    echo -e "${C_BOLD}── Errores recientes ──${C_RESET}"
+    local recent_err
+    recent_err=$(journalctl -u licitmap -n 200 --no-pager 2>/dev/null | grep -iE 'traceback|error|exception' | grep -v 'INFO:' | tail -5)
+    if [ -z "$recent_err" ]; then
+        echo -e "  ${C_GREEN}✓${C_RESET} No hay errores recientes en el journal"
+    else
+        _dr_warn "Últimas incidencias (revisar con: journalctl -u licitmap -n 200):"
+        echo "$recent_err" | sed 's/^/      /'
+    fi
+
+    echo
+    if [ $_dr_errors -gt 0 ]; then
+        bad "Diagnóstico: ${errors} error(es), ${warnings} aviso(s)"
+        return 1
+    elif [ $_dr_warnings -gt 0 ]; then
+        warn "Diagnóstico: ${warnings} aviso(s) — funcional pero revisa las notas"
+    else
+        ok "Todo OK"
+    fi
+}
+
+cmd_migrate() {
+    require_root
+    info "Aplicando migraciones idempotentes…"
+    run_as_app "-c '
+from sqlalchemy import text
+from app.database import engine
+statements = [
+    (\"users.language\", \"ALTER TABLE users ADD COLUMN IF NOT EXISTS language VARCHAR(2) DEFAULT \\\"es\\\" NOT NULL\"),
+]
+with engine.begin() as conn:
+    for name, sql in statements:
+        conn.execute(text(sql))
+        print(f\"  ✓ {name}\")
+print(\"OK\")
+'"
+    ok "Migraciones aplicadas."
+}
+
 cmd_update() {
     require_root
     info "$(t upd_code)"
@@ -428,6 +624,8 @@ case "$CMD" in
     stats)          cmd_stats ;;
     config)         cmd_config ;;
     update)         cmd_update ;;
+    doctor)         cmd_doctor ;;
+    migrate)        cmd_migrate ;;
     admin)
         SUB="${1:-help}"; shift || true
         case "$SUB" in
