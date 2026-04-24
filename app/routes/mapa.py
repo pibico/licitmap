@@ -230,12 +230,18 @@ def api_nombres(db: Session = Depends(get_db)):
 
 @router.get("/api/geo/provincias-by-ccaa", response_class=JSONResponse)
 def api_provincias_by_ccaa(ccaa: str = Query(default="")):
-    """Devuelve las provincias pertenecientes a las CCAA seleccionadas
-    (pipe-separated). Si no se pasa ninguna, devuelve las 52 provincias.
-    Usado por el progressive disclosure del form de alertas: seleccionar
-    CCAA revela sólo las provincias relevantes."""
+    """Devuelve:
+      - provincias: lista plana de todas las provincias de las CCAA pedidas.
+      - by_ccaa: {ccaa: [provincias]} — permite al cliente saber qué CCAAs
+        son uniprovinciales (1 item) y ocultar esas en el chip picker,
+        tratándolas como provincia implícita del filtro de municipio.
+    Si la lista de CCAA viene vacía se devuelven las 52 provincias planas."""
     ccaa_list = [c for c in (ccaa or "").split("|") if c]
-    return {"provincias": provincias_por_ccaa(ccaa_list)}
+    if not ccaa_list:
+        return {"provincias": provincias_por_ccaa([]), "by_ccaa": {}}
+    by_ccaa = {c: provincias_por_ccaa([c]) for c in ccaa_list}
+    flat = sorted({p for v in by_ccaa.values() for p in v})
+    return {"provincias": flat, "by_ccaa": by_ccaa}
 
 
 @router.get("/api/geo/municipios", response_class=JSONResponse)

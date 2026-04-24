@@ -165,17 +165,27 @@
     }).catch(function () {});
   }
 
-  // Provincias efectivas de un form: las explícitamente seleccionadas si
-  // las hay; si el form está en modo uniprovincial, la implícita; si no,
-  // todas las derivadas de las CCAA seleccionadas.
+  // Provincias efectivas de un form. Dos fuentes:
+  //   - implicit: provincias de CCAAs uniprovinciales seleccionadas (Madrid,
+  //     Asturias…). No se muestran como chips porque no hay nada que elegir;
+  //     siempre cuentan.
+  //   - chips: provincias de CCAAs multi-provinciales (las que sí pintamos
+  //     como chips para que el usuario acote).
+  //
+  // Si el usuario ha activado alguno de los chips visibles → la selección
+  // son esos chips + las implícitas (siempre). Si no ha tocado chips → la
+  // unión (implícit ∪ chips) para que el autocomplete muestre todos los
+  // municipios de las CCAA elegidas.
   function getEffectiveProvincias(prefix) {
     var picker = document.getElementById(prefix + '-provincia');
     if (!picker) return [];
-    var sel = getChipVals(prefix + '-provincia');
-    if (sel.length) return sel;
-    if (picker.dataset.implicit) return [picker.dataset.implicit];
-    if (picker.dataset.derived) return picker.dataset.derived.split('|').filter(Boolean);
-    return [];
+    var sel      = getChipVals(prefix + '-provincia');
+    var implicit = (picker.dataset.implicit || '').split('|').filter(Boolean);
+    var chips    = (picker.dataset.chips    || '').split('|').filter(Boolean);
+    if (sel.length) {
+      return Array.from(new Set(sel.concat(implicit)));
+    }
+    return Array.from(new Set(implicit.concat(chips)));
   }
 
   // Lista de municipios ofrecida por el autocomplete de un form dado.
@@ -213,7 +223,7 @@
       if (munCol)  munCol.style.display  = 'none';
       picker.innerHTML = '';
       picker.dataset.implicit = '';
-      picker.dataset.derived  = '';
+      picker.dataset.chips    = '';
       return;
     }
     var selected = getChipVals(prefix + '-provincia');
@@ -223,24 +233,33 @@
     fetch('/api/geo/provincias-by-ccaa?ccaa=' + encodeURIComponent(ccaaVals.join('|')))
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        var provs = d.provincias || [];
-        picker.dataset.derived = provs.join('|');
-        if (provs.length === 1) {
-          // CCAA uniprovincial (Madrid, Asturias, Navarra, Baleares…): no
-          // tiene sentido pedirle al usuario que elija la única provincia.
-          // Ocultamos el bloque y guardamos la provincia como implícita
-          // para que el filtro de municipio la siga usando.
+        var byCcaa = d.by_ccaa || {};
+        // Clasificar las provincias por CCAA: las uniprovinciales pasan a
+        // 'implicit' (se ocultan); las de multi-provincial a 'chips'
+        // (visibles como chips). Si el usuario combina Asturias (1 prov)
+        // con Cataluña (4), solo se muestran los chips de Cataluña.
+        var implicit = [];
+        var chips = [];
+        Object.keys(byCcaa).forEach(function (c) {
+          var ps = byCcaa[c] || [];
+          if (ps.length === 1) implicit.push(ps[0]);
+          else Array.prototype.push.apply(chips, ps);
+        });
+        chips    = Array.from(new Set(chips)).sort();
+        implicit = Array.from(new Set(implicit)).sort();
+        picker.dataset.implicit = implicit.join('|');
+        picker.dataset.chips    = chips.join('|');
+
+        if (chips.length === 0) {
+          // Todas las CCAA seleccionadas son uniprovinciales.
           if (provCol) provCol.style.display = 'none';
           picker.innerHTML = '';
-          picker.dataset.implicit = provs[0];
         } else {
-          picker.dataset.implicit = '';
-          renderProvChips(picker, provs, selected);
+          renderProvChips(picker, chips, selected);
           if (provCol) provCol.style.display = '';
         }
         picker.dataset.selected = '';
-        // Con al menos una CCAA seleccionada siempre se muestra municipio:
-        // el autocomplete queda acotado a las provincias derivadas.
+        // Municipio siempre visible si hay CCAA: el autocomplete ya acota.
         if (munCol) munCol.style.display = '';
       })
       .catch(function () {});
