@@ -138,7 +138,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login.err_inactive": "Tu cuenta está desactivada.",
         "login.err_bad_pass": "Contraseña incorrecta.",
         "login.err_bad_otp": "Código incorrecto o expirado.",
+        "login.err_otp_expired": "El código ha expirado. Vuelve a iniciar sesión.",
         "login.err_send_otp": "No se pudo enviar el código. Inténtalo más tarde.",
+        "login.err_no_email": "Este usuario no tiene correo electrónico. Contacta con el administrador.",
         # Admin
         "admin.header": "Administración",
         "admin.dashboard": "Panel",
@@ -373,6 +375,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "stat_tenders_short": "Licitaciones",
         "stat_active_short": "En plazo",
         "map_legend": "Licitaciones",
+        # Mensajes flash del admin
+        "admin.msg.user_created":    "Usuario creado.",
+        "admin.msg.user_deleted":    "Usuario eliminado.",
+        "admin.msg.email_updated":   "Correo actualizado.",
+        "admin.msg.limit_saved":     "Límite guardado.",
+        "admin.msg.smtp_saved":      "Configuración SMTP guardada.",
+        "admin.msg.password_updated":"Contraseña actualizada.",
     },
     "en": {
         "nav.search": "Search",
@@ -482,7 +491,9 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "login.err_inactive": "Your account is disabled.",
         "login.err_bad_pass": "Incorrect password.",
         "login.err_bad_otp": "Invalid or expired code.",
+        "login.err_otp_expired": "The code has expired. Sign in again.",
         "login.err_send_otp": "Could not send the code. Try again later.",
+        "login.err_no_email": "This user has no email address. Contact the administrator.",
         "admin.header": "Administration",
         "admin.dashboard": "Dashboard",
         "admin.users": "Users",
@@ -708,6 +719,13 @@ TRANSLATIONS: dict[str, dict[str, str]] = {
         "stat_tenders_short": "Tenders",
         "stat_active_short": "Open",
         "map_legend": "Tenders",
+        # Admin flash messages
+        "admin.msg.user_created":    "User created.",
+        "admin.msg.user_deleted":    "User deleted.",
+        "admin.msg.email_updated":   "Email updated.",
+        "admin.msg.limit_saved":     "Limit saved.",
+        "admin.msg.smtp_saved":      "SMTP settings saved.",
+        "admin.msg.password_updated":"Password updated.",
     },
 }
 

@@ -80,13 +80,13 @@ async def login_post(
         ).first()
 
     if not user:
-        return _err(request, "login.html", "Usuario o correo no encontrado, o cuenta inactiva.")
+        return _err(request, "login.html", "{{t.login.err_nouser}}")
 
     if user.username == "admin":
         return RedirectResponse("/login/password?u=admin", status_code=303)
 
     if not user.email:
-        return _err(request, "login.html", "Este usuario no tiene correo electrónico configurado. Contacta con el administrador.")
+        return _err(request, "login.html", "{{t.login.err_no_email}}")
 
     otp = f"{secrets.randbelow(1_000_000):06d}"
     user.otp_code = otp
@@ -96,7 +96,7 @@ async def login_post(
     try:
         send_otp_email(user.email, user.username, otp, db, lang=user.language)
     except Exception as e:
-        return _err(request, "login.html", f"No se pudo enviar el correo: {e}")
+        return _err(request, "login.html", f"{{{{t.login.err_send_otp}}}} ({e})")
 
     return RedirectResponse(f"/login/codigo?u={user.username}", status_code=303)
 
@@ -123,7 +123,7 @@ async def login_password_post(
     if user and user.hashed_password and bcrypt.checkpw(password.encode(), user.hashed_password.encode()):
         request.session["username"] = user.username
         return _login_redirect(user)
-    return _err(request, "login_password.html", "Contraseña incorrecta.", {"login_username": username})
+    return _err(request, "login_password.html", "{{t.login.err_bad_pass}}", {"login_username": username})
 
 
 @router.get("/login/codigo", response_class=HTMLResponse)
@@ -144,16 +144,16 @@ async def login_codigo_post(
 ):
     user = db.query(User).filter_by(username=username, is_active=True).first()
     if not user or not user.otp_code or not user.otp_expires_at:
-        return _err(request, "login_codigo.html", "Código inválido. Vuelve a iniciar sesión.", {"login_username": username})
+        return _err(request, "login_codigo.html", "{{t.login.err_bad_otp}}", {"login_username": username})
 
     if datetime.utcnow() > user.otp_expires_at:
         user.otp_code = None
         user.otp_expires_at = None
         db.commit()
-        return _err(request, "login_codigo.html", "El código ha expirado. Vuelve a iniciar sesión.", {"login_username": username})
+        return _err(request, "login_codigo.html", "{{t.login.err_otp_expired}}", {"login_username": username})
 
     if not secrets.compare_digest(codigo.strip(), user.otp_code):
-        return _err(request, "login_codigo.html", "Código incorrecto.", {"login_username": username})
+        return _err(request, "login_codigo.html", "{{t.login.err_bad_otp}}", {"login_username": username})
 
     user.otp_code = None
     user.otp_expires_at = None

@@ -43,6 +43,22 @@ def _require_admin(request: Request) -> bool:
     return request.session.get("username") == "admin"
 
 
+_OK_MESSAGES = {
+    "user_created":    "{{t.admin.msg.user_created}}",
+    "user_deleted":    "{{t.admin.msg.user_deleted}}",
+    "email_updated":   "{{t.admin.msg.email_updated}}",
+    "limit_saved":     "{{t.admin.msg.limit_saved}}",
+    "smtp_saved":      "{{t.admin.msg.smtp_saved}}",
+    "password_updated":"{{t.admin.msg.password_updated}}",
+}
+
+def _render_ok_block(ok: str) -> str:
+    if not ok:
+        return ""
+    msg = _OK_MESSAGES.get(ok, ok)
+    return f'<div class="alert alert-success mt-2">{msg}</div>'
+
+
 def _render(request: Request, page_tpl: str, active: str, extra: dict | None = None) -> str:
     auth_block, busqueda_display, lang_selector = _nav_context(request)
     base = Path("templates/base.html").read_text()
@@ -165,7 +181,7 @@ def admin_usuarios(request: Request, ok: str = "", db: Session = Depends(get_db)
         return RedirectResponse("/login", status_code=303)
     return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
         "users_rows": _users_rows(db),
-        "ok_block": f'<div class="alert alert-success mt-2">{ok}</div>' if ok else "",
+        "ok_block": _render_ok_block(ok),
     }))
 
 
@@ -196,7 +212,7 @@ async def admin_crear_usuario(
 
     db.add(User(username=username, email=email, is_active=True))
     db.commit()
-    return RedirectResponse(f"/admin/users?ok=Usuario '{username}' creado", status_code=303)
+    return RedirectResponse(f"/admin/users?ok=user_created&name={username}", status_code=303)
 
 
 @router.post("/users/{user_id}/toggle")
@@ -236,7 +252,7 @@ async def admin_cambiar_email(
         }))
     user.email = email
     db.commit()
-    return RedirectResponse("/admin/users?ok=Correo+actualizado", status_code=303)
+    return RedirectResponse("/admin/users?ok=email_updated", status_code=303)
 
 
 @router.post("/users/{user_id}/delete")
@@ -250,7 +266,7 @@ def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends
         db.query(LicitacionSeguida).filter_by(user_id=user_id).delete()
         db.delete(user)
         db.commit()
-        return RedirectResponse(f"/admin/users?ok=Usuario+eliminado", status_code=303)
+        return RedirectResponse("/admin/users?ok=user_deleted", status_code=303)
     return RedirectResponse("/admin/users", status_code=303)
 
 
@@ -271,7 +287,7 @@ def admin_config_exportacion(request: Request, ok: str = "", db: Session = Depen
         return RedirectResponse("/login", status_code=303)
     return HTMLResponse(_render(request, "admin_config_exportacion.html", "config", {
         "export_limit": get_setting(db, "export_limit", "5000"),
-        "ok_block": f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
+        "ok_block": _render_ok_block(ok),
     }))
 
 
@@ -282,7 +298,7 @@ def admin_config_exportacion_post(
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
     set_setting(db, "export_limit", str(max(100, min(50_000, export_limit))))
-    return RedirectResponse("/admin/settings/export?ok=Límite+guardado", status_code=303)
+    return RedirectResponse("/admin/settings/export?ok=limit_saved", status_code=303)
 
 
 # ── Config / Correo SMTP ──────────────────────────────────────────────────────
@@ -297,7 +313,7 @@ def admin_config_correo(request: Request, ok: str = "", db: Session = Depends(ge
         "smtp_user":      get_setting(db, "smtp_user", ""),
         "smtp_from":      get_setting(db, "smtp_from", ""),
         "smtp_pass_hint": "(ya configurada)" if get_setting(db, "smtp_pass", "") else "(no configurada)",
-        "ok_block":   f'<div class="alert alert-success mb-3">{ok}</div>' if ok else "",
+        "ok_block":   _render_ok_block(ok),
         "test_block": "",
     }))
 
@@ -368,7 +384,7 @@ async def admin_config_correo_post(
     if smtp_pass.strip():
         set_setting(db, "smtp_pass", smtp_pass.strip())
     set_setting(db, "smtp_from", smtp_from.strip())
-    return RedirectResponse("/admin/settings/email?ok=Configuración+SMTP+guardada", status_code=303)
+    return RedirectResponse("/admin/settings/email?ok=smtp_saved", status_code=303)
 
 
 # ── Config / Seguridad ────────────────────────────────────────────────────────
@@ -409,7 +425,7 @@ async def admin_config_seguridad_post(
 
     admin.hashed_password = bcrypt.hashpw(password_nueva.encode(), bcrypt.gensalt()).decode()
     db.commit()
-    return RedirectResponse("/admin/settings/security?ok=Contraseña+actualizada", status_code=303)
+    return RedirectResponse("/admin/settings/security?ok=password_updated", status_code=303)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -417,8 +433,8 @@ async def admin_config_seguridad_post(
 def _users_rows(db: Session) -> str:
     rows = ""
     for u in db.query(User).order_by(User.id).all():
-        estado = "Activo" if u.is_active else "Inactivo"
-        toggle_label = "Desactivar" if u.is_active else "Activar"
+        estado = "{{t.au.status_active}}" if u.is_active else "{{t.au.status_inactive}}"
+        toggle_label = "{{t.au.action_deactivate}}" if u.is_active else "{{t.au.action_activate}}"
         is_admin = u.username == "admin"
         if is_admin:
             email_cell = '<span style="color:var(--tx-muted);font-size:0.8rem">—</span>'
