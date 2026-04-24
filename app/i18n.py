@@ -893,7 +893,10 @@ class I18nMiddleware(BaseHTTPMiddleware):
         content_type = response.headers.get("content-type", "")
         if not content_type.startswith("text/html"):
             return response
-        if response.status_code >= 300:
+        # Saltar solo redirects (3xx). Las respuestas 4xx/5xx con HTML (p. ej.
+        # el formulario de login con mensaje de error) también necesitan que
+        # se resuelvan los placeholders {{t.*}}.
+        if 300 <= response.status_code < 400:
             return response
 
         body = b""
