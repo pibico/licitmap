@@ -231,8 +231,8 @@ async function fetchApi(nivel) {
     }
     const urls = {
         ccaa:       '/api/mapa',
-        provincias: '/api/mapa/provincias',
-        municipios: '/api/mapa/municipios',
+        provincias: '/api/map/provincias',
+        municipios: '/api/map/municipios',
     };
     const data = await fetch(urls[nivel] + '?' + params).then(r => r.json());
     apiCache[nivel] = { key: cacheKey, data };
@@ -414,7 +414,7 @@ function setupAutocomplete(inputId, listId, getOptions, onSelect) {
 let nombresProvincias = [];
 let nombresMunicipios = [];
 
-fetch('/api/mapa/nombres').then(r => r.json()).then(data => {
+fetch('/api/map/nombres').then(r => r.json()).then(data => {
     nombresProvincias = data.provincias || [];
     nombresMunicipios = data.municipios || [];
 
@@ -476,7 +476,7 @@ document.querySelectorAll('#nivel-selector button').forEach(btn => {
 });
 
 // ─── LMFilters: limpiar al pulsar "Limpiar filtros" ──────────────────────
-document.querySelector('a[href="/mapa"].btn')?.addEventListener('click', function () {
+document.querySelector('a[href="/map"].btn')?.addEventListener('click', function () {
     if (typeof LMFilters !== 'undefined') LMFilters.clear();
 });
 

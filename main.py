@@ -17,6 +17,7 @@ from app.routes.admin import router as admin_router
 from app.routes.analisis import router as analisis_router
 from app.routes.alertas import router as alertas_router
 from app.routes.lang import router as lang_router
+from app.routes.redirects import router as redirects_router
 
 app = FastAPI(title="LicitMap")
 
@@ -35,3 +36,5 @@ app.include_router(mapa_router)
 app.include_router(analisis_router)
 app.include_router(alertas_router)
 app.include_router(lang_router)
+# redirects last so they don't shadow the real routes
+app.include_router(redirects_router)

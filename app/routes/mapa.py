@@ -118,7 +118,7 @@ def apply_territorio_filter(query):
 
 
 
-@router.get("/mapa", response_class=HTMLResponse)
+@router.get("/map", response_class=HTMLResponse)
 def mapa_page(
     request: Request,
     q: str = Query(default=""),
@@ -215,7 +215,7 @@ def mapa_page(
     )
 
 
-@router.get("/api/mapa/nombres", response_class=JSONResponse)
+@router.get("/api/map/nombres", response_class=JSONResponse)
 def api_nombres(db: Session = Depends(get_db)):
     """Devuelve listas de provincias y municipios para autocomplete."""
     provincias = [
@@ -232,7 +232,7 @@ def api_nombres(db: Session = Depends(get_db)):
     return {"provincias": provincias, "municipios": municipios}
 
 
-@router.get("/api/mapa/provincias", response_class=JSONResponse)
+@router.get("/api/map/provincias", response_class=JSONResponse)
 def api_provincias(
     q: str = Query(default=""),
     cpv_q: str = Query(default=""),
@@ -264,7 +264,7 @@ def api_provincias(
     return {"provincias": {row[0]: {"total": row[1], "en_plazo": row[2]} for row in rows if row[0]}}
 
 
-@router.get("/api/mapa/municipios", response_class=JSONResponse)
+@router.get("/api/map/municipios", response_class=JSONResponse)
 def api_municipios(
     ccaa: str = Query(default=""),
     q: str = Query(default=""),
@@ -301,7 +301,7 @@ def api_municipios(
     return {"municipios": {row[0]: {"total": row[1], "en_plazo": row[2]} for row in rows if row[0]}}
 
 
-@router.get("/api/mapa", response_class=JSONResponse)
+@router.get("/api/map", response_class=JSONResponse)
 def api_mapa(
     q: str = Query(default=""),
     cpv_q: str = Query(default=""),

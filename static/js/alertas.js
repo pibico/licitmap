@@ -87,7 +87,7 @@
           ccaa:         ccaa,
         };
         guardar.disabled = true;
-        api('/api/alertas/newsletter', payload).then(function (r) {
+        api('/api/alerts/newsletter', payload).then(function (r) {
           if (r.ok) showToast('Newsletter guardada correctamente.', 'success');
           else showToast('Error: ' + (r.error || 'desconocido'), 'error');
         }).catch(function () {
@@ -100,7 +100,7 @@
       probar.addEventListener('click', function () {
         probar.disabled = true;
         probar.textContent = 'Enviando…';
-        fetch('/api/alertas/newsletter/probar', { method: 'POST' })
+        fetch('/api/alerts/newsletter/probar', { method: 'POST' })
           .then(function (r) { return r.json(); })
           .then(function (r) {
             if (r.ok) showToast('Prueba enviada (' + r.count + ' licitaciones).', 'success');
@@ -180,7 +180,7 @@
           hora_envio:   parseInt(document.getElementById('al-hora').value, 10) || 8,
         };
         btnGuard.disabled = true;
-        api('/api/alertas/nueva', payload).then(function (r) {
+        api('/api/alerts/nueva', payload).then(function (r) {
           if (r.ok) {
             showToast('Alerta guardada.', 'success');
             setTimeout(function () { location.reload(); }, 800);
@@ -289,7 +289,7 @@
           hora_envio:    parseInt(document.getElementById('sub-hora').value, 10) || 8,
         };
         btnGuard.disabled = true;
-        api('/api/alertas/suscripcion', payload).then(function (r) {
+        api('/api/alerts/suscripcion', payload).then(function (r) {
           if (r.ok) {
             showToast('Suscripción guardada.', 'success');
             setTimeout(function () { location.reload(); }, 800);
@@ -332,7 +332,7 @@
       var chk = e.target.closest('.alerta-toggle');
       if (!chk) return;
       var id = chk.dataset.id;
-      api('/api/alertas/' + id + '/toggle', {}).then(function (r) {
+      api('/api/alerts/' + id + '/toggle', {}).then(function (r) {
         var item = document.querySelector('.lm-alertas-item[data-id="' + id + '"]');
         if (r.ok && item) item.classList.toggle('lm-ai-inactive', !r.activa);
         else if (!r.ok) showToast('Error al cambiar estado.', 'error');
@@ -345,7 +345,7 @@
       var id = btn.dataset.id;
       var orig = btn.innerHTML;
       btn.disabled = true; btn.textContent = '…';
-      fetch('/api/alertas/' + id + '/probar', { method: 'POST' })
+      fetch('/api/alerts/' + id + '/probar', { method: 'POST' })
         .then(function (r) { return r.json(); })
         .then(function (r) {
           if (r.ok) showToast('Prueba enviada — ' + r.count + ' licitaciones.', 'success');
@@ -362,7 +362,7 @@
       var item = document.querySelector('.lm-alertas-item[data-id="' + id + '"]');
       var nombre = item ? (item.querySelector('.lm-ai-nombre') || {}).textContent : 'esta alerta';
       if (!confirm('¿Eliminar "' + nombre + '"?')) return;
-      api('/api/alertas/' + id + '/eliminar', {}).then(function (r) {
+      api('/api/alerts/' + id + '/eliminar', {}).then(function (r) {
         if (r.ok && item) { item.style.opacity = '0'; setTimeout(function () { item.remove(); }, 300); }
         else showToast('Error al eliminar.', 'error');
       });
@@ -374,7 +374,7 @@
       var segId = btn.dataset.segId;
       var item  = document.querySelector('.lm-watch-item[data-seg-id="' + segId + '"]');
       if (!confirm('¿Dejar de seguir esta licitación?')) return;
-      api('/api/alertas/watchlist/' + segId + '/eliminar', {}).then(function (r) {
+      api('/api/alerts/watchlist/' + segId + '/eliminar', {}).then(function (r) {
         if (r.ok && item) { item.style.opacity = '0'; setTimeout(function () { item.remove(); }, 300); }
         else showToast('Error al eliminar seguimiento.', 'error');
       });
@@ -383,7 +383,7 @@
     document.addEventListener('change', function (e) {
       var chk = e.target.closest('.watch-cambio-toggle');
       if (!chk) return;
-      api('/api/alertas/watchlist/' + chk.dataset.segId + '/config',
+      api('/api/alerts/watchlist/' + chk.dataset.segId + '/config',
           { notif_cambio_estado: chk.checked });
     });
 
@@ -391,7 +391,7 @@
       var sel = e.target.closest('.lm-watch-dias-select');
       if (!sel) return;
       var val = sel.value === 'None' || sel.value === '' ? null : parseInt(sel.value, 10);
-      api('/api/alertas/watchlist/' + sel.dataset.segId + '/config',
+      api('/api/alerts/watchlist/' + sel.dataset.segId + '/config',
           { notif_dias_vencimiento: val });
     });
   }

@@ -196,7 +196,7 @@ async def admin_crear_usuario(
 
     db.add(User(username=username, email=email, is_active=True))
     db.commit()
-    return RedirectResponse(f"/admin/usuarios?ok=Usuario '{username}' creado", status_code=303)
+    return RedirectResponse(f"/admin/users?ok=Usuario '{username}' creado", status_code=303)
 
 
 @router.post("/usuarios/{user_id}/toggle")
@@ -207,7 +207,7 @@ def admin_toggle_usuario(user_id: int, request: Request, db: Session = Depends(g
     if user and user.username != "admin":
         user.is_active = not user.is_active
         db.commit()
-    return RedirectResponse("/admin/usuarios", status_code=303)
+    return RedirectResponse("/admin/users", status_code=303)
 
 
 @router.post("/usuarios/{user_id}/email")
@@ -221,7 +221,7 @@ async def admin_cambiar_email(
         return RedirectResponse("/login", status_code=303)
     user = db.query(User).filter_by(id=user_id).first()
     if not user or user.username == "admin":
-        return RedirectResponse("/admin/usuarios", status_code=303)
+        return RedirectResponse("/admin/users", status_code=303)
     email = email.strip().lower()
     if not email:
         return HTMLResponse(_render(request, "admin_usuarios.html", "usuarios", {
@@ -236,7 +236,7 @@ async def admin_cambiar_email(
         }))
     user.email = email
     db.commit()
-    return RedirectResponse("/admin/usuarios?ok=Correo+actualizado", status_code=303)
+    return RedirectResponse("/admin/users?ok=Correo+actualizado", status_code=303)
 
 
 @router.post("/usuarios/{user_id}/eliminar")
@@ -250,8 +250,8 @@ def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends
         db.query(LicitacionSeguida).filter_by(user_id=user_id).delete()
         db.delete(user)
         db.commit()
-        return RedirectResponse(f"/admin/usuarios?ok=Usuario+eliminado", status_code=303)
-    return RedirectResponse("/admin/usuarios", status_code=303)
+        return RedirectResponse(f"/admin/users?ok=Usuario+eliminado", status_code=303)
+    return RedirectResponse("/admin/users", status_code=303)
 
 
 # ── Configuración: redirige a primera pestaña ─────────────────────────────────
@@ -260,7 +260,7 @@ def admin_eliminar_usuario(user_id: int, request: Request, db: Session = Depends
 def admin_config_redirect(request: Request):
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
-    return RedirectResponse("/admin/config/exportacion", status_code=303)
+    return RedirectResponse("/admin/settings/export", status_code=303)
 
 
 # ── Config / Exportación ──────────────────────────────────────────────────────
@@ -282,7 +282,7 @@ def admin_config_exportacion_post(
     if not _require_admin(request):
         return RedirectResponse("/login", status_code=303)
     set_setting(db, "export_limit", str(max(100, min(50_000, export_limit))))
-    return RedirectResponse("/admin/config/exportacion?ok=Límite+guardado", status_code=303)
+    return RedirectResponse("/admin/settings/export?ok=Límite+guardado", status_code=303)
 
 
 # ── Config / Correo SMTP ──────────────────────────────────────────────────────
@@ -368,7 +368,7 @@ async def admin_config_correo_post(
     if smtp_pass.strip():
         set_setting(db, "smtp_pass", smtp_pass.strip())
     set_setting(db, "smtp_from", smtp_from.strip())
-    return RedirectResponse("/admin/config/correo?ok=Configuración+SMTP+guardada", status_code=303)
+    return RedirectResponse("/admin/settings/email?ok=Configuración+SMTP+guardada", status_code=303)
 
 
 # ── Config / Seguridad ────────────────────────────────────────────────────────
@@ -409,7 +409,7 @@ async def admin_config_seguridad_post(
 
     admin.hashed_password = bcrypt.hashpw(password_nueva.encode(), bcrypt.gensalt()).decode()
     db.commit()
-    return RedirectResponse("/admin/config/seguridad?ok=Contraseña+actualizada", status_code=303)
+    return RedirectResponse("/admin/settings/security?ok=Contraseña+actualizada", status_code=303)
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -433,7 +433,7 @@ def _users_rows(db: Session) -> str:
                   <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
                 </svg>
               </button>
-              <form id="email-form-{u.id}" method="post" action="/admin/usuarios/{u.id}/email"
+              <form id="email-form-{u.id}" method="post" action="/admin/users/{u.id}/email"
                     style="display:none;margin-top:0.35rem">
                 <div class="input-group input-group-sm">
                   <input type="email" name="email" value="{u.email or ''}"
@@ -452,10 +452,10 @@ def _users_rows(db: Session) -> str:
           <td style="font-size:0.85rem">{email_cell}</td>
           <td><span class="badge {'bg-success' if u.is_active else 'bg-secondary'}">{estado}</span></td>
           <td style="white-space:nowrap">
-            <form method="post" action="/admin/usuarios/{u.id}/toggle" style="display:inline">
+            <form method="post" action="/admin/users/{u.id}/toggle" style="display:inline">
               <button class="btn btn-sm btn-outline-secondary" type="submit" {disabled}>{toggle_label}</button>
             </form>
-            <form method="post" action="/admin/usuarios/{u.id}/eliminar" style="display:inline"
+            <form method="post" action="/admin/users/{u.id}/eliminar" style="display:inline"
                   onsubmit="{confirm_js}">
               <button class="btn btn-sm btn-outline-danger" type="submit" {disabled}>Eliminar</button>
             </form>

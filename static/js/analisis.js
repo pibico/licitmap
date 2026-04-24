@@ -305,7 +305,7 @@
     Object.keys(state).forEach(function (k) {
       if (state[k]) params.set(k, state[k]);
     });
-    return '/api/analisis/data?' + params.toString();
+    return '/api/analytics/data?' + params.toString();
   }
 
   // ── Carga de datos ────────────────────────────────────────────────────────
@@ -458,7 +458,7 @@
   // ── Init ──────────────────────────────────────────────────────────────────
   document.addEventListener('DOMContentLoaded', function () {
     // Marcar tab activo
-    var tab = document.querySelector('.lm-nav-tabs a[href="/analisis"]');
+    var tab = document.querySelector('.lm-nav-tabs a[href="/analytics"]');
     if (tab) tab.classList.add('lm-nav-tab-active');
 
     loadSharedFilters();

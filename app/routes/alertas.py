@@ -420,7 +420,7 @@ def _get_user(request: Request, db: Session):
 
 # ── Página principal ──────────────────────────────────────────────────────────
 
-@router.get("/alertas", response_class=HTMLResponse)
+@router.get("/alerts", response_class=HTMLResponse)
 def alertas_page(request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -444,7 +444,7 @@ def alertas_page(request: Request, db: Session = Depends(get_db)):
 
 # ── Newsletter ────────────────────────────────────────────────────────────────
 
-@router.post("/api/alertas/newsletter")
+@router.post("/api/alerts/newsletter")
 async def save_newsletter(request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -478,7 +478,7 @@ async def save_newsletter(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/alertas/newsletter/probar")
+@router.post("/api/alerts/newsletter/probar")
 async def test_newsletter(request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -507,7 +507,7 @@ async def test_newsletter(request: Request, db: Session = Depends(get_db)):
 
 # ── Alertas personalizadas ────────────────────────────────────────────────────
 
-@router.post("/api/alertas/nueva")
+@router.post("/api/alerts/nueva")
 async def create_alerta(request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -541,7 +541,7 @@ async def create_alerta(request: Request, db: Session = Depends(get_db)):
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/alertas/{alerta_id}/toggle")
+@router.post("/api/alerts/{alerta_id}/toggle")
 async def toggle_alerta(alerta_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -554,7 +554,7 @@ async def toggle_alerta(alerta_id: int, request: Request, db: Session = Depends(
     return JSONResponse({"ok": True, "activa": a.activa})
 
 
-@router.post("/api/alertas/{alerta_id}/eliminar")
+@router.post("/api/alerts/{alerta_id}/eliminar")
 async def delete_alerta(alerta_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -567,7 +567,7 @@ async def delete_alerta(alerta_id: int, request: Request, db: Session = Depends(
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/alertas/{alerta_id}/probar")
+@router.post("/api/alerts/{alerta_id}/probar")
 async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -628,7 +628,7 @@ async def test_alerta(alerta_id: int, request: Request, db: Session = Depends(ge
 
 # ── Suscripciones de entidad ──────────────────────────────────────────────────
 
-@router.post("/api/alertas/suscripcion")
+@router.post("/api/alerts/suscripcion")
 async def create_suscripcion(request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -661,7 +661,7 @@ async def create_suscripcion(request: Request, db: Session = Depends(get_db)):
 
 # ── Watchlist / Seguir licitaciones ──────────────────────────────────────────
 
-@router.get("/api/alertas/seguidos")
+@router.get("/api/alerts/seguidos")
 def get_seguidos(request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -670,7 +670,7 @@ def get_seguidos(request: Request, db: Session = Depends(get_db)):
     return JSONResponse(ids)
 
 
-@router.post("/api/alertas/seguir/{licitacion_id}")
+@router.post("/api/alerts/seguir/{licitacion_id}")
 async def toggle_seguir(licitacion_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -698,7 +698,7 @@ async def toggle_seguir(licitacion_id: int, request: Request, db: Session = Depe
         return JSONResponse({"seguida": True})
 
 
-@router.post("/api/alertas/watchlist/{seg_id}/config")
+@router.post("/api/alerts/watchlist/{seg_id}/config")
 async def config_watchlist(seg_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:
@@ -716,7 +716,7 @@ async def config_watchlist(seg_id: int, request: Request, db: Session = Depends(
     return JSONResponse({"ok": True})
 
 
-@router.post("/api/alertas/watchlist/{seg_id}/eliminar")
+@router.post("/api/alerts/watchlist/{seg_id}/eliminar")
 async def delete_watchlist(seg_id: int, request: Request, db: Session = Depends(get_db)):
     user = _get_user(request, db)
     if not user:

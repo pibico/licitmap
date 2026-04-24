@@ -112,14 +112,14 @@ def _apply_filters(query, ccaa="", estado="", tipo="", prange="",
     return query
 
 
-@router.get("/analisis", response_class=HTMLResponse)
+@router.get("/analytics", response_class=HTMLResponse)
 def analisis_page(request: Request):
     if not request.session.get("username"):
         return RedirectResponse("/login", status_code=303)
     return HTMLResponse(_render_page(request))
 
 
-@router.get("/api/analisis/data")
+@router.get("/api/analytics/data")
 def analisis_data(
     request: Request,
     db: Session = Depends(get_db),

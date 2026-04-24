@@ -263,7 +263,7 @@ var LMFilters = (function () {
     var lmFollowed  = new Set();
 
     if (followBtn && document.getElementById('filtros-form')) {
-      fetch('/api/alertas/seguidos')
+      fetch('/api/alerts/seguidos')
         .then(function(r) { return r.json(); })
         .then(function(ids) { ids.forEach(function(id) { lmFollowed.add(String(id)); }); })
         .catch(function() {});
@@ -282,7 +282,7 @@ var LMFilters = (function () {
         e.stopPropagation();
         var licId = followBtn.dataset.licId;
         if (!licId) return;
-        fetch('/api/alertas/seguir/' + licId, { method: 'POST' })
+        fetch('/api/alerts/seguir/' + licId, { method: 'POST' })
           .then(function(r) { return r.json(); })
           .then(function(r) {
             if (r.error) return;
@@ -610,7 +610,7 @@ var LMFilters = (function () {
 
     // Cargar nombres para autocomplete
     var nombresProvincias = [], nombresMunicipios = [];
-    fetch('/api/mapa/nombres').then(function(r) { return r.json(); }).then(function(data) {
+    fetch('/api/map/nombres').then(function(r) { return r.json(); }).then(function(data) {
       nombresProvincias = data.provincias || [];
       nombresMunicipios = data.municipios || [];
 
