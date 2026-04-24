@@ -32,26 +32,46 @@ run_as_app() {
 
 cmd_help() {
     cat <<EOF
-${C_BOLD}LicitMap CLI${C_RESET}
+${C_BOLD}LicitMap CLI${C_RESET} — administración del servicio desde terminal
+
+${C_BOLD}Uso:${C_RESET}
+  licitmap <comando> [opciones]
 
 ${C_BOLD}Servicio:${C_RESET}
-  licitmap status                   Resumen completo del sistema
-  licitmap start|stop|restart       Controla el servicio systemd
-  licitmap logs [app|sync|alertas]  Tail en vivo del log (default: app)
-  licitmap url                      Imprime la URL pública
+  ${C_BOLD}status${C_RESET}                            Resumen del servicio, BD y último sync
+  ${C_BOLD}start${C_RESET} | ${C_BOLD}stop${C_RESET} | ${C_BOLD}restart${C_RESET}         Controla el servicio systemd
+  ${C_BOLD}logs${C_RESET} [app|sync|alertas]           Tail en vivo del log (default: app)
+  ${C_BOLD}url${C_RESET}                               Imprime la URL pública
 
 ${C_BOLD}Datos:${C_RESET}
-  licitmap sync                     Lanza sync rápido (máx 5 páginas)
-  licitmap sync --full              Sync completo (incluye purga)
-  licitmap sync --since YYYY-MM-DD  Sync histórico desde fecha
-  licitmap stats                    Estadísticas de la BD
+  ${C_BOLD}sync${C_RESET}                              Sync rápido (máx 5 páginas, ~250 licitaciones)
+  ${C_BOLD}sync --full${C_RESET}                       Sync completo (incluye purga de históricos)
+  ${C_BOLD}sync --since${C_RESET} YYYY-MM-DD           Sync histórico desde fecha
+  ${C_BOLD}stats${C_RESET}                             Estadísticas de la BD
 
 ${C_BOLD}Administración:${C_RESET}
-  licitmap config                   Muestra .env (secretos enmascarados)
-  licitmap admin reset-password     Resetea contraseña del admin
-  licitmap update                   git pull + pip install + restart
-  licitmap help                     Esta ayuda
+  ${C_BOLD}config${C_RESET}                            Muestra .env (secretos enmascarados)
+  ${C_BOLD}admin reset-password${C_RESET} [user]       Resetea contraseña (default: admin)
+  ${C_BOLD}update${C_RESET}                            git pull + reinstala deps + reinicia
+  ${C_BOLD}version${C_RESET}                           Muestra el commit desplegado
+  ${C_BOLD}help${C_RESET}                              Esta ayuda (alias: -h, --help)
+
+${C_BOLD}Ejemplos:${C_RESET}
+  licitmap status                      # Ver si todo funciona
+  licitmap logs sync                   # Seguir el proceso de sincronización
+  licitmap sync --since 2024-01-01     # Cargar histórico desde enero 2024
+  sudo licitmap admin reset-password   # Resetear contraseña del admin
+
+${C_BOLD}Ficheros clave:${C_RESET}
+  /etc/default/licitmap                # Config del CLI (INSTALL_DIR, SYS_USER)
+  \$INSTALL_DIR/.env                    # Config de la app (DATABASE_URL, etc.)
+  /etc/cron.d/licitmap                 # Cron de sync y alertas
 EOF
+}
+
+cmd_version() {
+    echo -n "LicitMap "
+    sudo -u "$SYS_USER" git -C "$INSTALL_DIR" log -1 --format="%h (%ci) — %s" 2>/dev/null || echo "sin histórico git"
 }
 
 cmd_status() {
@@ -191,6 +211,7 @@ cmd_update() {
 CMD="${1:-help}"; shift || true
 case "$CMD" in
     help|-h|--help) cmd_help ;;
+    version|-v|--version) cmd_version ;;
     status)         cmd_status ;;
     start)          cmd_start ;;
     stop)           cmd_stop ;;
