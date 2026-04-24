@@ -1,119 +1,303 @@
 #!/bin/bash
-# LicitMap — CLI de administración
-# Instalado por install.sh como /usr/local/bin/licitmap
+# LicitMap — admin CLI · CLI de administración
+# Installed by install.sh as /usr/local/bin/licitmap
 
 set -euo pipefail
 
 CONFIG_FILE="/etc/default/licitmap"
 if [ ! -f "$CONFIG_FILE" ]; then
-    echo "✗ No se encuentra $CONFIG_FILE. ¿Está LicitMap instalado?" >&2
+    echo "✗ $CONFIG_FILE not found. Is LicitMap installed? / ¿Está LicitMap instalado?" >&2
     exit 1
 fi
 # shellcheck source=/dev/null
 . "$CONFIG_FILE"
 
-: "${INSTALL_DIR:?INSTALL_DIR no definido en $CONFIG_FILE}"
-: "${SYS_USER:?SYS_USER no definido en $CONFIG_FILE}"
+: "${INSTALL_DIR:?INSTALL_DIR not defined in $CONFIG_FILE}"
+: "${SYS_USER:?SYS_USER not defined in $CONFIG_FILE}"
 
 C_RESET=$'\033[0m'; C_BOLD=$'\033[1m'; C_RED=$'\033[31m'; C_GREEN=$'\033[32m'; C_YELLOW=$'\033[33m'; C_DIM=$'\033[2m'
+
+# ─── i18n ──────────────────────────────────────────────────────────────
+# Precedence: --lang flag > LICITMAP_LANG > $LANG (prefix match) > default (es)
+LANG_SEL="es"
+if [ -n "${LICITMAP_LANG:-}" ]; then
+    LANG_SEL="$LICITMAP_LANG"
+elif [[ "${LANG:-}" =~ ^en ]]; then
+    LANG_SEL="en"
+fi
+
+# Extract --lang / --lang=XX from args
+ARGS=()
+while [ $# -gt 0 ]; do
+    case "$1" in
+        --lang=*) LANG_SEL="${1#--lang=}"; shift ;;
+        --lang)   LANG_SEL="${2:-es}"; shift 2 ;;
+        *)        ARGS+=("$1"); shift ;;
+    esac
+done
+set -- "${ARGS[@]+"${ARGS[@]}"}"
+[ "$LANG_SEL" != "en" ] && LANG_SEL="es"
+
+declare -A STR_ES=(
+    [root_required]="Este comando requiere permisos de root."
+    [sv_service]="Servicio"
+    [sv_active]="licitmap ACTIVO"
+    [sv_inactive]="licitmap INACTIVO"
+    [sv_db]="Base de datos"
+    [sv_db_ok]="Conexión OK — %s licitaciones"
+    [sv_db_err]="Sin conexión a la base de datos"
+    [sv_sync]="Último sync"
+    [sv_sync_none]="Sin sincronizaciones registradas todavía."
+    [sv_sync_date]="Fecha"
+    [sv_sync_feeds]="Feeds"
+    [sv_sync_new]="Nuevas"
+    [sv_sync_updated]="Actualizadas"
+    [sv_url]="URL"
+    [act_started]="Servicio iniciado."
+    [act_stopped]="Servicio detenido."
+    [act_restarted]="Servicio reiniciado."
+    [log_unknown]="Log desconocido: %s (usa app|sync|alertas)"
+    [sync_launching]="Lanzando sync: %s"
+    [sync_full]="(completo)"
+    [opt_unknown]="Opción desconocida: %s"
+    [stat_tenders]="Licitaciones"
+    [stat_users]="Usuarios"
+    [stat_active]="activos"
+    [stat_alerts]="Alertas"
+    [stat_alerts_active]="activas"
+    [stat_watched]="Licitaciones seguidas"
+    [pwd_env_missing]="No existe %s"
+    [pwd_new]="Nueva contraseña para '%s'"
+    [pwd_repeat]="Repite la contraseña"
+    [pwd_mismatch]="Las contraseñas no coinciden."
+    [pwd_empty]="Contraseña vacía."
+    [pwd_user_nf]="Usuario no encontrado: %s"
+    [pwd_updated]="Contraseña actualizada para '%s'."
+    [upd_code]="Actualizando código desde git…"
+    [upd_deps]="Actualizando dependencias Python…"
+    [upd_restart]="Reiniciando servicio…"
+    [upd_done]="LicitMap actualizado."
+    [ver_nogit]="sin histórico git"
+    [cmd_unknown]="Comando desconocido: %s"
+    [cmd_admin_unknown]="Subcomando admin desconocido: %s"
+    [help_tagline]="LicitMap CLI — administración del servicio desde terminal"
+    [help_usage]="Uso:"
+    [help_grp_service]="Servicio:"
+    [help_grp_data]="Datos:"
+    [help_grp_admin]="Administración:"
+    [help_grp_examples]="Ejemplos:"
+    [help_grp_files]="Ficheros clave:"
+    [help_status]="Resumen del servicio, BD y último sync"
+    [help_startstop]="Controla el servicio systemd"
+    [help_logs]="Tail en vivo del log (default: app)"
+    [help_url]="Imprime la URL pública"
+    [help_sync]="Sync rápido (máx 5 páginas, ~250 licitaciones)"
+    [help_sync_full]="Sync completo (incluye purga de históricos)"
+    [help_sync_since]="Sync histórico desde fecha"
+    [help_stats]="Estadísticas de la BD"
+    [help_config]="Muestra .env (secretos enmascarados)"
+    [help_reset_pwd]="Resetea contraseña (default: admin)"
+    [help_update]="git pull + reinstala deps + reinicia"
+    [help_version]="Muestra el commit desplegado"
+    [help_lang]="Idioma: auto-detecta de \$LANG, o fija con --lang=en|es o LICITMAP_LANG"
+    [help_help]="Esta ayuda (alias: -h, --help)"
+    [help_ex_status]="Ver si todo funciona"
+    [help_ex_logs]="Seguir el proceso de sincronización"
+    [help_ex_since]="Cargar histórico desde enero 2024"
+    [help_ex_reset]="Resetear contraseña del admin"
+    [help_fi_default]="Config del CLI (INSTALL_DIR, SYS_USER)"
+    [help_fi_env]="Config de la app (DATABASE_URL, etc.)"
+    [help_fi_cron]="Cron de sync y alertas"
+)
+
+declare -A STR_EN=(
+    [root_required]="This command requires root privileges."
+    [sv_service]="Service"
+    [sv_active]="licitmap ACTIVE"
+    [sv_inactive]="licitmap INACTIVE"
+    [sv_db]="Database"
+    [sv_db_ok]="Connection OK — %s tenders"
+    [sv_db_err]="Cannot connect to the database"
+    [sv_sync]="Last sync"
+    [sv_sync_none]="No synchronisations recorded yet."
+    [sv_sync_date]="Date"
+    [sv_sync_feeds]="Feeds"
+    [sv_sync_new]="New"
+    [sv_sync_updated]="Updated"
+    [sv_url]="URL"
+    [act_started]="Service started."
+    [act_stopped]="Service stopped."
+    [act_restarted]="Service restarted."
+    [log_unknown]="Unknown log: %s (use app|sync|alertas)"
+    [sync_launching]="Launching sync: %s"
+    [sync_full]="(full)"
+    [opt_unknown]="Unknown option: %s"
+    [stat_tenders]="Tenders"
+    [stat_users]="Users"
+    [stat_active]="active"
+    [stat_alerts]="Alerts"
+    [stat_alerts_active]="active"
+    [stat_watched]="Watched tenders"
+    [pwd_env_missing]="%s does not exist"
+    [pwd_new]="New password for '%s'"
+    [pwd_repeat]="Repeat password"
+    [pwd_mismatch]="Passwords do not match."
+    [pwd_empty]="Empty password."
+    [pwd_user_nf]="User not found: %s"
+    [pwd_updated]="Password updated for '%s'."
+    [upd_code]="Updating code from git…"
+    [upd_deps]="Updating Python dependencies…"
+    [upd_restart]="Restarting service…"
+    [upd_done]="LicitMap updated."
+    [ver_nogit]="no git history"
+    [cmd_unknown]="Unknown command: %s"
+    [cmd_admin_unknown]="Unknown admin subcommand: %s"
+    [help_tagline]="LicitMap CLI — manage the service from the terminal"
+    [help_usage]="Usage:"
+    [help_grp_service]="Service:"
+    [help_grp_data]="Data:"
+    [help_grp_admin]="Administration:"
+    [help_grp_examples]="Examples:"
+    [help_grp_files]="Key files:"
+    [help_status]="Summary of service state, DB and last sync"
+    [help_startstop]="Controls the systemd service"
+    [help_logs]="Live log tail (default: app)"
+    [help_url]="Prints the public URL"
+    [help_sync]="Quick sync (max 5 pages, ~250 recent tenders)"
+    [help_sync_full]="Full sync (includes purge of old records)"
+    [help_sync_since]="Historical sync from the given date"
+    [help_stats]="DB statistics"
+    [help_config]="Shows .env (secrets masked)"
+    [help_reset_pwd]="Resets password (default user: admin)"
+    [help_update]="git pull + reinstall deps + restart"
+    [help_version]="Shows the deployed commit"
+    [help_lang]="Language: auto-detected from \$LANG, or set with --lang=en|es or LICITMAP_LANG"
+    [help_help]="This help (aliases: -h, --help)"
+    [help_ex_status]="Check that everything works"
+    [help_ex_logs]="Follow the synchronisation process"
+    [help_ex_since]="Load history from January 2024"
+    [help_ex_reset]="Reset the admin password"
+    [help_fi_default]="CLI config (INSTALL_DIR, SYS_USER)"
+    [help_fi_env]="App config (DATABASE_URL, etc.)"
+    [help_fi_cron]="Sync and alerts cron"
+)
+
+t() {
+    local key="$1"
+    if [ "$LANG_SEL" = "en" ]; then
+        echo "${STR_EN[$key]:-${STR_ES[$key]:-$key}}"
+    else
+        echo "${STR_ES[$key]:-$key}"
+    fi
+}
+
 ok()   { echo -e "${C_GREEN}✓${C_RESET} $*"; }
 bad()  { echo -e "${C_RED}✗${C_RESET} $*"; }
 warn() { echo -e "${C_YELLOW}⚠${C_RESET} $*"; }
 info() { echo -e "${C_DIM}$*${C_RESET}"; }
 
 require_root() {
-    [ "$EUID" -eq 0 ] || { bad "Este comando requiere root."; exit 1; }
+    [ "$EUID" -eq 0 ] || { bad "$(t root_required)"; exit 1; }
 }
 
-# Detecta la herramienta disponible para cambiar de usuario
+# Detect which tool to use for dropping privileges
 if command -v runuser >/dev/null 2>&1; then
     AS_APP=(runuser -u "$SYS_USER" --)
 elif command -v sudo >/dev/null 2>&1; then
     AS_APP=(sudo -u "$SYS_USER")
 else
-    AS_APP=(su "$SYS_USER" -c)   # fallback (requiere adaptar las llamadas)
+    AS_APP=(su "$SYS_USER" -c)
 fi
 
 run_as_app() {
-    # Ejecuta comando como el usuario del servicio, con PYTHONPATH y cwd correctos
     "${AS_APP[@]}" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' $1"
 }
 
 cmd_help() {
     cat <<EOF
-${C_BOLD}LicitMap CLI${C_RESET} — administración del servicio desde terminal
+${C_BOLD}$(t help_tagline)${C_RESET}
 
-${C_BOLD}Uso:${C_RESET}
-  licitmap <comando> [opciones]
+${C_BOLD}$(t help_usage)${C_RESET}
+  licitmap <command> [options]
 
-${C_BOLD}Servicio:${C_RESET}
-  ${C_BOLD}status${C_RESET}                            Resumen del servicio, BD y último sync
-  ${C_BOLD}start${C_RESET} | ${C_BOLD}stop${C_RESET} | ${C_BOLD}restart${C_RESET}         Controla el servicio systemd
-  ${C_BOLD}logs${C_RESET} [app|sync|alertas]           Tail en vivo del log (default: app)
-  ${C_BOLD}url${C_RESET}                               Imprime la URL pública
+${C_BOLD}$(t help_grp_service)${C_RESET}
+  ${C_BOLD}status${C_RESET}                            $(t help_status)
+  ${C_BOLD}start${C_RESET} | ${C_BOLD}stop${C_RESET} | ${C_BOLD}restart${C_RESET}         $(t help_startstop)
+  ${C_BOLD}logs${C_RESET} [app|sync|alertas]           $(t help_logs)
+  ${C_BOLD}url${C_RESET}                               $(t help_url)
 
-${C_BOLD}Datos:${C_RESET}
-  ${C_BOLD}sync${C_RESET}                              Sync rápido (máx 5 páginas, ~250 licitaciones)
-  ${C_BOLD}sync --full${C_RESET}                       Sync completo (incluye purga de históricos)
-  ${C_BOLD}sync --since${C_RESET} YYYY-MM-DD           Sync histórico desde fecha
-  ${C_BOLD}stats${C_RESET}                             Estadísticas de la BD
+${C_BOLD}$(t help_grp_data)${C_RESET}
+  ${C_BOLD}sync${C_RESET}                              $(t help_sync)
+  ${C_BOLD}sync --full${C_RESET}                       $(t help_sync_full)
+  ${C_BOLD}sync --since${C_RESET} YYYY-MM-DD           $(t help_sync_since)
+  ${C_BOLD}stats${C_RESET}                             $(t help_stats)
 
-${C_BOLD}Administración:${C_RESET}
-  ${C_BOLD}config${C_RESET}                            Muestra .env (secretos enmascarados)
-  ${C_BOLD}admin reset-password${C_RESET} [user]       Resetea contraseña (default: admin)
-  ${C_BOLD}update${C_RESET}                            git pull + reinstala deps + reinicia
-  ${C_BOLD}version${C_RESET}                           Muestra el commit desplegado
-  ${C_BOLD}help${C_RESET}                              Esta ayuda (alias: -h, --help)
+${C_BOLD}$(t help_grp_admin)${C_RESET}
+  ${C_BOLD}config${C_RESET}                            $(t help_config)
+  ${C_BOLD}admin reset-password${C_RESET} [user]       $(t help_reset_pwd)
+  ${C_BOLD}update${C_RESET}                            $(t help_update)
+  ${C_BOLD}version${C_RESET}                           $(t help_version)
+  ${C_BOLD}--lang${C_RESET}=en|es                      $(t help_lang)
+  ${C_BOLD}help${C_RESET}                              $(t help_help)
 
-${C_BOLD}Ejemplos:${C_RESET}
-  licitmap status                      # Ver si todo funciona
-  licitmap logs sync                   # Seguir el proceso de sincronización
-  licitmap sync --since 2024-01-01     # Cargar histórico desde enero 2024
-  licitmap admin reset-password        # Resetear contraseña del admin
+${C_BOLD}$(t help_grp_examples)${C_RESET}
+  licitmap status                      # $(t help_ex_status)
+  licitmap logs sync                   # $(t help_ex_logs)
+  licitmap sync --since 2024-01-01     # $(t help_ex_since)
+  licitmap admin reset-password        # $(t help_ex_reset)
 
-${C_BOLD}Ficheros clave:${C_RESET}
-  /etc/default/licitmap                # Config del CLI (INSTALL_DIR, SYS_USER)
-  \$INSTALL_DIR/.env                    # Config de la app (DATABASE_URL, etc.)
-  /etc/cron.d/licitmap                 # Cron de sync y alertas
+${C_BOLD}$(t help_grp_files)${C_RESET}
+  /etc/default/licitmap                # $(t help_fi_default)
+  \$INSTALL_DIR/.env                    # $(t help_fi_env)
+  /etc/cron.d/licitmap                 # $(t help_fi_cron)
 EOF
 }
 
 cmd_version() {
     echo -n "LicitMap "
-    "${AS_APP[@]}" git -C "$INSTALL_DIR" log -1 --format="%h (%ci) — %s" 2>/dev/null || echo "sin histórico git"
+    "${AS_APP[@]}" git -C "$INSTALL_DIR" log -1 --format="%h (%ci) — %s" 2>/dev/null || echo "$(t ver_nogit)"
 }
 
 cmd_status() {
-    echo -e "${C_BOLD}── Servicio ──${C_RESET}"
+    echo -e "${C_BOLD}── $(t sv_service) ──${C_RESET}"
     if systemctl is-active --quiet licitmap; then
-        ok "licitmap ACTIVO (pid $(systemctl show -p MainPID --value licitmap), uptime $(systemctl show -p ActiveEnterTimestamp --value licitmap | awk '{print $2,$3}'))"
+        local pid uptime
+        pid=$(systemctl show -p MainPID --value licitmap)
+        uptime=$(systemctl show -p ActiveEnterTimestamp --value licitmap | awk '{print $2,$3}')
+        ok "$(t sv_active) (pid $pid, since $uptime)"
     else
-        bad "licitmap INACTIVO"
+        bad "$(t sv_inactive)"
     fi
 
-    echo; echo -e "${C_BOLD}── Base de datos ──${C_RESET}"
+    echo; echo -e "${C_BOLD}── $(t sv_db) ──${C_RESET}"
     if run_as_app "-c 'from app.database import engine; engine.connect().close(); print(\"OK\")'" &>/dev/null; then
-        COUNT=$(run_as_app "-c 'from app.database import SessionLocal; from app.models import Licitacion; db=SessionLocal(); print(db.query(Licitacion).count())'" 2>/dev/null || echo "?")
-        ok "Conexión OK — $COUNT licitaciones"
+        local count
+        count=$(run_as_app "-c 'from app.database import SessionLocal; from app.models import Licitacion; db=SessionLocal(); print(db.query(Licitacion).count())'" 2>/dev/null || echo "?")
+        ok "$(printf "$(t sv_db_ok)" "$count")"
     else
-        bad "Sin conexión a la BD"
+        bad "$(t sv_db_err)"
     fi
 
-    echo; echo -e "${C_BOLD}── Último sync ──${C_RESET}"
+    echo; echo -e "${C_BOLD}── $(t sv_sync) ──${C_RESET}"
     if [ -f "$INSTALL_DIR/data/sync_state.json" ]; then
+        local lbl_date lbl_feeds lbl_new lbl_upd
+        lbl_date=$(t sv_sync_date)
+        lbl_feeds=$(t sv_sync_feeds)
+        lbl_new=$(t sv_sync_new)
+        lbl_upd=$(t sv_sync_updated)
         python3 -c "
 import json
 s = json.load(open('$INSTALL_DIR/data/sync_state.json'))
-print(f\"  Fecha:        {s.get('last_sync','—')}\")
-print(f\"  Feeds:        {s.get('feeds','—')}\")
-print(f\"  Nuevas:       {s.get('nuevas','—')}\")
-print(f\"  Actualizadas: {s.get('actualizadas','—')}\")
+print(f\"  $lbl_date:        {s.get('last_sync','—')}\")
+print(f\"  $lbl_feeds:        {s.get('feeds','—')}\")
+print(f\"  $lbl_new:        {s.get('nuevas','—')}\")
+print(f\"  $lbl_upd: {s.get('actualizadas','—')}\")
 "
     else
-        info "  Sin sincronizaciones registradas todavía."
+        info "  $(t sv_sync_none)"
     fi
 
-    echo; echo -e "${C_BOLD}── URL ──${C_RESET}"
+    echo; echo -e "${C_BOLD}── $(t sv_url) ──${C_RESET}"
     cmd_url
 }
 
@@ -136,9 +320,9 @@ cmd_url() {
     echo "$url"
 }
 
-cmd_start()   { require_root; systemctl start   licitmap && ok "Servicio iniciado."; }
-cmd_stop()    { require_root; systemctl stop    licitmap && ok "Servicio detenido."; }
-cmd_restart() { require_root; systemctl restart licitmap && ok "Servicio reiniciado."; }
+cmd_start()   { require_root; systemctl start   licitmap && ok "$(t act_started)"; }
+cmd_stop()    { require_root; systemctl stop    licitmap && ok "$(t act_stopped)"; }
+cmd_restart() { require_root; systemctl restart licitmap && ok "$(t act_restarted)"; }
 
 cmd_logs() {
     local target="${1:-app}"
@@ -146,7 +330,7 @@ cmd_logs() {
         app)     journalctl -u licitmap -f --no-pager ;;
         sync)    tail -f /var/log/licitmap_sync.log ;;
         alertas) tail -f /var/log/licitmap_alertas.log ;;
-        *)       bad "Log desconocido: $target (usa app|sync|alertas)"; exit 1 ;;
+        *)       bad "$(printf "$(t log_unknown)" "$target")"; exit 1 ;;
     esac
 }
 
@@ -156,29 +340,35 @@ cmd_sync() {
         case "$1" in
             --full)  args=() ;;
             --since) args=("--force" "--since-date" "$2"); shift ;;
-            *)       bad "Opción desconocida: $1"; exit 1 ;;
+            *)       bad "$(printf "$(t opt_unknown)" "$1")"; exit 1 ;;
         esac
         shift || true
     done
-    info "Lanzando sync: ${args[*]:-(completo)}"
+    info "$(printf "$(t sync_launching)" "${args[*]:-$(t sync_full)}")"
     "${AS_APP[@]}" bash -c "cd '$INSTALL_DIR' && PYTHONPATH='$INSTALL_DIR' '$INSTALL_DIR/.venv/bin/python' scripts/sync.py ${args[*]}"
 }
 
 cmd_stats() {
+    local l_tend l_users l_active l_alerts l_watch
+    l_tend=$(t stat_tenders)
+    l_users=$(t stat_users)
+    l_active=$(t stat_active)
+    l_alerts=$(t stat_alerts)
+    l_watch=$(t stat_watched)
     run_as_app "-c '
 from app.database import SessionLocal
 from app.models import Licitacion, User, Alerta, LicitacionSeguida
 db = SessionLocal()
-print(f\"Licitaciones:        {db.query(Licitacion).count():>8}\")
-print(f\"Usuarios:            {db.query(User).count():>8}  (activos: {db.query(User).filter_by(is_active=True).count()})\")
-print(f\"Alertas:             {db.query(Alerta).count():>8}  (activas: {db.query(Alerta).filter_by(activa=True).count()})\")
-print(f\"Licitaciones seguidas:{db.query(LicitacionSeguida).count():>7}\")
+print(f\"$l_tend:        {db.query(Licitacion).count():>8}\")
+print(f\"$l_users:            {db.query(User).count():>8}  ($l_active: {db.query(User).filter_by(is_active=True).count()})\")
+print(f\"$l_alerts:             {db.query(Alerta).count():>8}  ($l_active: {db.query(Alerta).filter_by(activa=True).count()})\")
+print(f\"$l_watch: {db.query(LicitacionSeguida).count():>7}\")
 '"
 }
 
 cmd_config() {
     if [ ! -f "$INSTALL_DIR/.env" ]; then
-        bad "No existe $INSTALL_DIR/.env"; exit 1
+        bad "$(printf "$(t pwd_env_missing)" "$INSTALL_DIR/.env")"; exit 1
     fi
     sed -E 's/(SECRET_KEY=).*/\1***/; s/(:\/\/[^:]+:)[^@]+(@)/\1***\2/' "$INSTALL_DIR/.env"
 }
@@ -186,10 +376,17 @@ cmd_config() {
 cmd_admin_reset_password() {
     require_root
     local user="${1:-admin}"
-    echo -n "Nueva contraseña para '$user': "; read -r -s pass; echo
-    echo -n "Repite la contraseña:          "; read -r -s pass2; echo
-    [ "$pass" = "$pass2" ] || { bad "Las contraseñas no coinciden."; exit 1; }
-    [ -z "$pass" ] && { bad "Contraseña vacía."; exit 1; }
+    echo -n "$(t pwd_new): " | sed "s/%s/$user/"
+    local prompt_new prompt_rep
+    prompt_new="$(printf "$(t pwd_new)" "$user"): "
+    prompt_rep="$(t pwd_repeat): "
+    read -r -s -p "$prompt_new" pass; echo
+    read -r -s -p "$prompt_rep" pass2; echo
+    [ "$pass" = "$pass2" ] || { bad "$(t pwd_mismatch)"; exit 1; }
+    [ -z "$pass" ] && { bad "$(t pwd_empty)"; exit 1; }
+    local nf_msg upd_msg
+    nf_msg="$(printf "$(t pwd_user_nf)" "$user")"
+    upd_msg="$(printf "$(t pwd_updated)" "$user")"
     run_as_app "-c '
 import bcrypt
 from app.database import SessionLocal
@@ -197,23 +394,23 @@ from app.models import User
 db = SessionLocal()
 u = db.query(User).filter_by(username=\"$user\").first()
 if not u:
-    print(\"Usuario no encontrado: $user\"); raise SystemExit(1)
+    print(\"$nf_msg\"); raise SystemExit(1)
 u.hashed_password = bcrypt.hashpw(\"$pass\".encode(), bcrypt.gensalt()).decode()
 db.commit()
 print(\"OK\")
 '"
-    ok "Contraseña actualizada para '$user'."
+    ok "$upd_msg"
 }
 
 cmd_update() {
     require_root
-    info "Actualizando código desde git…"
+    info "$(t upd_code)"
     "${AS_APP[@]}" git -C "$INSTALL_DIR" pull --ff-only
-    info "Actualizando dependencias Python…"
+    info "$(t upd_deps)"
     "${AS_APP[@]}" "$INSTALL_DIR/.venv/bin/pip" install -q -r "$INSTALL_DIR/requirements.txt"
-    info "Reiniciando servicio…"
+    info "$(t upd_restart)"
     systemctl restart licitmap
-    ok "LicitMap actualizado."
+    ok "$(t upd_done)"
 }
 
 # ─── Router ────────────────────────────────────────────────────────────
@@ -235,8 +432,8 @@ case "$CMD" in
         SUB="${1:-help}"; shift || true
         case "$SUB" in
             reset-password) cmd_admin_reset_password "$@" ;;
-            *) bad "Subcomando admin desconocido: $SUB"; exit 1 ;;
+            *) bad "$(printf "$(t cmd_admin_unknown)" "$SUB")"; exit 1 ;;
         esac
         ;;
-    *) bad "Comando desconocido: $CMD"; echo; cmd_help; exit 1 ;;
+    *) bad "$(printf "$(t cmd_unknown)" "$CMD")"; echo; cmd_help; exit 1 ;;
 esac
