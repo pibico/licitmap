@@ -331,11 +331,26 @@ chmod 644 /etc/default/licitmap
 # CLI
 log "Instalando CLI en /usr/local/bin/licitmap…"
 install -m 755 "$INSTALL_DIR/scripts/licitmap" /usr/local/bin/licitmap
+
+# Asegura /usr/local/bin en el PATH de shells interactivas (afecta sobre todo a
+# LXC de Proxmox: `pct enter` da una shell no-login con PATH mínimo).
 if ! echo ":$PATH:" | grep -q ":/usr/local/bin:"; then
-    warn "/usr/local/bin NO está en tu PATH actual. Para usar 'licitmap' directamente añádelo:"
-    warn "  echo 'export PATH=/usr/local/sbin:/usr/local/bin:\$PATH' >> ~/.bashrc && source ~/.bashrc"
-    warn "O invoca siempre con ruta absoluta: /usr/local/bin/licitmap"
+    if ! grep -q '# LicitMap: ensure /usr/local/bin' /etc/bash.bashrc 2>/dev/null; then
+        cat >> /etc/bash.bashrc <<'EOF'
+
+# LicitMap: ensure /usr/local/bin is in PATH (Proxmox LXC / minimal shells)
+case ":$PATH:" in
+    *:/usr/local/bin:*) ;;
+    *) export PATH=/usr/local/sbin:/usr/local/bin:$PATH ;;
+esac
+EOF
+        warn "/usr/local/bin no estaba en PATH. Añadido a /etc/bash.bashrc. Abre una terminal nueva o ejecuta: source /etc/bash.bashrc"
+    fi
 fi
+
+# Permite a root ejecutar git en el repo aunque sea propiedad del SYS_USER
+git config --system --add safe.directory "$INSTALL_DIR" 2>/dev/null || true
+
 ok "CLI disponible: ejecuta 'licitmap help'."
 
 # systemd
