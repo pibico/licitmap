@@ -1,141 +1,161 @@
+<sub>[🇪🇸 Español](README.es.md) · 🇬🇧 **English**</sub>
+
 # LicitMap
 
-Plataforma web para explorar, analizar y recibir alertas de las licitaciones públicas españolas publicadas en el [PLACSP](https://contrataciondelestado.es/) (Plataforma de Contratación del Sector Público).
+Web platform to explore, analyse and receive alerts on Spanish public tenders published on [PLACSP](https://contrataciondelestado.es/) (*Plataforma de Contratación del Sector Público*, the official Spanish public procurement portal).
 
-## Características
+## Features
 
-- **Búsqueda y filtrado** avanzado por CCAA, provincia, tipo de contrato, CPV, presupuesto y palabras clave.
-- **Mapa interactivo** con licitaciones geolocalizadas por municipio (Leaflet).
-- **Panel de análisis** con 10 gráficas sobre volumen, presupuesto, distribución geográfica y CPV.
-- **Alertas por correo**: newsletter periódica, alertas personalizadas, suscripciones a entidad, seguimiento de licitaciones concretas.
-- **Panel de administración** para gestionar usuarios, configuración SMTP y sincronización manual.
-- **Sincronización automática** incremental con los feeds ATOM de PLACSP (cada 10 minutos + completa diaria).
-- **Purga automática** de licitaciones antiguas configurable (años de histórico).
-- **Exportación a Excel** de los resultados de búsqueda.
+- **Advanced search and filtering** by region, province, contract type, CPV code, budget and keywords.
+- **Interactive map** with tenders geolocated by municipality (Leaflet).
+- **Analytics dashboard** with 10 charts covering volume, budget, geographic distribution and CPV breakdown.
+- **Email alerts**: periodic newsletter, custom alerts, entity subscriptions, per-tender watchlists.
+- **Admin panel** for user management, SMTP configuration and manual synchronisation.
+- **Automatic incremental sync** against the PLACSP ATOM feeds (every 10 minutes plus a daily full sync).
+- **Configurable automatic purge** of old tenders (retention window in years).
+- **Excel export** of search results.
+- **Bilingual UI** (Spanish / English) with an in-app language switcher.
 
-## Requisitos
+## Requirements
 
-- Debian 12+ o Ubuntu 22.04+
-- 2 GB de RAM mínimo, 10 GB de disco libre
-- Acceso a Internet (para descargar los feeds de PLACSP)
-- Acceso como root (para instalar paquetes y configurar servicios)
+- Debian 12+ or Ubuntu 22.04+
+- 2 GB RAM minimum, 10 GB free disk
+- Internet access (to download the PLACSP feeds)
+- Root access (to install packages and configure services)
 
-## Instalación
+## Installation
 
 ```bash
 git clone https://github.com/Ivisor/licitmap.git
 cd licitmap
-sudo bash install.sh
+bash install.sh      # or 'sudo bash install.sh' if you are not root
 ```
 
-El instalador es **interactivo** y pregunta:
+The installer is **interactive** and asks about:
 
-- Ruta de instalación (por defecto `/opt/licitmap`)
-- Usuario del sistema que ejecutará el servicio (por defecto `licitmap`)
-- Credenciales del administrador (usuario, contraseña, correo)
-- Años de histórico a mantener (por defecto 5)
-- Tipo de PostgreSQL: **Docker** (recomendado), **nativo** (apt) o **externo**
-- Configuración de nginx + Let's Encrypt (opcional)
-- Configuración SMTP para envío de correos (opcional)
-- Cuándo cargar los datos históricos (ahora, al primer cron, o no cargar)
+- Installation path (default `/opt/licitmap`)
+- System user that will run the service (default `licitmap`)
+- Administrator credentials (username, password, email)
+- Years of history to retain (default 5)
+- PostgreSQL mode: **Docker**, **native** (apt, default) or **external**
+- Nginx + Let's Encrypt setup (optional)
+- SMTP configuration for email (optional)
+- When to perform the initial data load (now, on the first cron run, or skip)
 
-Al finalizar, el servicio queda corriendo bajo `systemd`:
+Every prompt has a sensible default — pressing Enter through the whole installer yields a working localhost deployment with native PostgreSQL, no nginx, no SMTP, and an `admin` user with password `admin` (a warning at the end reminds you to change it).
+
+When the installer finishes, the service runs under `systemd`:
 
 ```bash
-systemctl status licitmap
-journalctl -u licitmap -f
+licitmap status              # full summary
+systemctl status licitmap    # direct equivalent
+journalctl -u licitmap -f    # live logs
 ```
 
-## Estructura del proyecto
+## Project layout
 
 ```
-app/                 Código de la aplicación (FastAPI)
-  database.py        Conexión a PostgreSQL (lee DATABASE_URL de .env)
-  models.py          Modelos SQLAlchemy (User, Licitacion, Alerta, etc.)
-  routes/            Rutas HTTP (home, mapa, analisis, alertas, admin, auth)
-  email_utils.py     Envío de correos SMTP
-  parser.py          Parser de feeds ATOM de PLACSP
-  utils.py           Helpers (navegación, settings)
+app/                 Application code (FastAPI)
+  database.py        PostgreSQL connection (reads DATABASE_URL from .env)
+  models.py          SQLAlchemy models (User, Licitacion, Alerta, etc.)
+  i18n.py            Translations and the t() helper
+  routes/            HTTP routes (home, mapa, analisis, alertas, admin, auth)
+  email_utils.py     SMTP email sender
+  parser.py          PLACSP ATOM feed parser
+  utils.py           Helpers (navigation, settings, language)
 scripts/
-  sync.py            Sincronización incremental con PLACSP
-  run_sync.sh        Wrapper bash usado por cron
-  check_alertas.py   Procesa alertas y envía correos (cron horario)
-static/              CSS, JS, datos (CPV, GeoJSON, coordenadas de municipios)
-templates/           Plantillas HTML (sin Jinja2 — usa str.replace)
-deploy/              Plantillas de systemd, nginx y cron
-install.sh           Instalador interactivo
-.env.example         Plantilla de configuración
+  licitmap           Admin CLI (installed to /usr/local/bin/)
+  sync.py            Incremental PLACSP synchronisation
+  run_sync.sh        Bash wrapper used by cron
+  check_alertas.py   Processes alerts and sends emails (hourly cron)
+static/              CSS, JS, data (CPV, GeoJSON, municipality coordinates)
+templates/           HTML templates (no Jinja2 — uses str.replace)
+deploy/              Templates for systemd, nginx and cron
+install.sh           Interactive installer
+.env.example         Configuration template
 ```
 
-## Configuración
+## Configuration
 
-Toda la configuración vive en `.env` (generado por el instalador):
+Runtime configuration lives in `.env` (generated by the installer):
 
 ```
 DATABASE_URL=postgresql://licitmap:...@127.0.0.1:5432/licitmap
-SECRET_KEY=<clave aleatoria>
+SECRET_KEY=<random key>
 HISTORY_YEARS=5
 ```
 
-El resto de ajustes (SMTP, límites de exportación, etc.) se gestionan desde el panel web `/admin/config` y se guardan en la tabla `settings`.
+Everything else (SMTP, export limits, security policies) is managed from the web admin panel at `/admin/config` and stored in the `settings` table.
 
-## CLI de administración
+## Language
 
-El instalador deja disponible el comando `licitmap` en el PATH del sistema. Cubre las operaciones más habituales sin necesidad de recordar rutas ni invocar `systemctl`/`sudo -u licitmap` a mano.
+LicitMap is bilingual (Spanish / English):
 
-### Servicio
+- **Web UI**: language switcher in the top navigation bar. Preference is stored in a cookie and — when logged in — also on the user profile.
+- **CLI**: auto-detects from the `$LANG` environment variable. Manual override: `LICITMAP_LANG=en licitmap status` or via flag `licitmap --lang en status`.
+- **Emails**: sent in the recipient user's preferred language.
+- **Tender data**: titles, contracting bodies, CPV labels, etc. are **not** translated — they are the raw values from PLACSP.
 
-| Comando | Descripción |
+Default language: Spanish. Changing the language does not log you out.
+
+## Admin CLI
+
+The installer places the `licitmap` command on the system `PATH`. It covers the most common operations without needing to remember paths or invoke `systemctl`/`runuser` by hand.
+
+### Service
+
+| Command | Description |
 |---|---|
-| `licitmap status` | Resumen del servicio, conexión a BD, último sync y URL pública |
-| `licitmap start` | Arranca el servicio |
-| `licitmap stop` | Detiene el servicio |
-| `licitmap restart` | Reinicia el servicio |
-| `licitmap logs` | Logs de la app en vivo (equivalente a `journalctl -u licitmap -f`) |
-| `licitmap logs sync` | Tail del log de sincronizaciones |
-| `licitmap logs alertas` | Tail del log del procesado de alertas |
-| `licitmap url` | Imprime la URL pública del servicio |
+| `licitmap status` | Summary of service state, DB connection, last sync and public URL |
+| `licitmap start` | Start the service |
+| `licitmap stop` | Stop the service |
+| `licitmap restart` | Restart the service |
+| `licitmap logs` | Live app logs (equivalent to `journalctl -u licitmap -f`) |
+| `licitmap logs sync` | Tail of the synchronisation log |
+| `licitmap logs alertas` | Tail of the alerts log |
+| `licitmap url` | Prints the service's public URL |
 
-### Datos
+### Data
 
-| Comando | Descripción |
+| Command | Description |
 |---|---|
-| `licitmap sync` | Sync rápido (máx. 5 páginas, ~250 licitaciones recientes) |
-| `licitmap sync --full` | Sync completo con purga de históricos antiguos |
-| `licitmap sync --since 2023-01-01` | Sync histórico desde la fecha indicada |
-| `licitmap stats` | Estadísticas de la BD (licitaciones, usuarios, alertas) |
+| `licitmap sync` | Quick sync (max 5 pages, ~250 recent tenders) |
+| `licitmap sync --full` | Full sync including purge of old tenders |
+| `licitmap sync --since 2023-01-01` | Historical sync from the given date |
+| `licitmap stats` | DB stats (tenders, users, alerts) |
 
-### Administración
+### Administration
 
-| Comando | Descripción |
+| Command | Description |
 |---|---|
-| `licitmap config` | Muestra `.env` con secretos enmascarados |
-| `licitmap admin reset-password` | Resetea la contraseña del admin interactivamente |
-| `licitmap update` | `git pull` + reinstala dependencias + reinicia el servicio |
-| `licitmap help` | Lista completa de comandos |
+| `licitmap config` | Shows `.env` with secrets masked |
+| `licitmap admin reset-password` | Interactively resets the admin password |
+| `licitmap update` | `git pull` + reinstall dependencies + restart the service |
+| `licitmap version` | Shows the deployed commit |
+| `licitmap help` | Full help with examples (aliases: `-h`, `--help`) |
 
-### Ajustes fuera del CLI
+### Settings outside the CLI
 
-- **Años de histórico**: editar `HISTORY_YEARS` en `/opt/licitmap/.env` y ejecutar `licitmap restart`.
-- **SMTP, límite de exportación, políticas de seguridad**: desde el panel web en `/admin/config` (se guardan en la tabla `settings`).
-- **Cambiar puerto o dominio**: reconfigurar nginx en `/etc/nginx/sites-available/licitmap` y la unidad systemd en `/etc/systemd/system/licitmap.service`.
+- **Retention years**: edit `HISTORY_YEARS` in `/opt/licitmap/.env` and run `licitmap restart`.
+- **SMTP, export limit, security policies**: from the web panel at `/admin/config` (stored in the `settings` table).
+- **Change port or domain**: reconfigure nginx at `/etc/nginx/sites-available/licitmap` and the systemd unit at `/etc/systemd/system/licitmap.service`.
 
-### Cron instalado
+### Cron jobs installed
 
 ```
-*/10 * * * *  licitmap  run_sync.sh --max-pages 3       # sync rápido
-0    3 * * *  licitmap  run_sync.sh                     # sync completo + purga
-0    * * * *  licitmap  python check_alertas.py         # alertas email
+*/10 * * * *  licitmap  run_sync.sh --max-pages 3       # quick sync
+0    3 * * *  licitmap  run_sync.sh                     # full sync + purge
+0    * * * *  licitmap  python check_alertas.py         # email alerts
 ```
 
-## Desarrollo local
+## Local development
 
 ```bash
 python3 -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env
-# editar .env con DATABASE_URL a tu Postgres local
+# edit .env, point DATABASE_URL at your local Postgres
 uvicorn main:app --reload
 ```
 
@@ -143,8 +163,8 @@ uvicorn main:app --reload
 
 - **Backend**: FastAPI, SQLAlchemy 2.x, PostgreSQL 17
 - **Frontend**: Bootstrap 5, vanilla JS, Chart.js, Leaflet
-- **Infraestructura**: systemd, nginx, cron, Docker (opcional para PostgreSQL)
+- **Infrastructure**: systemd, nginx (optional), cron, Docker (optional for PostgreSQL)
 
-## Licencia
+## Licence
 
-Este proyecto no tiene licencia explícita. Contacta con el autor para uso comercial.
+This project has no explicit licence. Contact the author for commercial use.
