@@ -281,8 +281,11 @@ def _build_nl_section(nl: Alerta | None) -> str:
   </div>
   <div class="mb-3 lm-geo-mun-col" id="nl-mun-col" style="{mun_display}">
     <label class="lm-form-label">{L['mun']} <span class="lm-form-hint" style="display:inline;margin:0">{L['opt']}</span></label>
-    <input type="text" class="form-control form-control-sm lm-geo-mun-input" id="nl-municipio"
-           value="{municipios}" placeholder="{L['mun_ph']}">
+    <div class="lm-autocomplete">
+      <input type="text" class="form-control form-control-sm lm-geo-mun-input" id="nl-municipio"
+             value="{municipios}" placeholder="{L['mun_ph']}" autocomplete="off">
+      <div class="lm-autocomplete-list" id="nl-municipio-list"></div>
+    </div>
   </div>
   <div class="d-flex gap-2 flex-wrap">
     <button type="button" class="btn btn-sm btn-primary" id="nl-guardar">{L['save']}</button>

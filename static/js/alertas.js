@@ -76,6 +76,83 @@
   function formatPipe(pipeStr) {
     return (pipeStr || '').split('|').filter(Boolean).join(', ');
   }
+  function stripAccents(s) {
+    return (s || '').normalize('NFD').replace(/[̀-ͯ]/g, '').toLowerCase();
+  }
+
+  // Autocomplete multi-token: filtra sobre el último token tras la última
+  // coma y al seleccionar reemplaza sólo ese token. Reusa los estilos
+  // .lm-autocomplete-list / .lm-autocomplete-item ya definidos en app.js.
+  function setupMultiAutocomplete(inputId, listId, getOptions, onChange) {
+    var input = document.getElementById(inputId);
+    var list  = document.getElementById(listId);
+    if (!input || !list) return;
+    list.style.position = 'fixed';
+    list.style.zIndex   = '9999';
+
+    function getLastToken() {
+      var parts = input.value.split(',');
+      return parts[parts.length - 1].trim();
+    }
+    function replaceLastToken(val) {
+      var parts = input.value.split(',');
+      parts[parts.length - 1] = (parts.length > 1 ? ' ' : '') + val;
+      input.value = parts.join(',') + ', ';
+      if (onChange) onChange();
+    }
+    function updatePos() {
+      var r = input.getBoundingClientRect();
+      list.style.top   = r.bottom + 'px';
+      list.style.left  = r.left + 'px';
+      list.style.width = r.width + 'px';
+    }
+    function showList(items) {
+      if (!items.length) { list.classList.remove('open'); return; }
+      list.innerHTML = items.slice(0, 10).map(function (it) {
+        return '<div class="lm-autocomplete-item" data-val="' + it + '">' + it + '</div>';
+      }).join('');
+      updatePos();
+      list.classList.add('open');
+      list.querySelectorAll('.lm-autocomplete-item').forEach(function (el) {
+        el.addEventListener('mousedown', function (e) {
+          e.preventDefault();
+          replaceLastToken(el.dataset.val);
+          list.classList.remove('open');
+          input.focus();
+        });
+      });
+    }
+    input.addEventListener('input', function () {
+      if (onChange) onChange();
+      var tok = stripAccents(getLastToken());
+      if (!tok) { list.classList.remove('open'); return; }
+      var matches = getOptions().filter(function (o) {
+        return stripAccents(o).includes(tok);
+      });
+      showList(matches);
+    });
+    input.addEventListener('focus', function () {
+      var tok = stripAccents(getLastToken());
+      if (!tok) return;
+      var matches = getOptions().filter(function (o) { return stripAccents(o).includes(tok); });
+      showList(matches);
+    });
+    document.addEventListener('click', function (e) {
+      if (!input.contains(e.target) && !list.contains(e.target)) list.classList.remove('open');
+    });
+    window.addEventListener('scroll', updatePos, true);
+    window.addEventListener('resize', updatePos);
+  }
+
+  // Cargamos las listas de provincias y municipios una sola vez al boot para
+  // alimentar todos los autocompletes de la página.
+  var GEO_DATA = { provincias: [], municipios: [] };
+  function loadGeoNames() {
+    return fetch('/api/map/nombres')
+      .then(function (r) { return r.json(); })
+      .then(function (d) { GEO_DATA = { provincias: d.provincias || [], municipios: d.municipios || [] }; })
+      .catch(function () {});
+  }
 
   // ── Progressive disclosure: CCAA → provincia → municipio ──────────────────
   // Rellena el chip picker de provincia con las provincias pertenecientes a
@@ -109,7 +186,14 @@
     fetch('/api/geo/provincias-by-ccaa?ccaa=' + encodeURIComponent(ccaaVals.join('|')))
       .then(function (r) { return r.json(); })
       .then(function (d) {
-        renderProvChips(picker, d.provincias || [], selected);
+        var provs = d.provincias || [];
+        // CCAA uniprovincial (Madrid, Asturias, Navarra…): auto-seleccionar
+        // la única provincia para que el bloque municipio aparezca sin
+        // requerir un clic extra.
+        if (provs.length === 1 && selected.length === 0) {
+          selected = [provs[0]];
+        }
+        renderProvChips(picker, provs, selected);
         picker.dataset.selected = '';
         if (provCol) provCol.style.display = '';
         updateMunVisibility(prefix);
@@ -535,6 +619,10 @@
       var fh = document.getElementById('gf-fecha-hasta');
       if (fd) fd.value = f.fecha_desde || '';
       if (fh) fh.value = f.fecha_hasta || '';
+      var gp = document.getElementById('gf-provincia-input');
+      var gm = document.getElementById('gf-municipio-input');
+      if (gp) gp.value = f.provincia || '';
+      if (gm) gm.value = f.municipio || '';
     }
 
     syncUI();
@@ -558,6 +646,18 @@
 
     var resetBtn = document.getElementById('gf-reset');
     if (resetBtn) resetBtn.addEventListener('click', function () { LMFilters.clear(); syncUI(); });
+
+    // Autocomplete de provincia + municipio en el sidebar (escribe libre, se
+    // guarda en LMFilters como valor único — replica el patrón del sidebar
+    // de búsqueda). Los valores iniciales ya los puso syncUI() al arrancar.
+    if (window.LMAutocomplete) {
+      window.LMAutocomplete('gf-provincia-input', 'gf-provincia-list',
+        function () { return GEO_DATA.provincias; },
+        function (val) { LMFilters.save({ provincia: val }); });
+      window.LMAutocomplete('gf-municipio-input', 'gf-municipio-list',
+        function () { return GEO_DATA.municipios; },
+        function (val) { LMFilters.save({ municipio: val }); });
+    }
 
     var crearBtn = document.getElementById('gf-crear-alerta');
     if (crearBtn) {
@@ -640,6 +740,14 @@
     // el listener de toggle corra antes que el nuestro.
     initGeoDisclosure('nl');
     initGeoDisclosure('al');
+    // Cargar listas de provincias/municipios y conectar todos los
+    // autocompletes de la página (sidebar + forms).
+    loadGeoNames().then(function () {
+      setupMultiAutocomplete('nl-municipio',  'nl-municipio-list',  function () { return GEO_DATA.municipios; });
+      setupMultiAutocomplete('al-municipio',  'al-municipio-list',  function () { return GEO_DATA.municipios; });
+      setupMultiAutocomplete('sub-provincia', 'sub-provincia-list', function () { return GEO_DATA.provincias; });
+      setupMultiAutocomplete('sub-municipio', 'sub-municipio-list', function () { return GEO_DATA.municipios; });
+    });
   });
 
 })();
