@@ -2669,3 +2669,30 @@ a:hover {
 .lm-detail-footer .btn { min-width: 0; }
 #lm-detail-url { flex: 1; justify-content: center; }
 #lm-detail-follow { flex-shrink: 0; padding-left: 0.85rem; padding-right: 0.85rem; }
+
+/* ─── Selector de idioma (navbar) ──────────────────────────────────── */
+.lm-lang-switch {
+    display: inline-flex;
+    border: 1px solid var(--lm-border, rgba(0,0,0,0.15));
+    border-radius: 6px;
+    overflow: hidden;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+}
+.lm-lang-btn {
+    padding: 0.25rem 0.5rem;
+    text-decoration: none;
+    color: var(--lm-text-muted, #666);
+    background: transparent;
+    transition: color 0.15s ease, background-color 0.15s ease;
+    border: none;
+}
+.lm-lang-btn + .lm-lang-btn { border-left: 1px solid var(--lm-border, rgba(0,0,0,0.12)); }
+.lm-lang-btn:hover { color: var(--lm-text, #222); }
+.lm-lang-btn.is-active {
+    color: var(--lm-text, #fff);
+    background: var(--lm-accent, #475569);
+}
+[data-theme="dark"] .lm-lang-switch { border-color: rgba(255,255,255,0.12); }
+[data-theme="dark"] .lm-lang-btn + .lm-lang-btn { border-left-color: rgba(255,255,255,0.08); }

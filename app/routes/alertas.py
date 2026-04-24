@@ -378,7 +378,7 @@ def _build_watchlist(seguidas: list) -> str:
 
 
 def _render_page(request: Request, nl, alertas_list, subs_list, watchlist, user) -> str:
-    auth_block, busqueda_display = _nav_context(request)
+    auth_block, busqueda_display, lang_selector = _nav_context(request)
     base = Path("templates/base.html").read_text()
     tpl  = Path("templates/alertas.html").read_text()
 
@@ -399,6 +399,7 @@ def _render_page(request: Request, nl, alertas_list, subs_list, watchlist, user)
         "active_alertas":   "lm-nav-tab-active",
         "nav_auth_block":   auth_block,
         "nav_busqueda_display": busqueda_display,
+        "lang_selector":    lang_selector,
         "nl_section":       _build_nl_section(nl),
         "alertas_list":     _build_alertas_list(alertas_list),
         "subs_list":        _build_subs_list(subs_list),

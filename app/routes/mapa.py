@@ -190,13 +190,14 @@ def mapa_page(
         )
     sidebar_prange = "\n".join(prange_items)
 
-    auth_block, busqueda_display = _nav_context(request)
+    auth_block, busqueda_display, lang_selector = _nav_context(request)
     return render(
         "mapa.html",
         active_busqueda="",
         active_mapa="lm-nav-tab-active",
         nav_auth_block=auth_block,
         nav_busqueda_display=busqueda_display,
+        lang_selector=lang_selector,
         q=q,
         cpv_q=cpv_q,
         tipo=tipo,

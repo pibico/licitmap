@@ -46,7 +46,7 @@ TERRITORIOS_ESPECIALES = {"Todo el territorio", "Extra-Regio", "Extranjero"}
 
 
 def _render_page(request: Request) -> str:
-    auth_block, busqueda_display = _nav_context(request)
+    auth_block, busqueda_display, lang_selector = _nav_context(request)
     base = Path("templates/base.html").read_text()
     page = Path("templates/analisis.html").read_text()
     html = base.replace("{{content}}", page)
@@ -55,6 +55,7 @@ def _render_page(request: Request) -> str:
         "active_mapa": "",
         "nav_auth_block": auth_block,
         "nav_busqueda_display": busqueda_display,
+        "lang_selector": lang_selector,
     }.items():
         html = html.replace("{{" + k + "}}", v)
     html = re.sub(r"\{\{[a-z_]+\}\}", "", html)

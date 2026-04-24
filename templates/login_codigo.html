@@ -6,26 +6,25 @@
       </svg>
       <span>LicitMap</span>
     </div>
-    <h1 class="lm-login-title">Código de acceso</h1>
+    <h1 class="lm-login-title">{{t.login.otp_title}}</h1>
     <p class="lm-login-subtitle">
-      Hemos enviado un código de 6 dígitos al correo de
-      <strong style="color:var(--tx-primary)">{{login_username}}</strong>.
-      Expira en 15 minutos.
+      {{t.login.otp_body}}
+      <br><strong style="color:var(--tx-primary)">{{login_username}}</strong>
     </p>
     {{error_block}}
     <form method="post" action="/login/codigo" class="lm-login-form">
       <input type="hidden" name="username" value="{{login_username}}">
       <div class="lm-login-field">
-        <label class="lm-login-label" for="login-otp">Código</label>
+        <label class="lm-login-label" for="login-otp">{{t.login.otp_label}}</label>
         <input type="text" id="login-otp" name="codigo" class="form-control lm-login-otp"
           required autofocus autocomplete="one-time-code"
           inputmode="numeric" pattern="[0-9]{6}" maxlength="6"
           placeholder="000000">
       </div>
-      <button type="submit" class="btn btn-primary w-100 lm-login-submit">Verificar</button>
+      <button type="submit" class="btn btn-primary w-100 lm-login-submit">{{t.login.otp_submit}}</button>
     </form>
     <p class="lm-login-back">
-      <a href="/login">← Volver a introducir usuario</a>
+      <a href="/login">← {{t.login.back}}</a>
     </p>
   </div>
 </div>

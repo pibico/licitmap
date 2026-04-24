@@ -6,16 +6,16 @@
       </svg>
       <span>LicitMap</span>
     </div>
-    <h1 class="lm-login-title">Acceder</h1>
-    <p class="lm-login-subtitle">Introduce tu usuario o correo electrónico para continuar</p>
+    <h1 class="lm-login-title">{{t.login.title}}</h1>
+    <p class="lm-login-subtitle">{{t.login.subtitle}}</p>
     {{error_block}}
     <form method="post" action="/login" class="lm-login-form">
       <div class="lm-login-field">
-        <label class="lm-login-label" for="login-user">Usuario o correo electrónico</label>
+        <label class="lm-login-label" for="login-user">{{t.login.user_label}}</label>
         <input type="text" id="login-user" name="username" class="form-control"
           required autofocus autocomplete="username" autocapitalize="none">
       </div>
-      <button type="submit" class="btn btn-primary w-100 lm-login-submit">Continuar</button>
+      <button type="submit" class="btn btn-primary w-100 lm-login-submit">{{t.login.continue}}</button>
     </form>
   </div>
 </div>

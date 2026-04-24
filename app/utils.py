@@ -1,6 +1,8 @@
 from fastapi import Request
 from sqlalchemy.orm import Session
 
+from app.i18n import get_lang_from_request
+
 _ICON_USER = (
     '<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" fill="none" viewBox="0 0 24 24"'
     ' stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">'
@@ -35,12 +37,26 @@ def set_setting(db: Session, key: str, value: str) -> None:
     db.commit()
 
 
-def _nav_context(request: Request) -> tuple[str, str]:
-    """Devuelve (nav_auth_block_html, nav_busqueda_display_style)."""
+def lang_selector_html(active_lang: str) -> str:
+    """Botón/selector de idioma para la navbar."""
+    es_active = "is-active" if active_lang == "es" else ""
+    en_active = "is-active" if active_lang == "en" else ""
+    return (
+        '<div class="lm-lang-switch" role="group" aria-label="{{t.nav.lang_toggle}}">'
+        f'<a href="/lang/es" class="lm-lang-btn {es_active}" lang="es" title="Español" aria-label="Español">ES</a>'
+        f'<a href="/lang/en" class="lm-lang-btn {en_active}" lang="en" title="English" aria-label="English">EN</a>'
+        '</div>'
+    )
+
+
+def _nav_context(request: Request) -> tuple[str, str, str]:
+    """Devuelve (auth_block_html, busqueda_display_style, lang_selector_html)."""
     username = request.session.get("username", "")
+    lang = get_lang_from_request(request)
+    selector = lang_selector_html(lang)
     if username:
         admin_link = (
-            f'<a href="/admin" class="lm-nav-admin-btn">{_ICON_SHIELD}Admin</a>'
+            f'<a href="/admin" class="lm-nav-admin-btn">{_ICON_SHIELD}{{{{t.nav.admin}}}}</a>'
             f'<span class="lm-nav-sep"></span>'
             if username == "admin"
             else ""
@@ -49,8 +65,8 @@ def _nav_context(request: Request) -> tuple[str, str]:
             f'<div class="lm-nav-user">'
             f'<span class="lm-nav-username">{_ICON_USER}{username}</span>'
             f'{admin_link}'
-            f'<a href="/logout" class="lm-nav-logout">{_ICON_LOGOUT}Salir</a>'
+            f'<a href="/logout" class="lm-nav-logout">{_ICON_LOGOUT}{{{{t.nav.logout}}}}</a>'
             f'</div>'
         )
-        return auth_block, ""
-    return '<a href="/login" class="lm-btn-login">Iniciar sesión</a>', "display:none"
+        return auth_block, "", selector
+    return '<a href="/login" class="lm-btn-login">{{t.nav.login}}</a>', "display:none", selector

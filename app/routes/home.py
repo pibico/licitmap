@@ -157,13 +157,14 @@ def _render_landing(request: Request, db) -> str:
         except Exception:
             pass
 
-    auth_block, busqueda_display = _nav_context(request)
+    auth_block, busqueda_display, lang_selector = _nav_context(request)
     return render(
         "landing.html",
         active_busqueda="",
         active_mapa="",
         nav_auth_block=auth_block,
         nav_busqueda_display=busqueda_display,
+        lang_selector=lang_selector,
         total=f"{total:,}".replace(",", "."),
         en_plazo=f"{en_plazo:,}".replace(",", "."),
         ultima_sync=ultima_sync,
@@ -531,13 +532,14 @@ def home(
     territorio_title = "Comunidad autónoma" if mostrar_ccaa else "País"
     espana_only_display = "" if mostrar_ccaa else "display:none"
 
-    auth_block, busqueda_display = _nav_context(request)
+    auth_block, busqueda_display, lang_selector = _nav_context(request)
     return render(
         "home.html",
         active_busqueda="lm-nav-tab-active",
         active_mapa="",
         nav_auth_block=auth_block,
         nav_busqueda_display=busqueda_display,
+        lang_selector=lang_selector,
         total=f"{total:,}".replace(",", "."),
         en_plazo=en_plazo_str,
         resultados=resultados_str,

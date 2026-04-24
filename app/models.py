@@ -13,6 +13,7 @@ class User(Base):
     otp_code = Column(String, nullable=True)
     otp_expires_at = Column(DateTime, nullable=True)
     is_active = Column(Boolean, default=True, nullable=False)
+    language = Column(String(2), default="es", nullable=False)
 
 
 class Setting(Base):

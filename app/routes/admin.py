@@ -44,7 +44,7 @@ def _require_admin(request: Request) -> bool:
 
 
 def _render(request: Request, page_tpl: str, active: str, extra: dict | None = None) -> str:
-    auth_block, busqueda_display = _nav_context(request)
+    auth_block, busqueda_display, lang_selector = _nav_context(request)
     base = Path("templates/base.html").read_text()
     admin_base = Path("templates/admin_base.html").read_text()
     page = Path(f"templates/{page_tpl}").read_text()
@@ -55,6 +55,7 @@ def _render(request: Request, page_tpl: str, active: str, extra: dict | None = N
         "active_mapa": "",
         "nav_auth_block": auth_block,
         "nav_busqueda_display": busqueda_display,
+        "lang_selector": lang_selector,
         "admin_active_dashboard": "active" if active == "dashboard" else "",
         "admin_active_usuarios": "active" if active == "usuarios" else "",
         "admin_active_config": "active" if active == "config" else "",

@@ -9,13 +9,15 @@ from sqlalchemy.orm import Session
 from app.database import get_db
 from app.models import User
 from app.email_utils import send_otp_email
+from app.i18n import get_lang_from_request
+from app.utils import lang_selector_html
 
 router = APIRouter()
 
 _OTP_TTL = timedelta(minutes=15)
 
 
-def _render(template: str, vars: dict) -> str:
+def _render(request: Request, template: str, vars: dict) -> str:
     base = Path("templates/base.html").read_text()
     page = Path(f"templates/{template}").read_text()
     html = base.replace("{{content}}", page)
@@ -24,6 +26,7 @@ def _render(template: str, vars: dict) -> str:
         "active_mapa": "",
         "nav_auth_block": "",
         "nav_busqueda_display": "display:none",
+        "lang_selector": lang_selector_html(get_lang_from_request(request)),
         "error_block": "",
         "info_block": "",
     }
@@ -33,11 +36,11 @@ def _render(template: str, vars: dict) -> str:
     return html
 
 
-def _err(template: str, msg: str, extra: dict | None = None) -> HTMLResponse:
+def _err(request: Request, template: str, msg: str, extra: dict | None = None) -> HTMLResponse:
     v = {"error_block": f'<div class="lm-login-error">{msg}</div>'}
     if extra:
         v.update(extra)
-    return HTMLResponse(_render(template, v), status_code=400)
+    return HTMLResponse(_render(request, template, v), status_code=400)
 
 
 # ── Paso 1: formulario de usuario ────────────────────────────────────────────
@@ -46,7 +49,17 @@ def _err(template: str, msg: str, extra: dict | None = None) -> HTMLResponse:
 def login_get(request: Request):
     if request.session.get("username"):
         return RedirectResponse("/", status_code=303)
-    return HTMLResponse(_render("login.html", {}))
+    return HTMLResponse(_render(request, "login.html", {}))
+
+
+def _login_redirect(user: User) -> RedirectResponse:
+    """Redirige a la home tras login y sincroniza la cookie de idioma."""
+    resp = RedirectResponse("/", status_code=303)
+    if user.language:
+        resp.set_cookie(
+            "lm_lang", user.language, max_age=60 * 60 * 24 * 365, samesite="lax"
+        )
+    return resp
 
 
 @router.post("/login")
@@ -60,7 +73,6 @@ async def login_post(
 
     identifier = username.strip().lower()
 
-    # Buscar por nombre de usuario primero, luego por email
     user = db.query(User).filter_by(username=identifier, is_active=True).first()
     if not user:
         user = db.query(User).filter(
@@ -68,14 +80,13 @@ async def login_post(
         ).first()
 
     if not user:
-        return _err("login.html", "Usuario o correo no encontrado, o cuenta inactiva.")
+        return _err(request, "login.html", "Usuario o correo no encontrado, o cuenta inactiva.")
 
     if user.username == "admin":
         return RedirectResponse("/login/password?u=admin", status_code=303)
 
-    # Usuario normal — genera OTP y envía email
     if not user.email:
-        return _err("login.html", "Este usuario no tiene correo electrónico configurado. Contacta con el administrador.")
+        return _err(request, "login.html", "Este usuario no tiene correo electrónico configurado. Contacta con el administrador.")
 
     otp = f"{secrets.randbelow(1_000_000):06d}"
     user.otp_code = otp
@@ -85,12 +96,10 @@ async def login_post(
     try:
         send_otp_email(user.email, user.username, otp, db)
     except Exception as e:
-        return _err("login.html", f"No se pudo enviar el correo: {e}")
+        return _err(request, "login.html", f"No se pudo enviar el correo: {e}")
 
     return RedirectResponse(f"/login/codigo?u={user.username}", status_code=303)
 
-
-# ── Paso 2a: contraseña (solo admin) ─────────────────────────────────────────
 
 @router.get("/login/password", response_class=HTMLResponse)
 def login_password_get(request: Request, u: str = ""):
@@ -98,7 +107,7 @@ def login_password_get(request: Request, u: str = ""):
         return RedirectResponse("/", status_code=303)
     if u != "admin":
         return RedirectResponse("/login", status_code=303)
-    return HTMLResponse(_render("login_password.html", {"login_username": u}))
+    return HTMLResponse(_render(request, "login_password.html", {"login_username": u}))
 
 
 @router.post("/login/password")
@@ -113,11 +122,9 @@ async def login_password_post(
     user = db.query(User).filter_by(username="admin", is_active=True).first()
     if user and user.hashed_password and bcrypt.checkpw(password.encode(), user.hashed_password.encode()):
         request.session["username"] = user.username
-        return RedirectResponse("/", status_code=303)
-    return _err("login_password.html", "Contraseña incorrecta.", {"login_username": username})
+        return _login_redirect(user)
+    return _err(request, "login_password.html", "Contraseña incorrecta.", {"login_username": username})
 
-
-# ── Paso 2b: código OTP (usuarios no-admin) ───────────────────────────────────
 
 @router.get("/login/codigo", response_class=HTMLResponse)
 def login_codigo_get(request: Request, u: str = ""):
@@ -125,7 +132,7 @@ def login_codigo_get(request: Request, u: str = ""):
         return RedirectResponse("/", status_code=303)
     if not u:
         return RedirectResponse("/login", status_code=303)
-    return HTMLResponse(_render("login_codigo.html", {"login_username": u}))
+    return HTMLResponse(_render(request, "login_codigo.html", {"login_username": u}))
 
 
 @router.post("/login/codigo")
@@ -137,22 +144,22 @@ async def login_codigo_post(
 ):
     user = db.query(User).filter_by(username=username, is_active=True).first()
     if not user or not user.otp_code or not user.otp_expires_at:
-        return _err("login_codigo.html", "Código inválido. Vuelve a iniciar sesión.", {"login_username": username})
+        return _err(request, "login_codigo.html", "Código inválido. Vuelve a iniciar sesión.", {"login_username": username})
 
     if datetime.utcnow() > user.otp_expires_at:
         user.otp_code = None
         user.otp_expires_at = None
         db.commit()
-        return _err("login_codigo.html", "El código ha expirado. Vuelve a iniciar sesión.", {"login_username": username})
+        return _err(request, "login_codigo.html", "El código ha expirado. Vuelve a iniciar sesión.", {"login_username": username})
 
     if not secrets.compare_digest(codigo.strip(), user.otp_code):
-        return _err("login_codigo.html", "Código incorrecto.", {"login_username": username})
+        return _err(request, "login_codigo.html", "Código incorrecto.", {"login_username": username})
 
     user.otp_code = None
     user.otp_expires_at = None
     db.commit()
     request.session["username"] = user.username
-    return RedirectResponse("/", status_code=303)
+    return _login_redirect(user)
 
 
 # ── Logout ────────────────────────────────────────────────────────────────────
