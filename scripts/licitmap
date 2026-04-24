@@ -330,7 +330,15 @@ cmd_restart() { require_root; systemctl restart licitmap && ok "$(t act_restarte
 cmd_logs() {
     local target="${1:-app}"
     case "$target" in
-        app)     journalctl -u licitmap -f --no-pager ;;
+        app)
+            # systemd unit redirige stdout/err a /var/log/licitmap.log; si no existe,
+            # caemos en journalctl
+            if [ -f /var/log/licitmap.log ]; then
+                tail -f /var/log/licitmap.log
+            else
+                journalctl -u licitmap -f --no-pager
+            fi
+            ;;
         sync)    tail -f /var/log/licitmap_sync.log ;;
         alertas) tail -f /var/log/licitmap_alertas.log ;;
         *)       bad "$(printf "$(t log_unknown)" "$target")"; exit 1 ;;
@@ -561,7 +569,7 @@ print(\"OK\" if db.query(User).filter_by(username=\"admin\").first() else \"MISS
     echo
     echo -e "${C_BOLD}── Errores recientes ──${C_RESET}"
     local recent_err
-    recent_err=$(journalctl -u licitmap -n 200 --no-pager 2>/dev/null | grep -iE 'traceback|error|exception' | grep -v 'INFO:' | tail -5 || true)
+    recent_err=$( (journalctl -u licitmap -n 200 --no-pager 2>/dev/null; cat /var/log/licitmap.log 2>/dev/null | tail -200) | grep -iE 'traceback|error|exception' | grep -v 'INFO:' | tail -5 || true)
     if [ -z "$recent_err" ]; then
         echo -e "  ${C_GREEN}✓${C_RESET} No hay errores recientes en el journal"
     else
