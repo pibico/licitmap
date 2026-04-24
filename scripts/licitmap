@@ -561,7 +561,7 @@ print(\"OK\" if db.query(User).filter_by(username=\"admin\").first() else \"MISS
     echo
     echo -e "${C_BOLD}── Errores recientes ──${C_RESET}"
     local recent_err
-    recent_err=$(journalctl -u licitmap -n 200 --no-pager 2>/dev/null | grep -iE 'traceback|error|exception' | grep -v 'INFO:' | tail -5)
+    recent_err=$(journalctl -u licitmap -n 200 --no-pager 2>/dev/null | grep -iE 'traceback|error|exception' | grep -v 'INFO:' | tail -5 || true)
     if [ -z "$recent_err" ]; then
         echo -e "  ${C_GREEN}✓${C_RESET} No hay errores recientes en el journal"
     else
