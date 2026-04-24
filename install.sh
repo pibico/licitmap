@@ -219,7 +219,13 @@ case "$DB_MODE" in
         log "Configurando contenedor Docker licitmap-db…"
         systemctl enable --now docker >/dev/null
         if docker ps -a --format '{{.Names}}' | grep -q '^licitmap-db$'; then
-            warn "Contenedor licitmap-db ya existe — no se recrea. Para rehacerlo: docker rm -f licitmap-db"
+            warn "Contenedor licitmap-db ya existe — reutilizo la contraseña actual del contenedor."
+            # Sincronizamos DB_PASS con la del contenedor para que .env coincida
+            EXISTING_PASS=$(docker inspect licitmap-db --format '{{range .Config.Env}}{{println .}}{{end}}' | awk -F= '/^POSTGRES_PASSWORD=/{print $2}')
+            if [ -n "$EXISTING_PASS" ]; then
+                DB_PASS="$EXISTING_PASS"
+                DB_URL="postgresql://${DB_USER}:${DB_PASS}@127.0.0.1:5432/${DB_NAME}"
+            fi
         else
             docker run -d --name licitmap-db --restart unless-stopped \
                 -p 127.0.0.1:5432:5432 \
@@ -239,12 +245,18 @@ case "$DB_MODE" in
     nativo)
         log "Configurando PostgreSQL nativo…"
         systemctl enable --now postgresql >/dev/null
-        runuser -u postgres -- psql -tc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1 \
-            || runuser -u postgres -- psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" >/dev/null
+        # Idempotente: si el user existe, actualiza su contraseña (evita mismatch
+        # con la nueva generada cuando reinstalas sin limpiar).
+        if runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_roles WHERE rolname='$DB_USER'" | grep -q 1; then
+            runuser -u postgres -- psql -c "ALTER USER $DB_USER WITH PASSWORD '$DB_PASS';" >/dev/null
+        else
+            runuser -u postgres -- psql -c "CREATE USER $DB_USER WITH PASSWORD '$DB_PASS';" >/dev/null
+        fi
         # ENCODING 'UTF8' TEMPLATE template0 garantiza UTF-8 aunque el sistema no
         # tenga locales UTF-8 generadas (caso típico en LXC minimal de Proxmox).
-        runuser -u postgres -- psql -tc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1 \
-            || runuser -u postgres -- psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C';" >/dev/null
+        if ! runuser -u postgres -- psql -tAc "SELECT 1 FROM pg_database WHERE datname='$DB_NAME'" | grep -q 1; then
+            runuser -u postgres -- psql -c "CREATE DATABASE $DB_NAME OWNER $DB_USER ENCODING 'UTF8' TEMPLATE template0 LC_COLLATE 'C' LC_CTYPE 'C';" >/dev/null
+        fi
         ok "PostgreSQL nativo listo."
         ;;
     externo)
