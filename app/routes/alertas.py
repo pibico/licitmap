@@ -50,6 +50,41 @@ def _apply_geo_filters(q, provincias: str | None, municipios: str | None):
             q = q.filter(Licitacion.municipio.in_(muns))
     return q
 
+
+def _apply_suscripcion_filters(q, s: Alerta):
+    """Filtra un query por los campos de una suscripción. Prioriza el schema
+    nuevo (comunidades/provincias/municipios/organismo/cpv_codes); si está
+    vacío, cae al legacy entidad_tipo/entidad_valor para compatibilidad con
+    subs creadas antes del rediseño."""
+    new_schema = any([s.comunidades, s.provincias, s.municipios, s.organismo, s.cpv_codes])
+    if new_schema:
+        if s.comunidades:
+            cc = [c for c in s.comunidades.split("|") if c]
+            if cc:
+                q = q.filter(Licitacion.comunidad_autonoma.in_(cc))
+        q = _apply_geo_filters(q, s.provincias, s.municipios)
+        if s.organismo:
+            q = q.filter(Licitacion.organo_contratacion.ilike(f"%{s.organismo}%"))
+        if s.cpv_codes:
+            cpvs = [c.strip() for c in s.cpv_codes.replace(",", "|").split("|") if c.strip()]
+            if cpvs:
+                q = q.filter(or_(*[Licitacion.cpv.ilike(f"%{c}%") for c in cpvs]))
+        return q
+    # Legacy entidad_tipo/entidad_valor.
+    if s.entidad_tipo == "ccaa":
+        q = q.filter(Licitacion.comunidad_autonoma == s.entidad_valor)
+    elif s.entidad_tipo == "provincia":
+        cp = PROVINCIA_TO_CP.get(s.entidad_valor or "")
+        if cp:
+            q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2) == cp)
+        else:
+            q = q.filter(False)
+    elif s.entidad_tipo == "organismo":
+        q = q.filter(Licitacion.organo_contratacion.ilike(f"%{s.entidad_valor}%"))
+    elif s.entidad_tipo == "cpv":
+        q = q.filter(Licitacion.cpv.ilike(f"%{s.entidad_valor}%"))
+    return q
+
 CCAA_LIST = [
     "Andalucía", "Aragón", "Asturias", "Baleares", "Canarias", "Cantabria",
     "Castilla-La Mancha", "Castilla y León", "Cataluña", "Ceuta",

@@ -123,24 +123,35 @@ def check_suscripciones(db):
         since = s.last_checked_at or (now - timedelta(days=1))
         q = db.query(Licitacion).filter(Licitacion.fecha_publicacion >= since)
 
-        if s.entidad_tipo == "ccaa":
-            q = q.filter(Licitacion.comunidad_autonoma == s.entidad_valor)
-        elif s.entidad_tipo == "provincia":
-            # Licitacion.provincia siempre NULL → derivar vía CP prefix.
-            cp = PROVINCIA_TO_CP.get(s.entidad_valor or "")
-            if cp:
-                q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2) == cp)
-            else:
-                q = q.filter(False)
-        elif s.entidad_tipo == "organismo":
-            q = q.filter(Licitacion.organo_contratacion.ilike(f"%{s.entidad_valor}%"))
-        elif s.entidad_tipo == "cpv":
-            q = q.filter(Licitacion.cpv.ilike(f"%{s.entidad_valor}%"))
-
-        # Filtros opcionales adicionales (provincia/municipio dentro de la
-        # entidad principal — p. ej. suscripción a organismo X pero sólo en
-        # Madrid).
-        q = _apply_geo_filters(q, s.provincias, s.municipios)
+        # Nuevo schema: comunidades/provincias/municipios/organismo/cpv_codes
+        # como filtros ANDs. Fallback legacy a entidad_tipo/entidad_valor
+        # para subs creadas antes del rediseño.
+        new_schema = any([s.comunidades, s.provincias, s.municipios, s.organismo, s.cpv_codes])
+        if new_schema:
+            if s.comunidades:
+                cc = [c for c in s.comunidades.split("|") if c]
+                if cc:
+                    q = q.filter(Licitacion.comunidad_autonoma.in_(cc))
+            q = _apply_geo_filters(q, s.provincias, s.municipios)
+            if s.organismo:
+                q = q.filter(Licitacion.organo_contratacion.ilike(f"%{s.organismo}%"))
+            if s.cpv_codes:
+                cpvs = [c.strip() for c in s.cpv_codes.replace(",", "|").split("|") if c.strip()]
+                if cpvs:
+                    q = q.filter(or_(*[Licitacion.cpv.ilike(f"%{c}%") for c in cpvs]))
+        else:
+            if s.entidad_tipo == "ccaa":
+                q = q.filter(Licitacion.comunidad_autonoma == s.entidad_valor)
+            elif s.entidad_tipo == "provincia":
+                cp = PROVINCIA_TO_CP.get(s.entidad_valor or "")
+                if cp:
+                    q = q.filter(func.substr(Licitacion.codigo_postal, 1, 2) == cp)
+                else:
+                    q = q.filter(False)
+            elif s.entidad_tipo == "organismo":
+                q = q.filter(Licitacion.organo_contratacion.ilike(f"%{s.entidad_valor}%"))
+            elif s.entidad_tipo == "cpv":
+                q = q.filter(Licitacion.cpv.ilike(f"%{s.entidad_valor}%"))
 
         lics = q.order_by(Licitacion.fecha_publicacion.desc()).limit(50).all()
         if lics:

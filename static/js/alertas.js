@@ -480,53 +480,41 @@
   }
 
   // ── Suscripción: form ────────────────────────────────────────────────────
+  // Unifica la suscripción con el estilo del form de alerta custom:
+  // CCAA chips + provincia progresiva + municipio + organismo + CPV.
   function initSubForm() {
     var wrap     = document.getElementById('form-sub-wrap');
     var btnNueva = document.getElementById('btn-nueva-sub');
     var btnCanc  = document.getElementById('sub-cancelar');
     var btnGuard = document.getElementById('sub-guardar');
-    var tipoSel  = document.getElementById('sub-tipo');
     var freqSel  = document.getElementById('sub-frecuencia');
     var diaCol   = document.getElementById('sub-dia-col');
-    var selCol   = document.getElementById('sub-valor-select-col');
-    var txtCol   = document.getElementById('sub-valor-text-col');
-    var valorLbl = document.getElementById('sub-valor-label');
 
     if (!wrap) return;
 
-    var PLACEHOLDERS = (AL.subPh) || {};
-    var LABELS       = (AL.entidad) || {};
-    var fallbackValor = AL.valorFallback || 'Valor';
-
-    function updateTipoUI() {
-      var tipo = tipoSel.value;
-      if (tipo === 'ccaa') {
-        selCol.style.display = ''; txtCol.style.display = 'none';
-      } else {
-        selCol.style.display = 'none'; txtCol.style.display = '';
-        if (valorLbl) valorLbl.textContent = LABELS[tipo] || fallbackValor;
-        var inp = document.getElementById('sub-valor-text');
-        if (inp) inp.placeholder = PLACEHOLDERS[tipo] || '';
-      }
-    }
-
-    if (tipoSel) tipoSel.addEventListener('change', updateTipoUI);
     if (freqSel) freqSel.addEventListener('change', function () {
       if (diaCol) diaCol.style.display = freqSel.value === 'semanal' ? '' : 'none';
     });
 
-    function openForm() { wrap.style.display = ''; wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
+    function openForm()  { wrap.style.display = ''; wrap.scrollIntoView({ behavior: 'smooth', block: 'nearest' }); }
     function closeForm() { wrap.style.display = 'none'; resetForm(); }
     function resetForm() {
       document.getElementById('sub-edit-id').value    = '';
       document.getElementById('sub-nombre').value     = '';
-      document.getElementById('sub-valor-text').value = '';
-      var sp = document.getElementById('sub-provincia');
-      var sm = document.getElementById('sub-municipio');
-      if (sp) sp.value = '';
-      if (sm) sm.value = '';
-      if (tipoSel) { tipoSel.value = 'ccaa'; updateTipoUI(); }
+      document.getElementById('sub-organismo').value  = '';
+      document.getElementById('sub-cpv').value        = '';
+      clearChips('sub-ccaa');
+      // Resetear progressive disclosure provincia/municipio.
+      var provEl = document.getElementById('sub-provincia');
+      if (provEl) { provEl.innerHTML = ''; provEl.dataset.selected = ''; provEl.dataset.implicit = ''; provEl.dataset.chips = ''; }
+      var munEl  = document.getElementById('sub-municipio');
+      if (munEl) munEl.value = '';
+      var provCol = document.getElementById('sub-prov-col');
+      var munCol  = document.getElementById('sub-mun-col');
+      if (provCol) provCol.style.display = 'none';
+      if (munCol)  munCol.style.display  = 'none';
       if (freqSel) { freqSel.value = 'diaria'; if (diaCol) diaCol.style.display = 'none'; }
+      document.getElementById('sub-dia').value  = '0';
       document.getElementById('sub-hora').value = '8';
     }
 
@@ -538,24 +526,26 @@
 
     if (btnGuard) {
       btnGuard.addEventListener('click', function () {
-        var tipo  = tipoSel.value;
-        var valor = tipo === 'ccaa'
-          ? document.getElementById('sub-valor-ccaa').value
-          : document.getElementById('sub-valor-text').value.trim();
-        if (!valor) { showToast(T.valueRequired, 'error'); return; }
-        var sp = document.getElementById('sub-provincia');
-        var sm = document.getElementById('sub-municipio');
+        var munEl = document.getElementById('sub-municipio');
         var payload = {
-          edit_id:       document.getElementById('sub-edit-id').value || null,
-          nombre:        document.getElementById('sub-nombre').value.trim(),
-          entidad_tipo:  tipo,
-          entidad_valor: valor,
-          provincias:    sp ? parseCsv(sp.value) : [],
-          municipios:    sm ? parseCsv(sm.value) : [],
-          frecuencia:    freqSel ? freqSel.value : 'diaria',
-          dia_semana:    parseInt(document.getElementById('sub-dia').value, 10) || 0,
-          hora_envio:    parseInt(document.getElementById('sub-hora').value, 10) || 8,
+          edit_id:     document.getElementById('sub-edit-id').value || null,
+          nombre:      document.getElementById('sub-nombre').value.trim(),
+          ccaa:        getChipVals('sub-ccaa'),
+          provincias:  getChipVals('sub-provincia'),
+          municipios:  munEl ? parseCsv(munEl.value) : [],
+          organismo:   document.getElementById('sub-organismo').value.trim(),
+          cpv:         document.getElementById('sub-cpv').value.trim(),
+          frecuencia:  freqSel ? freqSel.value : 'diaria',
+          dia_semana:  parseInt(document.getElementById('sub-dia').value, 10) || 0,
+          hora_envio:  parseInt(document.getElementById('sub-hora').value, 10) || 8,
         };
+        // Requerir al menos un filtro — una suscripción vacía enviaría
+        // TODAS las licitaciones, rara vez es lo que quieres.
+        if (!payload.ccaa.length && !payload.provincias.length && !payload.municipios.length
+            && !payload.organismo && !payload.cpv) {
+          showToast(T.valueRequired, 'error');
+          return;
+        }
         btnGuard.disabled = true;
         api('/api/alerts/suscripcion', payload).then(function (r) {
           if (r.ok) {
@@ -570,30 +560,41 @@
       });
     }
 
+    // Editar: rellenar desde data-* del botón. Si la sub es legacy
+    // (entidad_tipo+valor) migramos al schema nuevo visualmente: la
+    // guardarán y el backend persistirá ya con las columnas nuevas.
     document.addEventListener('click', function (e) {
       var btn = e.target.closest('.btn-editar-sub');
       if (!btn) return;
       var d = btn.dataset;
-      document.getElementById('sub-edit-id').value  = d.id;
-      document.getElementById('sub-nombre').value   = d.nombre || '';
-      if (tipoSel) { tipoSel.value = d.tipo || 'ccaa'; updateTipoUI(); }
-      if (d.tipo === 'ccaa') {
-        var sel = document.getElementById('sub-valor-ccaa');
-        if (sel) sel.value = d.valor || '';
-      } else {
-        var inp = document.getElementById('sub-valor-text');
-        if (inp) inp.value = d.valor || '';
+      document.getElementById('sub-edit-id').value   = d.id;
+      document.getElementById('sub-nombre').value    = d.nombre || '';
+      document.getElementById('sub-organismo').value = d.organismo || '';
+      document.getElementById('sub-cpv').value       = (d.cpv || '').replace(/\|/g, ', ');
+
+      var ccaaList = (d.ccaa || '').split('|').filter(Boolean);
+      // Legacy: si el edit viene con tipo/valor vacío d.ccaa, migramos
+      // según el tipo de entidad.
+      if (!ccaaList.length && d.tipo && d.valor) {
+        if (d.tipo === 'ccaa')      ccaaList = [d.valor];
+        else if (d.tipo === 'organismo') document.getElementById('sub-organismo').value = d.valor;
+        else if (d.tipo === 'cpv')       document.getElementById('sub-cpv').value       = d.valor;
       }
+      setChipVals('sub-ccaa', ccaaList);
+
+      var provEl = document.getElementById('sub-provincia');
+      if (provEl) provEl.dataset.selected = d.provincias || '';
+      var munEl = document.getElementById('sub-municipio');
+      if (munEl) munEl.value = formatPipe(d.municipios || '');
+
       if (freqSel) {
         freqSel.value = d.frecuencia || 'diaria';
         if (diaCol) diaCol.style.display = freqSel.value === 'semanal' ? '' : 'none';
       }
       document.getElementById('sub-dia').value  = d.dia  || '0';
       document.getElementById('sub-hora').value = d.hora || '8';
-      var sp = document.getElementById('sub-provincia');
-      var sm = document.getElementById('sub-municipio');
-      if (sp) sp.value = formatPipe(d.provincias || '');
-      if (sm) sm.value = formatPipe(d.municipios || '');
+
+      updateProvChipsFromCcaa('sub');
       openForm();
     });
   }
@@ -805,15 +806,15 @@
     // el listener de toggle corra antes que el nuestro.
     initGeoDisclosure('nl');
     initGeoDisclosure('al');
-    // Cargar listas de provincias/municipios y conectar todos los
-    // autocompletes de la página (sidebar + forms). Los autocompletes de
-    // municipio en newsletter y custom alert devuelven la lista acotada a
-    // las provincias efectivas del form (CCAA/provincia seleccionada).
+    initGeoDisclosure('sub');
+    // Cargar listas de provincias/municipios y conectar los autocompletes
+    // de municipio de los 3 forms. Cada uno consulta getMunicipiosForForm()
+    // con su prefix, devolviendo la lista acotada a las provincias efectivas
+    // (CCAA/provincia seleccionadas en ese form).
     loadGeoNames().then(function () {
-      setupMultiAutocomplete('nl-municipio',  'nl-municipio-list',  function () { return getMunicipiosForForm('nl'); });
-      setupMultiAutocomplete('al-municipio',  'al-municipio-list',  function () { return getMunicipiosForForm('al'); });
-      setupMultiAutocomplete('sub-provincia', 'sub-provincia-list', function () { return GEO_DATA.provincias; });
-      setupMultiAutocomplete('sub-municipio', 'sub-municipio-list', function () { return GEO_DATA.municipios; });
+      setupMultiAutocomplete('nl-municipio',  'nl-municipio-list',  function () { return getMunicipiosForForm('nl');  });
+      setupMultiAutocomplete('al-municipio',  'al-municipio-list',  function () { return getMunicipiosForForm('al');  });
+      setupMultiAutocomplete('sub-municipio', 'sub-municipio-list', function () { return getMunicipiosForForm('sub'); });
     });
   });
 
